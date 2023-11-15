@@ -162,20 +162,6 @@ const char SARA_R5_RESPONSE_ERROR[] = "\nERROR\r\n";
 const char SARA_R5_RESPONSE_CONNECT[] = "\r\nCONNECT\r\n";
 #define SARA_R5_RESPONSE_OK_OR_ERROR nullptr
 
-// CTRL+Z and ESC ASCII codes for SMS message sends
-const char ASCII_CTRL_Z = 0x1A;
-const char ASCII_ESC = 0x1B;
-
-// NMEA data size - used by parseGPRMCString
-#define TEMP_NMEA_DATA_SIZE 16
-
-#define NOT_AT_COMMAND false
-#define AT_COMMAND true
-
-// The minimum memory allocation for responses from sendCommandWithResponse
-// This needs to be large enough to hold the response you're expecting plus and URC's that may arrive during the timeout
-#define minimumResponseAllocation 128
-
 #define SARA_R5_NUM_SOCKETS 6
 
 #define NUM_SUPPORTED_BAUD 6
@@ -196,33 +182,6 @@ typedef enum
   SARA_R5_DISABLE_FLOW_CONTROL = 0,
   SARA_R5_ENABLE_FLOW_CONTROL = 3
 } SARA_R5_flow_control_t;
-
-// The standard Europe profile should be used as the basis for all other MNOs in Europe outside of Vodafone
-// and Deutsche Telekom. However, there may be changes that need to be applied to the module for proper
-// operation with any given European MNO such as attach type, RAT preference, band selection, etc. Please
-// consult with the preferred network provider.
-typedef enum
-{
-  MNO_INVALID = -1,
-  MNO_SW_DEFAULT = 0, // Undefined / regulatory
-  MNO_SIM_ICCID = 1,
-  MNO_ATT = 2, // AT&T
-  MNO_VERIZON = 3,
-  MNO_TELSTRA = 4,
-  MNO_TMO = 5, // T-Mobile US
-  MNO_CT = 6,  // China Telecom
-  MNO_SPRINT = 8,
-  MNO_VODAFONE = 19,
-  MNO_NTT_DOCOMO = 20,
-  MNO_TELUS = 21,
-  MNO_SOFTBANK = 28,
-  MNO_DT = 31, // Deutsche Telekom
-  MNO_US_CELLULAR = 32,
-  MNO_SKT = 39,
-  MNO_GLOBAL = 90,
-  MNO_STD_EUROPE = 100,
-  MNO_STD_EU_NOEPCO = 101
-} mobile_network_operator_t;
 
 typedef enum
 {
@@ -254,64 +213,6 @@ typedef enum
   SARA_R5_REGISTRATION_HOME_CSFB_NOT_PREFERRED = 9,
   SARA_R5_REGISTRATION_ROAMING_CSFB_NOT_PREFERRED = 10
 } SARA_R5_registration_status_t;
-
-struct DateData
-{
-  uint8_t day;
-  uint8_t month;
-  unsigned int year;
-};
-
-struct TimeData
-{
-  uint8_t hour;
-  uint8_t minute;
-  uint8_t second;
-  unsigned int ms;
-  uint8_t tzh;
-  uint8_t tzm;
-};
-
-struct ClockData
-{
-  struct DateData date;
-  struct TimeData time;
-};
-
-struct PositionData
-{
-  float utc;
-  float lat; // Degrees: +/- 90
-  float lon; // Degrees: +/- 180
-  float alt;
-  char mode;
-  char status;
-};
-
-struct SpeedData
-{
-  float speed;  // m/s
-  float cog;    // Degrees
-  float magVar; // Degrees
-};
-
-struct operator_stats
-{
-  uint8_t stat;
-  String shortOp;
-  String longOp;
-  unsigned long numOp;
-  uint8_t act;
-};
-
-typedef struct ext_signal_quality_ {
-    unsigned int rxlev;
-    unsigned int ber;
-    unsigned int rscp;
-    unsigned int enc0;
-    unsigned int rsrq;
-    unsigned int rsrp;
-} signal_quality;
 
 typedef enum
 {
@@ -454,9 +355,6 @@ typedef enum
   SARA_R5_MQTT_COMMAND_PUBLISHBINARY,
 } SARA_R5_mqtt_command_opcode_t;
 
-constexpr uint16_t MAX_MQTT_HEX_MSG_LEN = 512;
-constexpr uint16_t MAX_MQTT_DIRECT_MSG_LEN = 1024;
-
 typedef enum
 {
     SARA_R5_FTP_PROFILE_IPADDRESS = 0,
@@ -568,20 +466,5 @@ typedef enum
     SARA_R5_SEC_MANAGER_CLIENT_KEY,
     SARA_R5_SEC_MANAGER_SERVER_CERT
 } SARA_R5_sec_manager_parameter_t;
-
-typedef enum
-{
-  MINIMUM_FUNCTIONALITY = 0, // (disable both transmit and receive RF circuits by deactivating both CS and PS services)
-  FULL_FUNCTIONALITY = 1,
-  AIRPLANE_MODE = 4,
-  SIM_TOOLKIT_ENABLE_DEDICATED = 6,
-  SIM_TOOLKIT_DISABLE_DEDICATED = 7,
-  SIM_TOOLKIT_ENABLE_RAW = 9,
-  FAST_SAFE_POWER_OFF = 10,
-  //SILENT_RESET_WITHOUT_SIM = 15, // Not supported on SARA-R5
-  SILENT_RESET_WITH_SIM = 16
-  //MINIMUM_FUNCTIONALITY = 19, // Not supported on SARA-R5
-  //DEEP_LOW_POWER_STATE = 127 // Not supported on SARA-R5
-} SARA_R5_functionality_t;
 
 #endif //SPARKFUN_SARA_R5_ARDUINO_LIBRARY_H
