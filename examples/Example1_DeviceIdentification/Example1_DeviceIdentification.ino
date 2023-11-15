@@ -43,7 +43,7 @@ void processSIMstate(UBLOX_AT_sim_states_t state)
   Serial.println();
 }
 
-void begin()
+void setup()
 {
   Serial.begin(115200); // Start the serial console
 
