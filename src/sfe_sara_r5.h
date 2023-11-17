@@ -1,7 +1,7 @@
 #ifndef SFE_SARA_R5_LIBRARY_H
 #define SFE_SARA_R5_LIBRARY_H
 
-#include "sfe_ublox_at_commands.h"
+#include "sfe_ublox_cellular.h"
 
 // Base SARA-R5 class
 class SARA_R5: public UBLOX_AT

@@ -1,4 +1,4 @@
-#include "SparkFun_u-blox_AT_Commands_Arduino_Library.h"
+#include "SparkFun_u-blox_Cellular_Arduino_Library.h"
 
 // Uncomment the line below that you need for Serial on your platform
 #define mySerial Serial1

@@ -1,7 +1,7 @@
 #ifndef SFE_LARA_R6_LIBRARY_H
 #define SFE_LARA_R6_LIBRARY_H
 
-#include "sfe_ublox_at_commands.h"
+#include "sfe_ublox_cellular.h"
 
 // Base LARA-R6 class
 class LARA_R6: public UBLOX_AT

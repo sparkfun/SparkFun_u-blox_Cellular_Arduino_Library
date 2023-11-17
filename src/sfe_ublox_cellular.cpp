@@ -14,7 +14,7 @@
 
 */
 
-#include "sfe_ublox_at_commands.h"
+#include "sfe_ublox_cellular.h"
 
 UBLOX_AT::UBLOX_AT(int powerPin, int resetPin, uint8_t maxInitTries)
 {
