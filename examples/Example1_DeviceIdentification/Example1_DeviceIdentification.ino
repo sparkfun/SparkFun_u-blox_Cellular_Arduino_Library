@@ -6,7 +6,7 @@
 
 // Uncomment the module you're using. If your module is not listed below, then
 // it's not supported for this example
-UBLOX_AT myModule; // This example works with all modules, so the base class can be used
+UBX_CELL myModule; // This example works with all modules, so the base class can be used
 // SARA_R5 myModule; // Base SARA-R5 class
 // SARA_R500S myModule;
 // SARA_R500S_01B myModule;
@@ -35,7 +35,7 @@ String simStateString[] =
 
 // processSIMstate is provided to the SARA-R5 library via a 
 // callback setter -- setSIMstateReadCallback. (See setup())
-void processSIMstate(UBLOX_AT_sim_states_t state)
+void processSIMstate(UBX_CELL_sim_states_t state)
 {
   Serial.println();
   Serial.print(F("SIM state:           "));
@@ -88,7 +88,7 @@ void setup()
   // Set a callback to return the SIM state once requested
   myModule.setSIMstateReportCallback(&processSIMstate);
   // Now enable SIM state reporting for states 0 to 6 (by setting the reporting mode LSb)
-  if (myModule.setSIMstateReportingMode(1) == UBLOX_AT_SUCCESS)
+  if (myModule.setSIMstateReportingMode(1) == UBX_CELL_SUCCESS)
     Serial.println("SIM state reports requested...");
   // You can disable the SIM staus reports again by calling assetTracker.setSIMstateReportingMode(0)
 }

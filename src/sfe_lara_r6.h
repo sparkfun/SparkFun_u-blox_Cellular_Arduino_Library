@@ -4,7 +4,7 @@
 #include "sfe_ublox_cellular.h"
 
 // Base LARA-R6 class
-class LARA_R6: public UBLOX_AT
+class LARA_R6: public UBX_CELL
 {
 
 };

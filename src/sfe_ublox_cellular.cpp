@@ -16,9 +16,9 @@
 
 #include "sfe_ublox_cellular.h"
 
-UBLOX_AT::UBLOX_AT(int powerPin, int resetPin, uint8_t maxInitTries)
+UBX_CELL::UBX_CELL(int powerPin, int resetPin, uint8_t maxInitTries)
 {
-#ifdef UBLOX_AT_SOFTWARE_SERIAL_ENABLED
+#ifdef UBX_CELL_SOFTWARE_SERIAL_ENABLED
   _softSerial = nullptr;
 #endif
   _hardSerial = nullptr;
@@ -44,7 +44,7 @@ UBLOX_AT::UBLOX_AT(int powerPin, int resetPin, uint8_t maxInitTries)
   _printDebug = false;
   _lastRemoteIP = {0, 0, 0, 0};
   _lastLocalIP = {0, 0, 0, 0};
-  for (int i = 0; i < UBLOX_AT_NUM_SOCKETS; i++)
+  for (int i = 0; i < UBX_CELL_NUM_SOCKETS; i++)
     _lastSocketProtocol[i] = 0; // Set to zero initially. Will be set to TCP/UDP by socketOpen etc.
   _autoTimeZoneForBegin = true;
   _bufferedPollReentrant = false;
@@ -55,7 +55,7 @@ UBLOX_AT::UBLOX_AT(int powerPin, int resetPin, uint8_t maxInitTries)
   _saraResponseBacklog = nullptr;
 }
 
-UBLOX_AT::~UBLOX_AT(void) {
+UBX_CELL::~UBX_CELL(void) {
   if (nullptr != _saraRXBuffer) {
     delete[] _saraRXBuffer;
     _saraRXBuffer = nullptr;
@@ -70,8 +70,8 @@ UBLOX_AT::~UBLOX_AT(void) {
   }
 }
 
-#ifdef UBLOX_AT_SOFTWARE_SERIAL_ENABLED
-bool UBLOX_AT::begin(SoftwareSerial &softSerial, unsigned long baud)
+#ifdef UBX_CELL_SOFTWARE_SERIAL_ENABLED
+bool UBX_CELL::begin(SoftwareSerial &softSerial, unsigned long baud)
 {
   if (nullptr == _saraRXBuffer)
   {
@@ -109,12 +109,12 @@ bool UBLOX_AT::begin(SoftwareSerial &softSerial, unsigned long baud)
   }
   memset(_saraResponseBacklog, 0, _RXBuffSize);
 
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
 
   _softSerial = &softSerial;
 
   err = init(baud);
-  if (err == UBLOX_AT_ERROR_SUCCESS)
+  if (err == UBX_CELL_ERROR_SUCCESS)
   {
     return true;
   }
@@ -122,7 +122,7 @@ bool UBLOX_AT::begin(SoftwareSerial &softSerial, unsigned long baud)
 }
 #endif
 
-bool UBLOX_AT::begin(HardwareSerial &hardSerial, unsigned long baud)
+bool UBX_CELL::begin(HardwareSerial &hardSerial, unsigned long baud)
 {
   if (nullptr == _saraRXBuffer)
   {
@@ -160,12 +160,12 @@ bool UBLOX_AT::begin(HardwareSerial &hardSerial, unsigned long baud)
   }
   memset(_saraResponseBacklog, 0, _RXBuffSize);
 
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
 
   _hardSerial = &hardSerial;
 
   err = init(baud);
-  if (err == UBLOX_AT_ERROR_SUCCESS)
+  if (err == UBX_CELL_ERROR_SUCCESS)
   {
     return true;
   }
@@ -174,7 +174,7 @@ bool UBLOX_AT::begin(HardwareSerial &hardSerial, unsigned long baud)
 
 //Calling this function with nothing sets the debug port to Serial
 //You can also call it with other streams like Serial1, SerialUSB, etc.
-void UBLOX_AT::enableDebugging(Print &debugPort)
+void UBX_CELL::enableDebugging(Print &debugPort)
 {
   _debugPort = &debugPort;
   _printDebug = true;
@@ -182,7 +182,7 @@ void UBLOX_AT::enableDebugging(Print &debugPort)
 
 //Calling this function with nothing sets the debug port to Serial
 //You can also call it with other streams like Serial1, SerialUSB, etc.
-void UBLOX_AT::enableAtDebugging(Print &debugPort)
+void UBX_CELL::enableAtDebugging(Print &debugPort)
 {
   _debugAtPort = &debugPort;
   _printAtDebug = true;
@@ -192,7 +192,7 @@ void UBLOX_AT::enableAtDebugging(Print &debugPort)
 // See: https://github.com/sparkfun/SparkFun_LTE_Shield_Arduino_Library/pull/8
 // It does the same job as ::poll but also processed any 'old' data stored in the backlog first
 // It also has a built-in timeout - which ::poll does not
-bool UBLOX_AT::bufferedPoll(void)
+bool UBX_CELL::bufferedPoll(void)
 {
   if (_bufferedPollReentrant == true) // Check for reentry (i.e. bufferedPoll has been called from inside a callback)
     return false;
@@ -314,28 +314,28 @@ bool UBLOX_AT::bufferedPoll(void)
 } // /bufferedPoll
 
 // Parse incoming URC's - the associated parse functions pass the data to the user via the callbacks (if defined)
-bool UBLOX_AT::processURCEvent(const char *event)
+bool UBX_CELL::processURCEvent(const char *event)
 {
   { // URC: +UUSORD (Read Socket Data)
     int socket, length;
-    char *searchPtr = strstr(event, UBLOX_AT_READ_SOCKET_URC);
+    char *searchPtr = strstr(event, UBX_CELL_READ_SOCKET_URC);
     if (searchPtr != nullptr)
     {
-      searchPtr += strlen(UBLOX_AT_READ_SOCKET_URC); // Move searchPtr to first character - probably a space
+      searchPtr += strlen(UBX_CELL_READ_SOCKET_URC); // Move searchPtr to first character - probably a space
       while (*searchPtr == ' ') searchPtr++; // Skip spaces
       int ret = sscanf(searchPtr, "%d,%d", &socket, &length);
       if (ret == 2)
       {
         if (_printDebug == true)
           _debugPort->println(F("processReadEvent: read socket data"));
-        // From the UBLOX_AT AT Commands Manual:
+        // From the UBX_CELL AT Commands Manual:
         // "For the UDP socket type the URC +UUSORD: <socket>,<length> notifies that a UDP packet has been received,
         //  either when buffer is empty or after a UDP packet has been read and one or more packets are stored in the
         //  buffer."
         // So we need to check if this is a TCP socket or a UDP socket:
         //  If UDP, we call parseSocketReadIndicationUDP.
         //  Otherwise, we call parseSocketReadIndication.
-        if (_lastSocketProtocol[socket] == UBLOX_AT_UDP)
+        if (_lastSocketProtocol[socket] == UBX_CELL_UDP)
         {
           if (_printDebug == true)
             _debugPort->println(F("processReadEvent: received +UUSORD but socket is UDP. Calling parseSocketReadIndicationUDP"));
@@ -349,10 +349,10 @@ bool UBLOX_AT::processURCEvent(const char *event)
   }
   { // URC: +UUSORF (Receive From command (UDP only))
     int socket, length;
-    char *searchPtr = strstr(event, UBLOX_AT_READ_UDP_SOCKET_URC);
+    char *searchPtr = strstr(event, UBX_CELL_READ_UDP_SOCKET_URC);
     if (searchPtr != nullptr)
     {
-      searchPtr += strlen(UBLOX_AT_READ_UDP_SOCKET_URC); // Move searchPtr to first character - probably a space
+      searchPtr += strlen(UBX_CELL_READ_UDP_SOCKET_URC); // Move searchPtr to first character - probably a space
       while (*searchPtr == ' ') searchPtr++; // skip spaces
       int ret = sscanf(searchPtr, "%d,%d", &socket, &length);
       if (ret == 2)
@@ -374,10 +374,10 @@ bool UBLOX_AT::processURCEvent(const char *event)
     int remoteIPstore[4]  = {0,0,0,0};
     int localIPstore[4] = {0,0,0,0};
 
-    char *searchPtr = strstr(event, UBLOX_AT_LISTEN_SOCKET_URC);
+    char *searchPtr = strstr(event, UBX_CELL_LISTEN_SOCKET_URC);
     if (searchPtr != nullptr)
     {
-      searchPtr += strlen(UBLOX_AT_LISTEN_SOCKET_URC); // Move searchPtr to first character - probably a space
+      searchPtr += strlen(UBX_CELL_LISTEN_SOCKET_URC); // Move searchPtr to first character - probably a space
       while (*searchPtr == ' ') searchPtr++; // skip spaces
       int ret = sscanf(searchPtr,
                       "%d,\"%d.%d.%d.%d\",%u,%d,\"%d.%d.%d.%d\",%u",
@@ -404,10 +404,10 @@ bool UBLOX_AT::processURCEvent(const char *event)
   }
   { // URC: +UUSOCL (Close Socket)
     int socket;
-    char *searchPtr = strstr(event, UBLOX_AT_CLOSE_SOCKET_URC);
+    char *searchPtr = strstr(event, UBX_CELL_CLOSE_SOCKET_URC);
     if (searchPtr != nullptr)
     {
-      searchPtr += strlen(UBLOX_AT_CLOSE_SOCKET_URC); // Move searchPtr to first character - probably a space
+      searchPtr += strlen(UBX_CELL_CLOSE_SOCKET_URC); // Move searchPtr to first character - probably a space
       while (*searchPtr == ' ') searchPtr++; // skip spaces
       int ret = sscanf(searchPtr, "%d", &socket);
       if (ret == 1)
@@ -439,10 +439,10 @@ bool UBLOX_AT::processURCEvent(const char *event)
     // Maybe we should also scan for +UUGIND and extract the activated gnss system?
 
     // This assumes the ULOC response type is "0" or "1" - as selected by gpsRequest detailed
-    char *searchPtr = strstr(event, UBLOX_AT_GNSS_REQUEST_LOCATION_URC);
+    char *searchPtr = strstr(event, UBX_CELL_GNSS_REQUEST_LOCATION_URC);
     if (searchPtr != nullptr)
     {
-      searchPtr += strlen(UBLOX_AT_GNSS_REQUEST_LOCATION_URC); // Move searchPtr to first character - probably a space
+      searchPtr += strlen(UBX_CELL_GNSS_REQUEST_LOCATION_URC); // Move searchPtr to first character - probably a space
       while (*searchPtr == ' ') searchPtr++; // skip spaces
       scanNum = sscanf(searchPtr,
                         "%d/%d/%d,%d:%d:%d.%d,%d.%[^,],%d.%[^,],%d,%lu,%u,%u,%*s",
@@ -503,14 +503,14 @@ bool UBLOX_AT::processURCEvent(const char *event)
     }
   }
   { // URC: +UUSIMSTAT (SIM Status)
-    UBLOX_AT_sim_states_t state;
+    UBX_CELL_sim_states_t state;
     int scanNum;
     int stateStore;
 
-    char *searchPtr = strstr(event, UBLOX_AT_SIM_STATE_URC);
+    char *searchPtr = strstr(event, UBX_CELL_SIM_STATE_URC);
     if (searchPtr != nullptr)
     {
-      searchPtr += strlen(UBLOX_AT_SIM_STATE_URC); // Move searchPtr to first character - probably a space
+      searchPtr += strlen(UBX_CELL_SIM_STATE_URC); // Move searchPtr to first character - probably a space
       while (*searchPtr == ' ') searchPtr++; // skip spaces
       scanNum = sscanf(searchPtr, "%d", &stateStore);
 
@@ -519,7 +519,7 @@ bool UBLOX_AT::processURCEvent(const char *event)
         if (_printDebug == true)
           _debugPort->println(F("processReadEvent: SIM status"));
 
-        state = (UBLOX_AT_sim_states_t)stateStore;
+        state = (UBX_CELL_sim_states_t)stateStore;
 
         if (_simStateReportCallback != nullptr)
         {
@@ -536,10 +536,10 @@ bool UBLOX_AT::processURCEvent(const char *event)
     int scanNum;
     int remoteIPstore[4];
 
-    char *searchPtr = strstr(event, UBLOX_AT_MESSAGE_PDP_ACTION_URC);
+    char *searchPtr = strstr(event, UBX_CELL_MESSAGE_PDP_ACTION_URC);
     if (searchPtr != nullptr)
     {
-      searchPtr += strlen(UBLOX_AT_MESSAGE_PDP_ACTION_URC); // Move searchPtr to first character - probably a space
+      searchPtr += strlen(UBX_CELL_MESSAGE_PDP_ACTION_URC); // Move searchPtr to first character - probably a space
       while (*searchPtr == ' ') searchPtr++; // skip spaces
       scanNum = sscanf(searchPtr, "%d,\"%d.%d.%d.%d\"",
                         &result, &remoteIPstore[0], &remoteIPstore[1], &remoteIPstore[2], &remoteIPstore[3]);
@@ -567,10 +567,10 @@ bool UBLOX_AT::processURCEvent(const char *event)
     int profile, command, result;
     int scanNum;
 
-    char *searchPtr = strstr(event, UBLOX_AT_HTTP_COMMAND_URC);
+    char *searchPtr = strstr(event, UBX_CELL_HTTP_COMMAND_URC);
     if (searchPtr != nullptr)
     {
-      searchPtr += strlen(UBLOX_AT_HTTP_COMMAND_URC); // Move searchPtr to first character - probably a space
+      searchPtr += strlen(UBX_CELL_HTTP_COMMAND_URC); // Move searchPtr to first character - probably a space
       while (*searchPtr == ' ') searchPtr++; // skip spaces
       scanNum = sscanf(searchPtr, "%d,%d,%d", &profile, &command, &result);
 
@@ -579,7 +579,7 @@ bool UBLOX_AT::processURCEvent(const char *event)
         if (_printDebug == true)
           _debugPort->println(F("processReadEvent: HTTP command result"));
 
-        if ((profile >= 0) && (profile < UBLOX_AT_NUM_HTTP_PROFILES))
+        if ((profile >= 0) && (profile < UBX_CELL_NUM_HTTP_PROFILES))
         {
           if (_httpCommandRequestCallback != nullptr)
           {
@@ -597,17 +597,17 @@ bool UBLOX_AT::processURCEvent(const char *event)
     int qos = -1;
     String topic;
 
-    char *searchPtr = strstr(event, UBLOX_AT_MQTT_COMMAND_URC);
+    char *searchPtr = strstr(event, UBX_CELL_MQTT_COMMAND_URC);
     if (searchPtr != nullptr)
     {
-      searchPtr += strlen(UBLOX_AT_MQTT_COMMAND_URC); // Move searchPtr to first character - probably a space
+      searchPtr += strlen(UBX_CELL_MQTT_COMMAND_URC); // Move searchPtr to first character - probably a space
       while (*searchPtr == ' ')
       {
         searchPtr++; // skip spaces
       }
 
       scanNum = sscanf(searchPtr, "%d,%d", &command, &result);
-      if ((scanNum == 2) && (command == UBLOX_AT_MQTT_COMMAND_SUBSCRIBE))
+      if ((scanNum == 2) && (command == UBX_CELL_MQTT_COMMAND_SUBSCRIBE))
       {
         char topicC[100] = "";
         scanNum = sscanf(searchPtr, "%*d,%*d,%d,\"%[^\"]\"", &qos, topicC);
@@ -633,10 +633,10 @@ bool UBLOX_AT::processURCEvent(const char *event)
     int ftpCmd;
     int ftpResult;
     int scanNum;
-    char *searchPtr = strstr(event, UBLOX_AT_FTP_COMMAND_URC);
+    char *searchPtr = strstr(event, UBX_CELL_FTP_COMMAND_URC);
     if (searchPtr != nullptr)
     {
-      searchPtr += strlen(UBLOX_AT_FTP_COMMAND_URC); // Move searchPtr to first character - probably a space
+      searchPtr += strlen(UBX_CELL_FTP_COMMAND_URC); // Move searchPtr to first character - probably a space
       while (*searchPtr == ' ')
       {
         searchPtr++; // skip spaces
@@ -660,10 +660,10 @@ bool UBLOX_AT::processURCEvent(const char *event)
     int scanNum;
 
     // Try to extract the UUPING retries and payload size
-    char *searchPtr = strstr(event, UBLOX_AT_PING_COMMAND_URC);
+    char *searchPtr = strstr(event, UBX_CELL_PING_COMMAND_URC);
     if (searchPtr != nullptr)
     {
-      searchPtr += strlen(UBLOX_AT_PING_COMMAND_URC); // Move searchPtr to first character - probably a space
+      searchPtr += strlen(UBX_CELL_PING_COMMAND_URC); // Move searchPtr to first character - probably a space
       while (*searchPtr == ' ') searchPtr++; // skip spaces
       scanNum = sscanf(searchPtr, "%d,%d,", &retry, &p_size);
 
@@ -707,10 +707,10 @@ bool UBLOX_AT::processURCEvent(const char *event)
   { // URC: +CREG
     int status = 0;
     unsigned int lac = 0, ci = 0, Act = 0;
-    char *searchPtr = strstr(event, UBLOX_AT_REGISTRATION_STATUS_URC);
+    char *searchPtr = strstr(event, UBX_CELL_REGISTRATION_STATUS_URC);
     if (searchPtr != nullptr)
     {
-      searchPtr += strlen(UBLOX_AT_REGISTRATION_STATUS_URC); // Move searchPtr to first character - probably a space
+      searchPtr += strlen(UBX_CELL_REGISTRATION_STATUS_URC); // Move searchPtr to first character - probably a space
       while (*searchPtr == ' ') searchPtr++; // skip spaces
       int scanNum = sscanf(searchPtr, "%d,\"%4x\",\"%4x\",%d", &status, &lac, &ci, &Act);
       if (scanNum == 4)
@@ -720,7 +720,7 @@ bool UBLOX_AT::processURCEvent(const char *event)
 
         if (_registrationCallback != nullptr)
         {
-          _registrationCallback((UBLOX_AT_registration_status_t)status, lac, ci, Act);
+          _registrationCallback((UBX_CELL_registration_status_t)status, lac, ci, Act);
         }
 
         return true;
@@ -730,10 +730,10 @@ bool UBLOX_AT::processURCEvent(const char *event)
   { // URC: +CEREG
     int status = 0;
     unsigned int tac = 0, ci = 0, Act = 0;
-    char *searchPtr = strstr(event, UBLOX_AT_EPSREGISTRATION_STATUS_URC);
+    char *searchPtr = strstr(event, UBX_CELL_EPSREGISTRATION_STATUS_URC);
     if (searchPtr != nullptr)
     {
-      searchPtr += strlen(UBLOX_AT_EPSREGISTRATION_STATUS_URC); // Move searchPtr to first character - probably a space
+      searchPtr += strlen(UBX_CELL_EPSREGISTRATION_STATUS_URC); // Move searchPtr to first character - probably a space
       while (*searchPtr == ' ') searchPtr++; // skip spaces
       int scanNum = sscanf(searchPtr, "%d,\"%4x\",\"%4x\",%d", &status, &tac, &ci, &Act);
       if (scanNum == 4)
@@ -743,7 +743,7 @@ bool UBLOX_AT::processURCEvent(const char *event)
 
         if (_epsRegistrationCallback != nullptr)
         {
-          _epsRegistrationCallback((UBLOX_AT_registration_status_t)status, tac, ci, Act);
+          _epsRegistrationCallback((UBX_CELL_registration_status_t)status, tac, ci, Act);
         }
 
         return true;
@@ -758,7 +758,7 @@ bool UBLOX_AT::processURCEvent(const char *event)
 // This is the original poll function.
 // It is 'blocking' - it does not return when serial data is available until it receives a `\n`.
 // ::bufferedPoll is the new improved version. It processes any data in the backlog and includes a timeout.
-bool UBLOX_AT::poll(void)
+bool UBX_CELL::poll(void)
 {
   if (_pollReentrant == true) // Check for reentry (i.e. poll has been called from inside a callback)
     return false;
@@ -807,141 +807,141 @@ bool UBLOX_AT::poll(void)
   return handled;
 }
 
-void UBLOX_AT::setSocketListenCallback(void (*socketListenCallback)(int, IPAddress, unsigned int, int, IPAddress, unsigned int))
+void UBX_CELL::setSocketListenCallback(void (*socketListenCallback)(int, IPAddress, unsigned int, int, IPAddress, unsigned int))
 {
   _socketListenCallback = socketListenCallback;
 }
 
-void UBLOX_AT::setSocketReadCallback(void (*socketReadCallback)(int, String))
+void UBX_CELL::setSocketReadCallback(void (*socketReadCallback)(int, String))
 {
   _socketReadCallback = socketReadCallback;
 }
 
-void UBLOX_AT::setSocketReadCallbackPlus(void (*socketReadCallbackPlus)(int, const char *, int, IPAddress, int)) // socket, data, length, remoteAddress, remotePort
+void UBX_CELL::setSocketReadCallbackPlus(void (*socketReadCallbackPlus)(int, const char *, int, IPAddress, int)) // socket, data, length, remoteAddress, remotePort
 {
   _socketReadCallbackPlus = socketReadCallbackPlus;
 }
 
-void UBLOX_AT::setSocketCloseCallback(void (*socketCloseCallback)(int))
+void UBX_CELL::setSocketCloseCallback(void (*socketCloseCallback)(int))
 {
   _socketCloseCallback = socketCloseCallback;
 }
 
-void UBLOX_AT::setGpsReadCallback(void (*gpsRequestCallback)(ClockData time,
+void UBX_CELL::setGpsReadCallback(void (*gpsRequestCallback)(ClockData time,
                                                             PositionData gps, SpeedData spd, unsigned long uncertainty))
 {
   _gpsRequestCallback = gpsRequestCallback;
 }
 
-void UBLOX_AT::setSIMstateReportCallback(void (*simStateReportCallback)(UBLOX_AT_sim_states_t state))
+void UBX_CELL::setSIMstateReportCallback(void (*simStateReportCallback)(UBX_CELL_sim_states_t state))
 {
   _simStateReportCallback = simStateReportCallback;
 }
 
-void UBLOX_AT::setPSDActionCallback(void (*psdActionRequestCallback)(int result, IPAddress ip))
+void UBX_CELL::setPSDActionCallback(void (*psdActionRequestCallback)(int result, IPAddress ip))
 {
   _psdActionRequestCallback = psdActionRequestCallback;
 }
 
-void UBLOX_AT::setPingCallback(void (*pingRequestCallback)(int retry, int p_size, String remote_hostname, IPAddress ip, int ttl, long rtt))
+void UBX_CELL::setPingCallback(void (*pingRequestCallback)(int retry, int p_size, String remote_hostname, IPAddress ip, int ttl, long rtt))
 {
   _pingRequestCallback = pingRequestCallback;
 }
 
-void UBLOX_AT::setHTTPCommandCallback(void (*httpCommandRequestCallback)(int profile, int command, int result))
+void UBX_CELL::setHTTPCommandCallback(void (*httpCommandRequestCallback)(int profile, int command, int result))
 {
   _httpCommandRequestCallback = httpCommandRequestCallback;
 }
 
-void UBLOX_AT::setMQTTCommandCallback(void (*mqttCommandRequestCallback)(int command, int result))
+void UBX_CELL::setMQTTCommandCallback(void (*mqttCommandRequestCallback)(int command, int result))
 {
   _mqttCommandRequestCallback = mqttCommandRequestCallback;
 }
 
-void UBLOX_AT::setFTPCommandCallback(void (*ftpCommandRequestCallback)(int command, int result))
+void UBX_CELL::setFTPCommandCallback(void (*ftpCommandRequestCallback)(int command, int result))
 {
     _ftpCommandRequestCallback = ftpCommandRequestCallback;
 }
 
-UBLOX_AT_error_t UBLOX_AT::setRegistrationCallback(void (*registrationCallback)(UBLOX_AT_registration_status_t status, unsigned int lac, unsigned int ci, int Act))
+UBX_CELL_error_t UBX_CELL::setRegistrationCallback(void (*registrationCallback)(UBX_CELL_registration_status_t status, unsigned int lac, unsigned int ci, int Act))
 {
   _registrationCallback = registrationCallback;
 
-  char *command = ublox_at_calloc_char(strlen(UBLOX_AT_REGISTRATION_STATUS) + 3);
+  char *command = ubx_cell_calloc_char(strlen(UBX_CELL_REGISTRATION_STATUS) + 3);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=%d", UBLOX_AT_REGISTRATION_STATUS, 2/*enable URC with location*/);
-  UBLOX_AT_error_t err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR,
-                                nullptr, UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s=%d", UBX_CELL_REGISTRATION_STATUS, 2/*enable URC with location*/);
+  UBX_CELL_error_t err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR,
+                                nullptr, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
   free(command);
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::setEpsRegistrationCallback(void (*registrationCallback)(UBLOX_AT_registration_status_t status, unsigned int tac, unsigned int ci, int Act))
+UBX_CELL_error_t UBX_CELL::setEpsRegistrationCallback(void (*registrationCallback)(UBX_CELL_registration_status_t status, unsigned int tac, unsigned int ci, int Act))
 {
   _epsRegistrationCallback = registrationCallback;
 
-  char *command = ublox_at_calloc_char(strlen(UBLOX_AT_EPSREGISTRATION_STATUS) + 3);
+  char *command = ubx_cell_calloc_char(strlen(UBX_CELL_EPSREGISTRATION_STATUS) + 3);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=%d", UBLOX_AT_EPSREGISTRATION_STATUS, 2/*enable URC with location*/);
-  UBLOX_AT_error_t err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR,
-                                nullptr, UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s=%d", UBX_CELL_EPSREGISTRATION_STATUS, 2/*enable URC with location*/);
+  UBX_CELL_error_t err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR,
+                                nullptr, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
   free(command);
   return err;
 }
 
-size_t UBLOX_AT::write(uint8_t c)
+size_t UBX_CELL::write(uint8_t c)
 {
   return hwWrite(c);
 }
 
-size_t UBLOX_AT::write(const char *str)
+size_t UBX_CELL::write(const char *str)
 {
   return hwPrint(str);
 }
 
-size_t UBLOX_AT::write(const char *buffer, size_t size)
+size_t UBX_CELL::write(const char *buffer, size_t size)
 {
   return hwWriteData(buffer, size);
 }
 
-UBLOX_AT_error_t UBLOX_AT::at(void)
+UBX_CELL_error_t UBX_CELL::at(void)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
 
-  err = sendCommandWithResponse(nullptr, UBLOX_AT_RESPONSE_OK, nullptr,
-                                UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  err = sendCommandWithResponse(nullptr, UBX_CELL_RESPONSE_OK, nullptr,
+                                UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::enableEcho(bool enable)
+UBX_CELL_error_t UBX_CELL::enableEcho(bool enable)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_COMMAND_ECHO) + 2);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_COMMAND_ECHO) + 2);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s%d", UBLOX_AT_COMMAND_ECHO, enable ? 1 : 0);
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK,
-                                nullptr, UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s%d", UBX_CELL_COMMAND_ECHO, enable ? 1 : 0);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK,
+                                nullptr, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
   free(command);
   return err;
 }
 
-String UBLOX_AT::getManufacturerID(void)
+String UBX_CELL::getManufacturerID(void)
 {
   char *response;
   char idResponse[16] = {0x00}; // E.g. u-blox
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
 
-  response = ublox_at_calloc_char(minimumResponseAllocation);
+  response = ubx_cell_calloc_char(minimumResponseAllocation);
 
-  err = sendCommandWithResponse(UBLOX_AT_COMMAND_MANU_ID,
-                                UBLOX_AT_RESPONSE_OK_OR_ERROR, response, UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
-  if (err == UBLOX_AT_ERROR_SUCCESS)
+  err = sendCommandWithResponse(UBX_CELL_COMMAND_MANU_ID,
+                                UBX_CELL_RESPONSE_OK_OR_ERROR, response, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
+  if (err == UBX_CELL_ERROR_SUCCESS)
   {
     if (sscanf(response, "\r\n%15s\r\n", idResponse) != 1)
     {
@@ -952,17 +952,17 @@ String UBLOX_AT::getManufacturerID(void)
   return String(idResponse);
 }
 
-String UBLOX_AT::getModelID(void)
+String UBX_CELL::getModelID(void)
 {
   char *response;
   char idResponse[32] = {0x00}; // E.g. SARA-R510M8Q
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
 
-  response = ublox_at_calloc_char(minimumResponseAllocation);
+  response = ubx_cell_calloc_char(minimumResponseAllocation);
 
-  err = sendCommandWithResponse(UBLOX_AT_COMMAND_MODEL_ID,
-                                UBLOX_AT_RESPONSE_OK_OR_ERROR, response, UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
-  if (err == UBLOX_AT_ERROR_SUCCESS)
+  err = sendCommandWithResponse(UBX_CELL_COMMAND_MODEL_ID,
+                                UBX_CELL_RESPONSE_OK_OR_ERROR, response, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
+  if (err == UBX_CELL_ERROR_SUCCESS)
   {
     if (sscanf(response, "\r\n%31s\r\n", idResponse) != 1)
     {
@@ -973,17 +973,17 @@ String UBLOX_AT::getModelID(void)
   return String(idResponse);
 }
 
-String UBLOX_AT::getFirmwareVersion(void)
+String UBX_CELL::getFirmwareVersion(void)
 {
   char *response;
   char idResponse[16] = {0x00}; // E.g. 11.40
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
 
-  response = ublox_at_calloc_char(minimumResponseAllocation);
+  response = ubx_cell_calloc_char(minimumResponseAllocation);
 
-  err = sendCommandWithResponse(UBLOX_AT_COMMAND_FW_VER_ID,
-                                UBLOX_AT_RESPONSE_OK_OR_ERROR, response, UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
-  if (err == UBLOX_AT_ERROR_SUCCESS)
+  err = sendCommandWithResponse(UBX_CELL_COMMAND_FW_VER_ID,
+                                UBX_CELL_RESPONSE_OK_OR_ERROR, response, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
+  if (err == UBX_CELL_ERROR_SUCCESS)
   {
     if (sscanf(response, "\r\n%15s\r\n", idResponse) != 1)
     {
@@ -994,17 +994,17 @@ String UBLOX_AT::getFirmwareVersion(void)
   return String(idResponse);
 }
 
-String UBLOX_AT::getSerialNo(void)
+String UBX_CELL::getSerialNo(void)
 {
   char *response;
   char idResponse[32] = {0x00}; // E.g. 357520070120767
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
 
-  response = ublox_at_calloc_char(minimumResponseAllocation);
+  response = ubx_cell_calloc_char(minimumResponseAllocation);
 
-  err = sendCommandWithResponse(UBLOX_AT_COMMAND_SERIAL_NO,
-                                UBLOX_AT_RESPONSE_OK_OR_ERROR, response, UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
-  if (err == UBLOX_AT_ERROR_SUCCESS)
+  err = sendCommandWithResponse(UBX_CELL_COMMAND_SERIAL_NO,
+                                UBX_CELL_RESPONSE_OK_OR_ERROR, response, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
+  if (err == UBX_CELL_ERROR_SUCCESS)
   {
     if (sscanf(response, "\r\n%31s\r\n", idResponse) != 1)
     {
@@ -1015,17 +1015,17 @@ String UBLOX_AT::getSerialNo(void)
   return String(idResponse);
 }
 
-String UBLOX_AT::getIMEI(void)
+String UBX_CELL::getIMEI(void)
 {
   char *response;
   char imeiResponse[32] = {0x00}; // E.g. 004999010640000
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
 
-  response = ublox_at_calloc_char(minimumResponseAllocation);
+  response = ubx_cell_calloc_char(minimumResponseAllocation);
 
-  err = sendCommandWithResponse(UBLOX_AT_COMMAND_IMEI,
-                                UBLOX_AT_RESPONSE_OK_OR_ERROR, response, UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
-  if (err == UBLOX_AT_ERROR_SUCCESS)
+  err = sendCommandWithResponse(UBX_CELL_COMMAND_IMEI,
+                                UBX_CELL_RESPONSE_OK_OR_ERROR, response, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
+  if (err == UBX_CELL_ERROR_SUCCESS)
   {
     if (sscanf(response, "\r\n%31s\r\n", imeiResponse) != 1)
     {
@@ -1036,17 +1036,17 @@ String UBLOX_AT::getIMEI(void)
   return String(imeiResponse);
 }
 
-String UBLOX_AT::getIMSI(void)
+String UBX_CELL::getIMSI(void)
 {
   char *response;
   char imsiResponse[32] = {0x00}; // E.g. 222107701772423
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
 
-  response = ublox_at_calloc_char(minimumResponseAllocation);
+  response = ubx_cell_calloc_char(minimumResponseAllocation);
 
-  err = sendCommandWithResponse(UBLOX_AT_COMMAND_IMSI,
-                                UBLOX_AT_RESPONSE_OK_OR_ERROR, response, UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
-  if (err == UBLOX_AT_ERROR_SUCCESS)
+  err = sendCommandWithResponse(UBX_CELL_COMMAND_IMSI,
+                                UBX_CELL_RESPONSE_OK_OR_ERROR, response, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
+  if (err == UBX_CELL_ERROR_SUCCESS)
   {
     if (sscanf(response, "\r\n%31s\r\n", imsiResponse) != 1)
     {
@@ -1057,17 +1057,17 @@ String UBLOX_AT::getIMSI(void)
   return String(imsiResponse);
 }
 
-String UBLOX_AT::getCCID(void)
+String UBX_CELL::getCCID(void)
 {
   char *response;
   char ccidResponse[32] = {0x00}; // E.g. +CCID: 8939107900010087330
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
 
-  response = ublox_at_calloc_char(minimumResponseAllocation);
+  response = ubx_cell_calloc_char(minimumResponseAllocation);
 
-  err = sendCommandWithResponse(UBLOX_AT_COMMAND_CCID,
-                                UBLOX_AT_RESPONSE_OK_OR_ERROR, response, UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
-  if (err == UBLOX_AT_ERROR_SUCCESS)
+  err = sendCommandWithResponse(UBX_CELL_COMMAND_CCID,
+                                UBX_CELL_RESPONSE_OK_OR_ERROR, response, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
+  if (err == UBX_CELL_ERROR_SUCCESS)
   {
     char *searchPtr = strstr(response, "\r\n+CCID:");
     if (searchPtr != nullptr)
@@ -1084,17 +1084,17 @@ String UBLOX_AT::getCCID(void)
   return String(ccidResponse);
 }
 
-String UBLOX_AT::getSubscriberNo(void)
+String UBX_CELL::getSubscriberNo(void)
 {
   char *response;
   char idResponse[128] = {0x00}; // E.g. +CNUM: "ABCD . AAA","123456789012",129
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
 
-  response = ublox_at_calloc_char(minimumResponseAllocation);
+  response = ubx_cell_calloc_char(minimumResponseAllocation);
 
-  err = sendCommandWithResponse(UBLOX_AT_COMMAND_CNUM,
-                                UBLOX_AT_RESPONSE_OK_OR_ERROR, response, UBLOX_AT_10_SEC_TIMEOUT);
-  if (err == UBLOX_AT_ERROR_SUCCESS)
+  err = sendCommandWithResponse(UBX_CELL_COMMAND_CNUM,
+                                UBX_CELL_RESPONSE_OK_OR_ERROR, response, UBX_CELL_10_SEC_TIMEOUT);
+  if (err == UBX_CELL_ERROR_SUCCESS)
   {
     char *searchPtr = strstr(response, "\r\n+CNUM:");
     if (searchPtr != nullptr)
@@ -1111,17 +1111,17 @@ String UBLOX_AT::getSubscriberNo(void)
   return String(idResponse);
 }
 
-String UBLOX_AT::getCapabilities(void)
+String UBX_CELL::getCapabilities(void)
 {
   char *response;
   char idResponse[128] = {0x00}; // E.g. +GCAP: +FCLASS, +CGSM
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
 
-  response = ublox_at_calloc_char(minimumResponseAllocation);
+  response = ubx_cell_calloc_char(minimumResponseAllocation);
 
-  err = sendCommandWithResponse(UBLOX_AT_COMMAND_REQ_CAP,
-                                UBLOX_AT_RESPONSE_OK_OR_ERROR, response, UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
-  if (err == UBLOX_AT_ERROR_SUCCESS)
+  err = sendCommandWithResponse(UBX_CELL_COMMAND_REQ_CAP,
+                                UBX_CELL_RESPONSE_OK_OR_ERROR, response, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
+  if (err == UBX_CELL_ERROR_SUCCESS)
   {
     char *searchPtr = strstr(response, "\r\n+GCAP:");
     if (searchPtr != nullptr)
@@ -1138,19 +1138,19 @@ String UBLOX_AT::getCapabilities(void)
   return String(idResponse);
 }
 
-UBLOX_AT_error_t UBLOX_AT::reset(void)
+UBX_CELL_error_t UBX_CELL::reset(void)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
 
   err = functionality(SILENT_RESET_WITH_SIM);
-  if (err == UBLOX_AT_ERROR_SUCCESS)
+  if (err == UBX_CELL_ERROR_SUCCESS)
   {
     // Reset will set the baud rate back to 115200
     //beginSerial(9600);
-    err = UBLOX_AT_ERROR_INVALID;
-    while (err != UBLOX_AT_ERROR_SUCCESS)
+    err = UBX_CELL_ERROR_INVALID;
+    while (err != UBX_CELL_ERROR_SUCCESS)
     {
-      beginSerial(UBLOX_AT_DEFAULT_BAUD_RATE);
+      beginSerial(UBX_CELL_DEFAULT_BAUD_RATE);
       setBaud(_baud);
       beginSerial(_baud);
       err = at();
@@ -1160,29 +1160,29 @@ UBLOX_AT_error_t UBLOX_AT::reset(void)
   return err;
 }
 
-String UBLOX_AT::clock(void)
+String UBX_CELL::clock(void)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
   char *response;
   char *clockBegin;
   char *clockEnd;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_COMMAND_CLOCK) + 2);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_COMMAND_CLOCK) + 2);
   if (command == nullptr)
     return "";
-  sprintf(command, "%s?", UBLOX_AT_COMMAND_CLOCK);
+  sprintf(command, "%s?", UBX_CELL_COMMAND_CLOCK);
 
-  response = ublox_at_calloc_char(minimumResponseAllocation);
+  response = ubx_cell_calloc_char(minimumResponseAllocation);
   if (response == nullptr)
   {
     free(command);
     return "";
   }
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR,
-                                response, UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
-  if (err != UBLOX_AT_ERROR_SUCCESS)
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR,
+                                response, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
+  if (err != UBX_CELL_ERROR_SUCCESS)
   {
     free(command);
     free(response);
@@ -1215,10 +1215,10 @@ String UBLOX_AT::clock(void)
   return (clock);
 }
 
-UBLOX_AT_error_t UBLOX_AT::clock(uint8_t *y, uint8_t *mo, uint8_t *d,
+UBX_CELL_error_t UBX_CELL::clock(uint8_t *y, uint8_t *mo, uint8_t *d,
                                uint8_t *h, uint8_t *min, uint8_t *s, int8_t *tz)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
   char *response;
   char tzPlusMinus;
@@ -1226,23 +1226,23 @@ UBLOX_AT_error_t UBLOX_AT::clock(uint8_t *y, uint8_t *mo, uint8_t *d,
 
   int iy, imo, id, ih, imin, is, itz;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_COMMAND_CLOCK) + 2);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_COMMAND_CLOCK) + 2);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s?", UBLOX_AT_COMMAND_CLOCK);
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s?", UBX_CELL_COMMAND_CLOCK);
 
-  response = ublox_at_calloc_char(minimumResponseAllocation);
+  response = ubx_cell_calloc_char(minimumResponseAllocation);
   if (response == nullptr)
   {
     free(command);
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
   }
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR,
-                                response, UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR,
+                                response, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
   // Response format (if TZ is negative): \r\n+CCLK: "YY/MM/DD,HH:MM:SS-TZ"\r\n\r\nOK\r\n
-  if (err == UBLOX_AT_ERROR_SUCCESS)
+  if (err == UBX_CELL_ERROR_SUCCESS)
   {
     char *searchPtr = strstr(response, "+CCLK:");
     if (searchPtr != nullptr)
@@ -1266,7 +1266,7 @@ UBLOX_AT_error_t UBLOX_AT::clock(uint8_t *y, uint8_t *mo, uint8_t *d,
         *tz = itz;
     }
     else
-      err = UBLOX_AT_ERROR_UNEXPECTED_RESPONSE;
+      err = UBX_CELL_ERROR_UNEXPECTED_RESPONSE;
   }
 
   free(command);
@@ -1274,7 +1274,7 @@ UBLOX_AT_error_t UBLOX_AT::clock(uint8_t *y, uint8_t *mo, uint8_t *d,
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::setClock(uint8_t y, uint8_t mo, uint8_t d,
+UBX_CELL_error_t UBX_CELL::setClock(uint8_t y, uint8_t mo, uint8_t d,
                                   uint8_t h, uint8_t min, uint8_t s, int8_t tz)
 {
   //Convert y,mo,d,h,min,s,tz into a String
@@ -1314,73 +1314,73 @@ UBLOX_AT_error_t UBLOX_AT::setClock(uint8_t y, uint8_t mo, uint8_t d,
   return (setClock(theTime));
 }
 
-UBLOX_AT_error_t UBLOX_AT::setClock(String theTime)
+UBX_CELL_error_t UBX_CELL::setClock(String theTime)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_COMMAND_CLOCK) + theTime.length() + 8);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_COMMAND_CLOCK) + theTime.length() + 8);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=\"%s\"", UBLOX_AT_COMMAND_CLOCK, theTime.c_str());
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s=\"%s\"", UBX_CELL_COMMAND_CLOCK, theTime.c_str());
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR,
-                                nullptr, UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR,
+                                nullptr, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
   free(command);
   return err;
 }
 
-void UBLOX_AT::autoTimeZoneForBegin(bool tz)
+void UBX_CELL::autoTimeZoneForBegin(bool tz)
 {
   _autoTimeZoneForBegin = tz;
 }
 
-UBLOX_AT_error_t UBLOX_AT::setUtimeMode(UBLOX_AT_utime_mode_t mode, UBLOX_AT_utime_sensor_t sensor)
+UBX_CELL_error_t UBX_CELL::setUtimeMode(UBX_CELL_utime_mode_t mode, UBX_CELL_utime_sensor_t sensor)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_GNSS_REQUEST_TIME) + 16);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_GNSS_REQUEST_TIME) + 16);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  if (mode == UBLOX_AT_UTIME_MODE_STOP) // stop UTIME does not require a sensor
-    sprintf(command, "%s=%d", UBLOX_AT_GNSS_REQUEST_TIME, mode);
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  if (mode == UBX_CELL_UTIME_MODE_STOP) // stop UTIME does not require a sensor
+    sprintf(command, "%s=%d", UBX_CELL_GNSS_REQUEST_TIME, mode);
   else
-    sprintf(command, "%s=%d,%d", UBLOX_AT_GNSS_REQUEST_TIME, mode, sensor);
+    sprintf(command, "%s=%d,%d", UBX_CELL_GNSS_REQUEST_TIME, mode, sensor);
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR,
-                                nullptr, UBLOX_AT_10_SEC_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR,
+                                nullptr, UBX_CELL_10_SEC_TIMEOUT);
   free(command);
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::getUtimeMode(UBLOX_AT_utime_mode_t *mode, UBLOX_AT_utime_sensor_t *sensor)
+UBX_CELL_error_t UBX_CELL::getUtimeMode(UBX_CELL_utime_mode_t *mode, UBX_CELL_utime_sensor_t *sensor)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
   char *response;
 
-  UBLOX_AT_utime_mode_t m;
-  UBLOX_AT_utime_sensor_t s;
+  UBX_CELL_utime_mode_t m;
+  UBX_CELL_utime_sensor_t s;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_GNSS_REQUEST_TIME) + 2);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_GNSS_REQUEST_TIME) + 2);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s?", UBLOX_AT_GNSS_REQUEST_TIME);
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s?", UBX_CELL_GNSS_REQUEST_TIME);
 
-  response = ublox_at_calloc_char(minimumResponseAllocation);
+  response = ubx_cell_calloc_char(minimumResponseAllocation);
   if (response == nullptr)
   {
     free(command);
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
   }
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR,
-                                response, UBLOX_AT_10_SEC_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR,
+                                response, UBX_CELL_10_SEC_TIMEOUT);
 
   // Response format: \r\n+UTIME: <mode>[,<sensor>]\r\n\r\nOK\r\n
-  if (err == UBLOX_AT_ERROR_SUCCESS)
+  if (err == UBX_CELL_ERROR_SUCCESS)
   {
     int mStore, sStore, scanned = 0;
     char *searchPtr = strstr(response, "+UTIME:");
@@ -1390,8 +1390,8 @@ UBLOX_AT_error_t UBLOX_AT::getUtimeMode(UBLOX_AT_utime_mode_t *mode, UBLOX_AT_ut
       while (*searchPtr == ' ') searchPtr++; // skip spaces
       scanned = sscanf(searchPtr, "%d,%d\r\n", &mStore, &sStore);
     }
-    m = (UBLOX_AT_utime_mode_t)mStore;
-    s = (UBLOX_AT_utime_sensor_t)sStore;
+    m = (UBX_CELL_utime_mode_t)mStore;
+    s = (UBX_CELL_utime_sensor_t)sStore;
     if (scanned == 2)
     {
       *mode = m;
@@ -1400,10 +1400,10 @@ UBLOX_AT_error_t UBLOX_AT::getUtimeMode(UBLOX_AT_utime_mode_t *mode, UBLOX_AT_ut
     else if (scanned == 1)
     {
       *mode = m;
-      *sensor = UBLOX_AT_UTIME_SENSOR_NONE;
+      *sensor = UBX_CELL_UTIME_SENSOR_NONE;
     }
     else
-      err = UBLOX_AT_ERROR_UNEXPECTED_RESPONSE;
+      err = UBX_CELL_ERROR_UNEXPECTED_RESPONSE;
   }
 
   free(command);
@@ -1411,47 +1411,47 @@ UBLOX_AT_error_t UBLOX_AT::getUtimeMode(UBLOX_AT_utime_mode_t *mode, UBLOX_AT_ut
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::setUtimeIndication(UBLOX_AT_utime_urc_configuration_t config)
+UBX_CELL_error_t UBX_CELL::setUtimeIndication(UBX_CELL_utime_urc_configuration_t config)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_GNSS_TIME_INDICATION) + 16);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_GNSS_TIME_INDICATION) + 16);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=%d", UBLOX_AT_GNSS_TIME_INDICATION, config);
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s=%d", UBX_CELL_GNSS_TIME_INDICATION, config);
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR,
-                                nullptr, UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR,
+                                nullptr, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
   free(command);
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::getUtimeIndication(UBLOX_AT_utime_urc_configuration_t *config)
+UBX_CELL_error_t UBX_CELL::getUtimeIndication(UBX_CELL_utime_urc_configuration_t *config)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
   char *response;
 
-  UBLOX_AT_utime_urc_configuration_t c;
+  UBX_CELL_utime_urc_configuration_t c;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_GNSS_TIME_INDICATION) + 2);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_GNSS_TIME_INDICATION) + 2);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s?", UBLOX_AT_GNSS_TIME_INDICATION);
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s?", UBX_CELL_GNSS_TIME_INDICATION);
 
-  response = ublox_at_calloc_char(minimumResponseAllocation);
+  response = ubx_cell_calloc_char(minimumResponseAllocation);
   if (response == nullptr)
   {
     free(command);
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
   }
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR,
-                                response, UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR,
+                                response, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
   // Response format: \r\n+UTIMEIND: <mode>\r\n\r\nOK\r\n
-  if (err == UBLOX_AT_ERROR_SUCCESS)
+  if (err == UBX_CELL_ERROR_SUCCESS)
   {
     int cStore, scanned = 0;
     char *searchPtr = strstr(response, "+UTIMEIND:");
@@ -1461,13 +1461,13 @@ UBLOX_AT_error_t UBLOX_AT::getUtimeIndication(UBLOX_AT_utime_urc_configuration_t
       while (*searchPtr == ' ') searchPtr++; // skip spaces
       scanned = sscanf(searchPtr, "%d\r\n", &cStore);
     }
-    c = (UBLOX_AT_utime_urc_configuration_t)cStore;
+    c = (UBX_CELL_utime_urc_configuration_t)cStore;
     if (scanned == 1)
     {
       *config = c;
     }
     else
-      err = UBLOX_AT_ERROR_UNEXPECTED_RESPONSE;
+      err = UBX_CELL_ERROR_UNEXPECTED_RESPONSE;
   }
 
   free(command);
@@ -1475,52 +1475,52 @@ UBLOX_AT_error_t UBLOX_AT::getUtimeIndication(UBLOX_AT_utime_urc_configuration_t
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::setUtimeConfiguration(int32_t offsetNanoseconds, int32_t offsetSeconds)
+UBX_CELL_error_t UBX_CELL::setUtimeConfiguration(int32_t offsetNanoseconds, int32_t offsetSeconds)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_GNSS_TIME_CONFIGURATION) + 48);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_GNSS_TIME_CONFIGURATION) + 48);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
 #if defined(ARDUINO_ARCH_ESP32) || defined(ARDUINO_ARCH_ESP8266)
-  sprintf(command, "%s=%d,%d", UBLOX_AT_GNSS_TIME_CONFIGURATION, offsetNanoseconds, offsetSeconds);
+  sprintf(command, "%s=%d,%d", UBX_CELL_GNSS_TIME_CONFIGURATION, offsetNanoseconds, offsetSeconds);
 #else
-  sprintf(command, "%s=%ld,%ld", UBLOX_AT_GNSS_TIME_CONFIGURATION, offsetNanoseconds, offsetSeconds);
+  sprintf(command, "%s=%ld,%ld", UBX_CELL_GNSS_TIME_CONFIGURATION, offsetNanoseconds, offsetSeconds);
 #endif
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR,
-                                nullptr, UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR,
+                                nullptr, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
   free(command);
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::getUtimeConfiguration(int32_t *offsetNanoseconds, int32_t *offsetSeconds)
+UBX_CELL_error_t UBX_CELL::getUtimeConfiguration(int32_t *offsetNanoseconds, int32_t *offsetSeconds)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
   char *response;
 
   int32_t ons;
   int32_t os;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_GNSS_TIME_CONFIGURATION) + 2);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_GNSS_TIME_CONFIGURATION) + 2);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s?", UBLOX_AT_GNSS_TIME_CONFIGURATION);
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s?", UBX_CELL_GNSS_TIME_CONFIGURATION);
 
-  response = ublox_at_calloc_char(minimumResponseAllocation);
+  response = ubx_cell_calloc_char(minimumResponseAllocation);
   if (response == nullptr)
   {
     free(command);
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
   }
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR,
-                                response, UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR,
+                                response, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
   // Response format: \r\n+UTIMECFG: <offset_nano>,<offset_sec>\r\n\r\nOK\r\n
-  if (err == UBLOX_AT_ERROR_SUCCESS)
+  if (err == UBX_CELL_ERROR_SUCCESS)
   {
     int scanned = 0;
     char *searchPtr = strstr(response, "+UTIMECFG:");
@@ -1540,7 +1540,7 @@ UBLOX_AT_error_t UBLOX_AT::getUtimeConfiguration(int32_t *offsetNanoseconds, int
       *offsetSeconds = os;
     }
     else
-      err = UBLOX_AT_ERROR_UNEXPECTED_RESPONSE;
+      err = UBX_CELL_ERROR_UNEXPECTED_RESPONSE;
   }
 
   free(command);
@@ -1548,45 +1548,45 @@ UBLOX_AT_error_t UBLOX_AT::getUtimeConfiguration(int32_t *offsetNanoseconds, int
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::autoTimeZone(bool enable)
+UBX_CELL_error_t UBX_CELL::autoTimeZone(bool enable)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_COMMAND_AUTO_TZ) + 3);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_COMMAND_AUTO_TZ) + 3);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=%d", UBLOX_AT_COMMAND_AUTO_TZ, enable ? 1 : 0);
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s=%d", UBX_CELL_COMMAND_AUTO_TZ, enable ? 1 : 0);
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR,
-                                nullptr, UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR,
+                                nullptr, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
   free(command);
   return err;
 }
 
-int8_t UBLOX_AT::rssi(void)
+int8_t UBX_CELL::rssi(void)
 {
   char *command;
   char *response;
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   int rssi;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_SIGNAL_QUALITY) + 1);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_SIGNAL_QUALITY) + 1);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s", UBLOX_AT_SIGNAL_QUALITY);
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s", UBX_CELL_SIGNAL_QUALITY);
 
-  response = ublox_at_calloc_char(minimumResponseAllocation);
+  response = ubx_cell_calloc_char(minimumResponseAllocation);
   if (response == nullptr)
   {
     free(command);
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
   }
 
   err = sendCommandWithResponse(command,
-                                UBLOX_AT_RESPONSE_OK_OR_ERROR, response, 10000,
+                                UBX_CELL_RESPONSE_OK_OR_ERROR, response, 10000,
                                 minimumResponseAllocation, AT_COMMAND);
-  if (err != UBLOX_AT_ERROR_SUCCESS)
+  if (err != UBX_CELL_ERROR_SUCCESS)
   {
     free(command);
     free(response);
@@ -1611,35 +1611,35 @@ int8_t UBLOX_AT::rssi(void)
   return rssi;
 }
 
-UBLOX_AT_error_t UBLOX_AT::getExtSignalQuality(signal_quality& signal_quality)
+UBX_CELL_error_t UBX_CELL::getExtSignalQuality(signal_quality& signal_quality)
 {
   char *command;
   char *response;
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_EXT_SIGNAL_QUALITY) + 1);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_EXT_SIGNAL_QUALITY) + 1);
   if (command == nullptr)
   {
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
   }
 
-  sprintf(command, "%s", UBLOX_AT_EXT_SIGNAL_QUALITY);
+  sprintf(command, "%s", UBX_CELL_EXT_SIGNAL_QUALITY);
 
-  response = ublox_at_calloc_char(minimumResponseAllocation);
+  response = ubx_cell_calloc_char(minimumResponseAllocation);
   if (response == nullptr)
   {
     free(command);
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
   }
 
   err = sendCommandWithResponse(command,
-                                UBLOX_AT_RESPONSE_OK_OR_ERROR, response, 10000,
+                                UBX_CELL_RESPONSE_OK_OR_ERROR, response, 10000,
                                 minimumResponseAllocation, AT_COMMAND);
-  if (err != UBLOX_AT_ERROR_SUCCESS)
+  if (err != UBX_CELL_ERROR_SUCCESS)
   {
     free(command);
     free(response);
-    return UBLOX_AT_ERROR_ERROR;
+    return UBX_CELL_ERROR_ERROR;
   }
 
   int scanned = 0;
@@ -1653,10 +1653,10 @@ UBLOX_AT_error_t UBLOX_AT::getExtSignalQuality(signal_quality& signal_quality)
                        &signal_quality.rscp, &signal_quality.enc0, &signal_quality.rsrq, &signal_quality.rsrp);
   }
 
-  err = UBLOX_AT_ERROR_UNEXPECTED_RESPONSE;
+  err = UBX_CELL_ERROR_UNEXPECTED_RESPONSE;
   if (scanned == 6)
   {
-    err = UBLOX_AT_ERROR_SUCCESS;
+    err = UBX_CELL_ERROR_SUCCESS;
   }
 
   free(command);
@@ -1664,58 +1664,58 @@ UBLOX_AT_error_t UBLOX_AT::getExtSignalQuality(signal_quality& signal_quality)
   return err;
 }
 
-UBLOX_AT_registration_status_t UBLOX_AT::registration(bool eps)
+UBX_CELL_registration_status_t UBX_CELL::registration(bool eps)
 {
   char *command;
   char *response;
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   int status;
-  const char* tag = eps ? UBLOX_AT_EPSREGISTRATION_STATUS : UBLOX_AT_REGISTRATION_STATUS;
-  command = ublox_at_calloc_char(strlen(tag) + 3);
+  const char* tag = eps ? UBX_CELL_EPSREGISTRATION_STATUS : UBX_CELL_REGISTRATION_STATUS;
+  command = ubx_cell_calloc_char(strlen(tag) + 3);
   if (command == nullptr)
-    return UBLOX_AT_REGISTRATION_INVALID;
+    return UBX_CELL_REGISTRATION_INVALID;
   sprintf(command, "%s?", tag);
 
-  response = ublox_at_calloc_char(minimumResponseAllocation);
+  response = ubx_cell_calloc_char(minimumResponseAllocation);
   if (response == nullptr)
   {
     free(command);
-    return UBLOX_AT_REGISTRATION_INVALID;
+    return UBX_CELL_REGISTRATION_INVALID;
   }
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR,
-                                response, UBLOX_AT_STANDARD_RESPONSE_TIMEOUT,
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR,
+                                response, UBX_CELL_STANDARD_RESPONSE_TIMEOUT,
                                 minimumResponseAllocation, AT_COMMAND);
-  if (err != UBLOX_AT_ERROR_SUCCESS)
+  if (err != UBX_CELL_ERROR_SUCCESS)
   {
     free(command);
     free(response);
-    return UBLOX_AT_REGISTRATION_INVALID;
+    return UBX_CELL_REGISTRATION_INVALID;
   }
 
   int scanned = 0;
-  const char *startTag = eps ? UBLOX_AT_EPSREGISTRATION_STATUS_URC : UBLOX_AT_REGISTRATION_STATUS_URC;
+  const char *startTag = eps ? UBX_CELL_EPSREGISTRATION_STATUS_URC : UBX_CELL_REGISTRATION_STATUS_URC;
   char *searchPtr = strstr(response, startTag);
   if (searchPtr != nullptr)
   {
-    searchPtr += eps ? strlen(UBLOX_AT_EPSREGISTRATION_STATUS_URC) : strlen(UBLOX_AT_REGISTRATION_STATUS_URC); //  Move searchPtr to first char
+    searchPtr += eps ? strlen(UBX_CELL_EPSREGISTRATION_STATUS_URC) : strlen(UBX_CELL_REGISTRATION_STATUS_URC); //  Move searchPtr to first char
     while (*searchPtr == ' ') searchPtr++; // skip spaces
 	  scanned = sscanf(searchPtr, "%*d,%d", &status);
   }
   if (scanned != 1)
-    status = UBLOX_AT_REGISTRATION_INVALID;
+    status = UBX_CELL_REGISTRATION_INVALID;
 
   free(command);
   free(response);
-  return (UBLOX_AT_registration_status_t)status;
+  return (UBX_CELL_registration_status_t)status;
 }
 
-bool UBLOX_AT::setNetworkProfile(mobile_network_operator_t mno, bool autoReset, bool urcNotification)
+bool UBX_CELL::setNetworkProfile(mobile_network_operator_t mno, bool autoReset, bool urcNotification)
 {
   mobile_network_operator_t currentMno;
 
   // Check currently set MNO profile
-  if (getMNOprofile(&currentMno) != UBLOX_AT_ERROR_SUCCESS)
+  if (getMNOprofile(&currentMno) != UBX_CELL_ERROR_SUCCESS)
   {
     return false;
   }
@@ -1726,17 +1726,17 @@ bool UBLOX_AT::setNetworkProfile(mobile_network_operator_t mno, bool autoReset, 
   }
 
   // Disable transmit and receive so we can change operator
-  if (functionality(MINIMUM_FUNCTIONALITY) != UBLOX_AT_ERROR_SUCCESS)
+  if (functionality(MINIMUM_FUNCTIONALITY) != UBX_CELL_ERROR_SUCCESS)
   {
     return false;
   }
 
-  if (setMNOprofile(mno, autoReset, urcNotification) != UBLOX_AT_ERROR_SUCCESS)
+  if (setMNOprofile(mno, autoReset, urcNotification) != UBX_CELL_ERROR_SUCCESS)
   {
     return false;
   }
 
-  if (reset() != UBLOX_AT_ERROR_SUCCESS)
+  if (reset() != UBX_CELL_ERROR_SUCCESS)
   {
     return false;
   }
@@ -1744,38 +1744,38 @@ bool UBLOX_AT::setNetworkProfile(mobile_network_operator_t mno, bool autoReset, 
   return true;
 }
 
-mobile_network_operator_t UBLOX_AT::getNetworkProfile(void)
+mobile_network_operator_t UBX_CELL::getNetworkProfile(void)
 {
   mobile_network_operator_t mno;
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
 
   err = getMNOprofile(&mno);
-  if (err != UBLOX_AT_ERROR_SUCCESS)
+  if (err != UBX_CELL_ERROR_SUCCESS)
   {
     return MNO_INVALID;
   }
   return mno;
 }
 
-UBLOX_AT_error_t UBLOX_AT::setAPN(String apn, uint8_t cid, UBLOX_AT_pdp_type pdpType)
+UBX_CELL_error_t UBX_CELL::setAPN(String apn, uint8_t cid, UBX_CELL_pdp_type pdpType)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
   char pdpStr[8];
 
   memset(pdpStr, 0, 8);
 
   if (cid >= 8)
-    return UBLOX_AT_ERROR_UNEXPECTED_PARAM;
+    return UBX_CELL_ERROR_UNEXPECTED_PARAM;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_MESSAGE_PDP_DEF) + strlen(apn.c_str()) + 16);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_MESSAGE_PDP_DEF) + strlen(apn.c_str()) + 16);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
   switch (pdpType)
   {
   case PDP_TYPE_INVALID:
     free(command);
-    return UBLOX_AT_ERROR_UNEXPECTED_PARAM;
+    return UBX_CELL_ERROR_UNEXPECTED_PARAM;
     break;
   case PDP_TYPE_IP:
     memcpy(pdpStr, "IP", 2);
@@ -1791,14 +1791,14 @@ UBLOX_AT_error_t UBLOX_AT::setAPN(String apn, uint8_t cid, UBLOX_AT_pdp_type pdp
     break;
   default:
     free(command);
-    return UBLOX_AT_ERROR_UNEXPECTED_PARAM;
+    return UBX_CELL_ERROR_UNEXPECTED_PARAM;
     break;
   }
   if (apn == nullptr)
   {
     if (_printDebug == true)
       _debugPort->println(F("setAPN: nullptr"));
-    sprintf(command, "%s=%d,\"%s\",\"\"", UBLOX_AT_MESSAGE_PDP_DEF,
+    sprintf(command, "%s=%d,\"%s\",\"\"", UBX_CELL_MESSAGE_PDP_DEF,
             cid, pdpStr);
   }
   else
@@ -1808,12 +1808,12 @@ UBLOX_AT_error_t UBLOX_AT::setAPN(String apn, uint8_t cid, UBLOX_AT_pdp_type pdp
       _debugPort->print(F("setAPN: "));
       _debugPort->println(apn);
     }
-    sprintf(command, "%s=%d,\"%s\",\"%s\"", UBLOX_AT_MESSAGE_PDP_DEF,
+    sprintf(command, "%s=%d,\"%s\",\"%s\"", UBX_CELL_MESSAGE_PDP_DEF,
             cid, pdpStr, apn.c_str());
   }
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, nullptr,
-                                UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr,
+                                UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
   free(command);
 
@@ -1821,31 +1821,31 @@ UBLOX_AT_error_t UBLOX_AT::setAPN(String apn, uint8_t cid, UBLOX_AT_pdp_type pdp
 }
 
 // Return the Access Point Name and IP address for the chosen context identifier
-UBLOX_AT_error_t UBLOX_AT::getAPN(int cid, String *apn, IPAddress *ip, UBLOX_AT_pdp_type* pdpType)
+UBX_CELL_error_t UBX_CELL::getAPN(int cid, String *apn, IPAddress *ip, UBX_CELL_pdp_type* pdpType)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
   char *response;
 
-  if (cid > UBLOX_AT_NUM_PDP_CONTEXT_IDENTIFIERS)
-    return UBLOX_AT_ERROR_ERROR;
+  if (cid > UBX_CELL_NUM_PDP_CONTEXT_IDENTIFIERS)
+    return UBX_CELL_ERROR_ERROR;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_MESSAGE_PDP_DEF) + 3);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_MESSAGE_PDP_DEF) + 3);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s?", UBLOX_AT_MESSAGE_PDP_DEF);
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s?", UBX_CELL_MESSAGE_PDP_DEF);
 
-  response = ublox_at_calloc_char(1024);
+  response = ubx_cell_calloc_char(1024);
   if (response == nullptr)
   {
     free(command);
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
   }
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, response,
-                                UBLOX_AT_STANDARD_RESPONSE_TIMEOUT, 1024);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, response,
+                                UBX_CELL_STANDARD_RESPONSE_TIMEOUT, 1024);
 
-  if (err == UBLOX_AT_ERROR_SUCCESS)
+  if (err == UBX_CELL_ERROR_SUCCESS)
   {
     // Example:
     // +CGDCONT: 0,"IP","payandgo.o2.co.uk","0.0.0.0",0,0,0,0,0,0,0,0,0,0
@@ -1896,7 +1896,7 @@ UBLOX_AT_error_t UBLOX_AT::getAPN(int cid, String *apn, IPAddress *ip, UBLOX_AT_
   }
   else
   {
-    err = UBLOX_AT_ERROR_UNEXPECTED_RESPONSE;
+    err = UBX_CELL_ERROR_UNEXPECTED_RESPONSE;
   }
 
   free(command);
@@ -1905,25 +1905,25 @@ UBLOX_AT_error_t UBLOX_AT::getAPN(int cid, String *apn, IPAddress *ip, UBLOX_AT_
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::getSimStatus(String* code)
+UBX_CELL_error_t UBX_CELL::getSimStatus(String* code)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
   char *response;
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_COMMAND_SIMPIN) + 2);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_COMMAND_SIMPIN) + 2);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s?", UBLOX_AT_COMMAND_SIMPIN);
-  response = ublox_at_calloc_char(minimumResponseAllocation);
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s?", UBX_CELL_COMMAND_SIMPIN);
+  response = ubx_cell_calloc_char(minimumResponseAllocation);
   if (response == nullptr)
   {
     free(command);
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
   }
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR,
-                                response, UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR,
+                                response, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
-  if (err == UBLOX_AT_ERROR_SUCCESS)
+  if (err == UBX_CELL_ERROR_SUCCESS)
   {
     int scanned = 0;
     char c[16];
@@ -1939,7 +1939,7 @@ UBLOX_AT_error_t UBLOX_AT::getSimStatus(String* code)
         *code = c;
     }
     else
-      err = UBLOX_AT_ERROR_UNEXPECTED_RESPONSE;
+      err = UBX_CELL_ERROR_UNEXPECTED_RESPONSE;
   }
 
   free(command);
@@ -1948,60 +1948,60 @@ UBLOX_AT_error_t UBLOX_AT::getSimStatus(String* code)
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::setSimPin(String pin)
+UBX_CELL_error_t UBX_CELL::setSimPin(String pin)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_COMMAND_SIMPIN) + 4 + pin.length());
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_COMMAND_SIMPIN) + 4 + pin.length());
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=\"%s\"", UBLOX_AT_COMMAND_SIMPIN, pin.c_str());
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR,
-                                nullptr, UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s=\"%s\"", UBX_CELL_COMMAND_SIMPIN, pin.c_str());
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR,
+                                nullptr, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
   free(command);
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::setSIMstateReportingMode(int mode)
+UBX_CELL_error_t UBX_CELL::setSIMstateReportingMode(int mode)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_SIM_STATE) + 4);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_SIM_STATE) + 4);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=%d", UBLOX_AT_SIM_STATE, mode);
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s=%d", UBX_CELL_SIM_STATE, mode);
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR,
-                                nullptr, UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR,
+                                nullptr, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
   free(command);
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::getSIMstateReportingMode(int *mode)
+UBX_CELL_error_t UBX_CELL::getSIMstateReportingMode(int *mode)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
   char *response;
 
   int m;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_SIM_STATE) + 3);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_SIM_STATE) + 3);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s?", UBLOX_AT_SIM_STATE);
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s?", UBX_CELL_SIM_STATE);
 
-  response = ublox_at_calloc_char(minimumResponseAllocation);
+  response = ubx_cell_calloc_char(minimumResponseAllocation);
   if (response == nullptr)
   {
     free(command);
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
   }
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR,
-                                response, UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR,
+                                response, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
-  if (err == UBLOX_AT_ERROR_SUCCESS)
+  if (err == UBX_CELL_ERROR_SUCCESS)
   {
     int scanned = 0;
     char *searchPtr = strstr(response, "+USIMSTAT:");
@@ -2016,7 +2016,7 @@ UBLOX_AT_error_t UBLOX_AT::getSIMstateReportingMode(int *mode)
       *mode = m;
     }
     else
-      err = UBLOX_AT_ERROR_UNEXPECTED_RESPONSE;
+      err = UBX_CELL_ERROR_UNEXPECTED_RESPONSE;
   }
 
   free(command);
@@ -2032,62 +2032,62 @@ const char *PPP_L2P[5] = {
     "M-OPT-PPP",
 };
 
-UBLOX_AT_error_t UBLOX_AT::enterPPP(uint8_t cid, char dialing_type_char,
-                                  unsigned long dialNumber, UBLOX_AT::UBLOX_AT_l2p_t l2p)
+UBX_CELL_error_t UBX_CELL::enterPPP(uint8_t cid, char dialing_type_char,
+                                  unsigned long dialNumber, UBX_CELL::UBX_CELL_l2p_t l2p)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
 
   if ((dialing_type_char != 0) && (dialing_type_char != 'T') &&
       (dialing_type_char != 'P'))
   {
-    return UBLOX_AT_ERROR_UNEXPECTED_PARAM;
+    return UBX_CELL_ERROR_UNEXPECTED_PARAM;
   }
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_MESSAGE_ENTER_PPP) + 32);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_MESSAGE_ENTER_PPP) + 32);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
   if (dialing_type_char != 0)
   {
-    sprintf(command, "%s%c*%lu**%s*%u#", UBLOX_AT_MESSAGE_ENTER_PPP, dialing_type_char,
+    sprintf(command, "%s%c*%lu**%s*%u#", UBX_CELL_MESSAGE_ENTER_PPP, dialing_type_char,
             dialNumber, PPP_L2P[l2p], (unsigned int)cid);
   }
   else
   {
-    sprintf(command, "%s*%lu**%s*%u#", UBLOX_AT_MESSAGE_ENTER_PPP,
+    sprintf(command, "%s*%lu**%s*%u#", UBX_CELL_MESSAGE_ENTER_PPP,
             dialNumber, PPP_L2P[l2p], (unsigned int)cid);
   }
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_CONNECT, nullptr,
-                                UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_CONNECT, nullptr,
+                                UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
   free(command);
   return err;
 }
 
-uint8_t UBLOX_AT::getOperators(struct operator_stats *opRet, int maxOps)
+uint8_t UBX_CELL::getOperators(struct operator_stats *opRet, int maxOps)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
   char *response;
   uint8_t opsSeen = 0;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_OPERATOR_SELECTION) + 3);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_OPERATOR_SELECTION) + 3);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=?", UBLOX_AT_OPERATOR_SELECTION);
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s=?", UBX_CELL_OPERATOR_SELECTION);
 
   int responseSize = (maxOps + 1) * 48;
-  response = ublox_at_calloc_char(responseSize);
+  response = ubx_cell_calloc_char(responseSize);
   if (response == nullptr)
   {
     free(command);
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
   }
 
   // AT+COPS maximum response time is 3 minutes (180000 ms)
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, response,
-                                UBLOX_AT_3_MIN_TIMEOUT, responseSize);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, response,
+                                UBX_CELL_3_MIN_TIMEOUT, responseSize);
 
   // Sample responses:
   // +COPS: (3,"Verizon Wireless","VzW","311480",8),,(0,1,2,3,4),(0,1,2)
@@ -2100,7 +2100,7 @@ uint8_t UBLOX_AT::getOperators(struct operator_stats *opRet, int maxOps)
     _debugPort->println(F("}"));
   }
 
-  if (err == UBLOX_AT_ERROR_SUCCESS)
+  if (err == UBX_CELL_ERROR_SUCCESS)
   {
     char *opBegin;
     char *opEnd;
@@ -2148,67 +2148,67 @@ uint8_t UBLOX_AT::getOperators(struct operator_stats *opRet, int maxOps)
   return opsSeen;
 }
 
-UBLOX_AT_error_t UBLOX_AT::registerOperator(struct operator_stats oper)
+UBX_CELL_error_t UBX_CELL::registerOperator(struct operator_stats oper)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_OPERATOR_SELECTION) + 24);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_OPERATOR_SELECTION) + 24);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=1,2,\"%lu\"", UBLOX_AT_OPERATOR_SELECTION, oper.numOp);
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s=1,2,\"%lu\"", UBX_CELL_OPERATOR_SELECTION, oper.numOp);
 
   // AT+COPS maximum response time is 3 minutes (180000 ms)
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, nullptr,
-                                UBLOX_AT_3_MIN_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr,
+                                UBX_CELL_3_MIN_TIMEOUT);
 
   free(command);
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::automaticOperatorSelection()
+UBX_CELL_error_t UBX_CELL::automaticOperatorSelection()
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_OPERATOR_SELECTION) + 6);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_OPERATOR_SELECTION) + 6);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=0,0", UBLOX_AT_OPERATOR_SELECTION);
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s=0,0", UBX_CELL_OPERATOR_SELECTION);
 
   // AT+COPS maximum response time is 3 minutes (180000 ms)
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, nullptr,
-                                UBLOX_AT_3_MIN_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr,
+                                UBX_CELL_3_MIN_TIMEOUT);
 
   free(command);
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::getOperator(String *oper)
+UBX_CELL_error_t UBX_CELL::getOperator(String *oper)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
   char *response;
   char *searchPtr;
   char mode;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_OPERATOR_SELECTION) + 3);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_OPERATOR_SELECTION) + 3);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s?", UBLOX_AT_OPERATOR_SELECTION);
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s?", UBX_CELL_OPERATOR_SELECTION);
 
-  response = ublox_at_calloc_char(minimumResponseAllocation);
+  response = ubx_cell_calloc_char(minimumResponseAllocation);
   if (response == nullptr)
   {
     free(command);
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
   }
 
   // AT+COPS maximum response time is 3 minutes (180000 ms)
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, response,
-                                UBLOX_AT_3_MIN_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, response,
+                                UBX_CELL_3_MIN_TIMEOUT);
 
-  if (err == UBLOX_AT_ERROR_SUCCESS)
+  if (err == UBX_CELL_ERROR_SUCCESS)
   {
     searchPtr = strstr(response, "+COPS:");
     if (searchPtr != nullptr)
@@ -2218,7 +2218,7 @@ UBLOX_AT_error_t UBLOX_AT::getOperator(String *oper)
       mode = *searchPtr;              // Read first char -- should be mode
       if (mode == '2')                // Check for de-register
       {
-        err = UBLOX_AT_ERROR_DEREGISTERED;
+        err = UBX_CELL_ERROR_DEREGISTERED;
       }
       // Otherwise if it's default, manual, set-only, or automatic
       else if ((mode == '0') || (mode == '1') || (mode == '3') || (mode == '4'))
@@ -2227,7 +2227,7 @@ UBLOX_AT_error_t UBLOX_AT::getOperator(String *oper)
         searchPtr = strchr(searchPtr, '\"'); // Move to first quote
         if (searchPtr == nullptr)
         {
-          err = UBLOX_AT_ERROR_DEREGISTERED;
+          err = UBX_CELL_ERROR_DEREGISTERED;
         }
         else
         {
@@ -2250,112 +2250,112 @@ UBLOX_AT_error_t UBLOX_AT::getOperator(String *oper)
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::deregisterOperator(void)
+UBX_CELL_error_t UBX_CELL::deregisterOperator(void)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_OPERATOR_SELECTION) + 4);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_OPERATOR_SELECTION) + 4);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=2", UBLOX_AT_OPERATOR_SELECTION);
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s=2", UBX_CELL_OPERATOR_SELECTION);
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, nullptr,
-                                UBLOX_AT_3_MIN_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr,
+                                UBX_CELL_3_MIN_TIMEOUT);
 
   free(command);
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::setSMSMessageFormat(UBLOX_AT_message_format_t textMode)
+UBX_CELL_error_t UBX_CELL::setSMSMessageFormat(UBX_CELL_message_format_t textMode)
 {
   char *command;
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_MESSAGE_FORMAT) + 4);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_MESSAGE_FORMAT) + 4);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=%d", UBLOX_AT_MESSAGE_FORMAT,
-          (textMode == UBLOX_AT_MESSAGE_FORMAT_TEXT) ? 1 : 0);
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s=%d", UBX_CELL_MESSAGE_FORMAT,
+          (textMode == UBX_CELL_MESSAGE_FORMAT_TEXT) ? 1 : 0);
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, nullptr,
-                                UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr,
+                                UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
   free(command);
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::sendSMS(String number, String message)
+UBX_CELL_error_t UBX_CELL::sendSMS(String number, String message)
 {
   char *command;
   char *messageCStr;
   char *numberCStr;
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
 
-  numberCStr = ublox_at_calloc_char(number.length() + 2);
+  numberCStr = ubx_cell_calloc_char(number.length() + 2);
   if (numberCStr == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
   number.toCharArray(numberCStr, number.length() + 1);
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_SEND_TEXT) + strlen(numberCStr) + 8);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_SEND_TEXT) + strlen(numberCStr) + 8);
   if (command != nullptr)
   {
-    sprintf(command, "%s=\"%s\"", UBLOX_AT_SEND_TEXT, numberCStr);
+    sprintf(command, "%s=\"%s\"", UBX_CELL_SEND_TEXT, numberCStr);
 
     err = sendCommandWithResponse(command, ">", nullptr,
-                                  UBLOX_AT_10_SEC_TIMEOUT);
+                                  UBX_CELL_10_SEC_TIMEOUT);
     free(command);
     free(numberCStr);
-    if (err != UBLOX_AT_ERROR_SUCCESS)
+    if (err != UBX_CELL_ERROR_SUCCESS)
       return err;
 
-    messageCStr = ublox_at_calloc_char(message.length() + 1);
+    messageCStr = ubx_cell_calloc_char(message.length() + 1);
     if (messageCStr == nullptr)
     {
       hwWrite(ASCII_CTRL_Z);
-      return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+      return UBX_CELL_ERROR_OUT_OF_MEMORY;
     }
     message.toCharArray(messageCStr, message.length() + 1);
     messageCStr[message.length()] = ASCII_CTRL_Z;
 
-    err = sendCommandWithResponse(messageCStr, UBLOX_AT_RESPONSE_OK_OR_ERROR,
-                                  nullptr, UBLOX_AT_10_SEC_TIMEOUT, minimumResponseAllocation, NOT_AT_COMMAND);
+    err = sendCommandWithResponse(messageCStr, UBX_CELL_RESPONSE_OK_OR_ERROR,
+                                  nullptr, UBX_CELL_10_SEC_TIMEOUT, minimumResponseAllocation, NOT_AT_COMMAND);
 
     free(messageCStr);
   }
   else
   {
     free(numberCStr);
-    err = UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    err = UBX_CELL_ERROR_OUT_OF_MEMORY;
   }
 
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::getPreferredMessageStorage(int *used, int *total, String memory)
+UBX_CELL_error_t UBX_CELL::getPreferredMessageStorage(int *used, int *total, String memory)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
   char *response;
   int u;
   int t;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_PREF_MESSAGE_STORE) + 32);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_PREF_MESSAGE_STORE) + 32);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=\"%s\"", UBLOX_AT_PREF_MESSAGE_STORE, memory.c_str());
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s=\"%s\"", UBX_CELL_PREF_MESSAGE_STORE, memory.c_str());
 
-  response = ublox_at_calloc_char(minimumResponseAllocation);
+  response = ubx_cell_calloc_char(minimumResponseAllocation);
   if (response == nullptr)
   {
     free(command);
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
   }
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, response,
-                                UBLOX_AT_3_MIN_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, response,
+                                UBX_CELL_3_MIN_TIMEOUT);
 
-  if (err != UBLOX_AT_ERROR_SUCCESS)
+  if (err != UBX_CELL_ERROR_SUCCESS)
   {
     free(command);
     free(response);
@@ -2386,7 +2386,7 @@ UBLOX_AT_error_t UBLOX_AT::getPreferredMessageStorage(int *used, int *total, Str
   }
   else
   {
-    err = UBLOX_AT_ERROR_INVALID;
+    err = UBX_CELL_ERROR_INVALID;
   }
 
   free(response);
@@ -2394,28 +2394,28 @@ UBLOX_AT_error_t UBLOX_AT::getPreferredMessageStorage(int *used, int *total, Str
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::readSMSmessage(int location, String *unread, String *from, String *dateTime, String *message)
+UBX_CELL_error_t UBX_CELL::readSMSmessage(int location, String *unread, String *from, String *dateTime, String *message)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
   char *response;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_READ_TEXT_MESSAGE) + 5);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_READ_TEXT_MESSAGE) + 5);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=%d", UBLOX_AT_READ_TEXT_MESSAGE, location);
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s=%d", UBX_CELL_READ_TEXT_MESSAGE, location);
 
-  response = ublox_at_calloc_char(1024);
+  response = ubx_cell_calloc_char(1024);
   if (response == nullptr)
   {
     free(command);
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
   }
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, response,
-                                UBLOX_AT_10_SEC_TIMEOUT, 1024);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, response,
+                                UBX_CELL_10_SEC_TIMEOUT, 1024);
 
-  if (err == UBLOX_AT_ERROR_SUCCESS)
+  if (err == UBX_CELL_ERROR_SUCCESS)
   {
     char *searchPtr = response;
 
@@ -2435,7 +2435,7 @@ UBLOX_AT_error_t UBLOX_AT::readSMSmessage(int location, String *unread, String *
       {
         free(command);
         free(response);
-        return UBLOX_AT_ERROR_UNEXPECTED_RESPONSE;
+        return UBX_CELL_ERROR_UNEXPECTED_RESPONSE;
       }
       // Search to the next quote
       searchPtr = strchr(++searchPtr, '\"');
@@ -2449,7 +2449,7 @@ UBLOX_AT_error_t UBLOX_AT::readSMSmessage(int location, String *unread, String *
       {
         free(command);
         free(response);
-        return UBLOX_AT_ERROR_UNEXPECTED_RESPONSE;
+        return UBX_CELL_ERROR_UNEXPECTED_RESPONSE;
       }
       // Skip two commas
       searchPtr = strchr(++searchPtr, ',');
@@ -2466,7 +2466,7 @@ UBLOX_AT_error_t UBLOX_AT::readSMSmessage(int location, String *unread, String *
       {
         free(command);
         free(response);
-        return UBLOX_AT_ERROR_UNEXPECTED_RESPONSE;
+        return UBX_CELL_ERROR_UNEXPECTED_RESPONSE;
       }
       // Search to the next new line
       searchPtr = strchr(++searchPtr, '\n');
@@ -2480,17 +2480,17 @@ UBLOX_AT_error_t UBLOX_AT::readSMSmessage(int location, String *unread, String *
       {
         free(command);
         free(response);
-        return UBLOX_AT_ERROR_UNEXPECTED_RESPONSE;
+        return UBX_CELL_ERROR_UNEXPECTED_RESPONSE;
       }
     }
     else
     {
-      err = UBLOX_AT_ERROR_UNEXPECTED_RESPONSE;
+      err = UBX_CELL_ERROR_UNEXPECTED_RESPONSE;
     }
   }
   else
   {
-    err = UBLOX_AT_ERROR_UNEXPECTED_RESPONSE;
+    err = UBX_CELL_ERROR_UNEXPECTED_RESPONSE;
   }
 
   free(command);
@@ -2499,125 +2499,125 @@ UBLOX_AT_error_t UBLOX_AT::readSMSmessage(int location, String *unread, String *
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::deleteSMSmessage(int location, int deleteFlag)
+UBX_CELL_error_t UBX_CELL::deleteSMSmessage(int location, int deleteFlag)
 {
   char *command;
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_DELETE_MESSAGE) + 12);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_DELETE_MESSAGE) + 12);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
   if (deleteFlag == 0)
-    sprintf(command, "%s=%d", UBLOX_AT_DELETE_MESSAGE, location);
+    sprintf(command, "%s=%d", UBX_CELL_DELETE_MESSAGE, location);
   else
-    sprintf(command, "%s=%d,%d", UBLOX_AT_DELETE_MESSAGE, location, deleteFlag);
+    sprintf(command, "%s=%d,%d", UBX_CELL_DELETE_MESSAGE, location, deleteFlag);
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, nullptr, UBLOX_AT_55_SECS_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr, UBX_CELL_55_SECS_TIMEOUT);
 
   free(command);
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::setBaud(unsigned long baud)
+UBX_CELL_error_t UBX_CELL::setBaud(unsigned long baud)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
   int b = 0;
 
   // Error check -- ensure supported baud
   for (; b < NUM_SUPPORTED_BAUD; b++)
   {
-    if (UBLOX_AT_SUPPORTED_BAUD[b] == baud)
+    if (UBX_CELL_SUPPORTED_BAUD[b] == baud)
     {
       break;
     }
   }
   if (b >= NUM_SUPPORTED_BAUD)
   {
-    return UBLOX_AT_ERROR_UNEXPECTED_PARAM;
+    return UBX_CELL_ERROR_UNEXPECTED_PARAM;
   }
 
   // Construct command
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_COMMAND_BAUD) + 7 + 12);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_COMMAND_BAUD) + 7 + 12);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=%lu", UBLOX_AT_COMMAND_BAUD, baud);
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s=%lu", UBX_CELL_COMMAND_BAUD, baud);
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR,
-                                nullptr, UBLOX_AT_SET_BAUD_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR,
+                                nullptr, UBX_CELL_SET_BAUD_TIMEOUT);
 
   free(command);
 
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::setFlowControl(UBLOX_AT_flow_control_t value)
+UBX_CELL_error_t UBX_CELL::setFlowControl(UBX_CELL_flow_control_t value)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_FLOW_CONTROL) + 16);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_FLOW_CONTROL) + 16);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s%d", UBLOX_AT_FLOW_CONTROL, value);
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s%d", UBX_CELL_FLOW_CONTROL, value);
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR,
-                                nullptr, UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR,
+                                nullptr, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
   free(command);
 
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::setGpioMode(UBLOX_AT_gpio_t gpio,
-                                     UBLOX_AT_gpio_mode_t mode, int value)
+UBX_CELL_error_t UBX_CELL::setGpioMode(UBX_CELL_gpio_t gpio,
+                                     UBX_CELL_gpio_mode_t mode, int value)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
 
   // Example command: AT+UGPIOC=16,2
   // Example command: AT+UGPIOC=23,0,1
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_COMMAND_GPIO) + 16);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_COMMAND_GPIO) + 16);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
   if (mode == GPIO_OUTPUT)
-    sprintf(command, "%s=%d,%d,%d", UBLOX_AT_COMMAND_GPIO, gpio, mode, value);
+    sprintf(command, "%s=%d,%d,%d", UBX_CELL_COMMAND_GPIO, gpio, mode, value);
   else
-    sprintf(command, "%s=%d,%d", UBLOX_AT_COMMAND_GPIO, gpio, mode);
+    sprintf(command, "%s=%d,%d", UBX_CELL_COMMAND_GPIO, gpio, mode);
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR,
-                                nullptr, UBLOX_AT_10_SEC_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR,
+                                nullptr, UBX_CELL_10_SEC_TIMEOUT);
 
   free(command);
 
   return err;
 }
 
-UBLOX_AT::UBLOX_AT_gpio_mode_t UBLOX_AT::getGpioMode(UBLOX_AT_gpio_t gpio)
+UBX_CELL::UBX_CELL_gpio_mode_t UBX_CELL::getGpioMode(UBX_CELL_gpio_t gpio)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
   char *response;
   char gpioChar[4];
   char *gpioStart;
   int gpioMode;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_COMMAND_GPIO) + 2);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_COMMAND_GPIO) + 2);
   if (command == nullptr)
     return GPIO_MODE_INVALID;
-  sprintf(command, "%s?", UBLOX_AT_COMMAND_GPIO);
+  sprintf(command, "%s?", UBX_CELL_COMMAND_GPIO);
 
-  response = ublox_at_calloc_char(minimumResponseAllocation);
+  response = ubx_cell_calloc_char(minimumResponseAllocation);
   if (response == nullptr)
   {
     free(command);
     return GPIO_MODE_INVALID;
   }
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR,
-                                response, UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR,
+                                response, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
-  if (err != UBLOX_AT_ERROR_SUCCESS)
+  if (err != UBX_CELL_ERROR_SUCCESS)
   {
     free(command);
     free(response);
@@ -2634,26 +2634,26 @@ UBLOX_AT::UBLOX_AT_gpio_mode_t UBLOX_AT::getGpioMode(UBLOX_AT_gpio_t gpio)
     return GPIO_MODE_INVALID; // If not found return invalid
   sscanf(gpioStart, "%*d,%d\r\n", &gpioMode);
 
-  return (UBLOX_AT_gpio_mode_t)gpioMode;
+  return (UBX_CELL_gpio_mode_t)gpioMode;
 }
 
-int UBLOX_AT::socketOpen(UBLOX_AT_socket_protocol_t protocol, unsigned int localPort)
+int UBX_CELL::socketOpen(UBX_CELL_socket_protocol_t protocol, unsigned int localPort)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
   char *response;
   int sockId = -1;
   char *responseStart;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_CREATE_SOCKET) + 10);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_CREATE_SOCKET) + 10);
   if (command == nullptr)
     return -1;
   if (localPort == 0)
-    sprintf(command, "%s=%d", UBLOX_AT_CREATE_SOCKET, (int)protocol);
+    sprintf(command, "%s=%d", UBX_CELL_CREATE_SOCKET, (int)protocol);
   else
-    sprintf(command, "%s=%d,%d", UBLOX_AT_CREATE_SOCKET, (int)protocol, localPort);
+    sprintf(command, "%s=%d,%d", UBX_CELL_CREATE_SOCKET, (int)protocol, localPort);
 
-  response = ublox_at_calloc_char(minimumResponseAllocation);
+  response = ubx_cell_calloc_char(minimumResponseAllocation);
   if (response == nullptr)
   {
     if (_printDebug == true)
@@ -2662,10 +2662,10 @@ int UBLOX_AT::socketOpen(UBLOX_AT_socket_protocol_t protocol, unsigned int local
     return -1;
   }
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR,
-                                response, UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR,
+                                response, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
-  if (err != UBLOX_AT_ERROR_SUCCESS)
+  if (err != UBX_CELL_ERROR_SUCCESS)
   {
     if (_printDebug == true)
     {
@@ -2705,29 +2705,29 @@ int UBLOX_AT::socketOpen(UBLOX_AT_socket_protocol_t protocol, unsigned int local
   return sockId;
 }
 
-UBLOX_AT_error_t UBLOX_AT::socketClose(int socket, unsigned long timeout)
+UBX_CELL_error_t UBX_CELL::socketClose(int socket, unsigned long timeout)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
   char *response;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_CLOSE_SOCKET) + 10);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_CLOSE_SOCKET) + 10);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  response = ublox_at_calloc_char(minimumResponseAllocation);
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  response = ubx_cell_calloc_char(minimumResponseAllocation);
   if (response == nullptr)
   {
     free(command);
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
   }
   // if timeout is short, close asynchronously and don't wait for socket closure (we will get the URC later)
   // this will make sure the AT command parser is not confused during init()
-  const char* format = (UBLOX_AT_STANDARD_RESPONSE_TIMEOUT == timeout) ? "%s=%d,1" : "%s=%d";
-  sprintf(command, format, UBLOX_AT_CLOSE_SOCKET, socket);
+  const char* format = (UBX_CELL_STANDARD_RESPONSE_TIMEOUT == timeout) ? "%s=%d,1" : "%s=%d";
+  sprintf(command, format, UBX_CELL_CLOSE_SOCKET, socket);
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, response, timeout);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, response, timeout);
 
-  if ((err != UBLOX_AT_ERROR_SUCCESS) && (_printDebug == true))
+  if ((err != UBX_CELL_ERROR_SUCCESS) && (_printDebug == true))
   {
     _debugPort->print(F("socketClose: Error: "));
     _debugPort->println(socketGetLastError());
@@ -2739,58 +2739,58 @@ UBLOX_AT_error_t UBLOX_AT::socketClose(int socket, unsigned long timeout)
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::socketConnect(int socket, const char *address,
+UBX_CELL_error_t UBX_CELL::socketConnect(int socket, const char *address,
                                        unsigned int port)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_CONNECT_SOCKET) + strlen(address) + 11);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_CONNECT_SOCKET) + strlen(address) + 11);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=%d,\"%s\",%d", UBLOX_AT_CONNECT_SOCKET, socket, address, port);
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s=%d,\"%s\",%d", UBX_CELL_CONNECT_SOCKET, socket, address, port);
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, nullptr, UBLOX_AT_IP_CONNECT_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr, UBX_CELL_IP_CONNECT_TIMEOUT);
 
   free(command);
 
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::socketConnect(int socket, IPAddress address,
+UBX_CELL_error_t UBX_CELL::socketConnect(int socket, IPAddress address,
                                        unsigned int port)
 {
-  char *charAddress = ublox_at_calloc_char(16);
+  char *charAddress = ubx_cell_calloc_char(16);
   if (charAddress == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
   memset(charAddress, 0, 16);
   sprintf(charAddress, "%d.%d.%d.%d", address[0], address[1], address[2], address[3]);
 
   return (socketConnect(socket, (const char *)charAddress, port));
 }
 
-UBLOX_AT_error_t UBLOX_AT::socketWrite(int socket, const char *str, int len)
+UBX_CELL_error_t UBX_CELL::socketWrite(int socket, const char *str, int len)
 {
   char *command;
   char *response;
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_WRITE_SOCKET) + 16);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_WRITE_SOCKET) + 16);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  response = ublox_at_calloc_char(minimumResponseAllocation);
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  response = ubx_cell_calloc_char(minimumResponseAllocation);
   if (response == nullptr)
   {
     free(command);
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
   }
   int dataLen = len == -1 ? strlen(str) : len;
-  sprintf(command, "%s=%d,%d", UBLOX_AT_WRITE_SOCKET, socket, dataLen);
+  sprintf(command, "%s=%d,%d", UBX_CELL_WRITE_SOCKET, socket, dataLen);
 
   err = sendCommandWithResponse(command, "@", response,
-                                UBLOX_AT_STANDARD_RESPONSE_TIMEOUT * 5);
+                                UBX_CELL_STANDARD_RESPONSE_TIMEOUT * 5);
 
-  if (err == UBLOX_AT_ERROR_SUCCESS)
+  if (err == UBX_CELL_ERROR_SUCCESS)
   {
     unsigned long writeDelay = millis();
     while (millis() < (writeDelay + 50))
@@ -2816,10 +2816,10 @@ UBLOX_AT_error_t UBLOX_AT::socketWrite(int socket, const char *str, int len)
       hwWriteData(str, len);
     }
 
-    err = waitForResponse(UBLOX_AT_RESPONSE_OK, UBLOX_AT_RESPONSE_ERROR, UBLOX_AT_SOCKET_WRITE_TIMEOUT);
+    err = waitForResponse(UBX_CELL_RESPONSE_OK, UBX_CELL_RESPONSE_ERROR, UBX_CELL_SOCKET_WRITE_TIMEOUT);
   }
 
-  if (err != UBLOX_AT_ERROR_SUCCESS)
+  if (err != UBX_CELL_ERROR_SUCCESS)
   {
     if (_printDebug == true)
     {
@@ -2836,33 +2836,33 @@ UBLOX_AT_error_t UBLOX_AT::socketWrite(int socket, const char *str, int len)
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::socketWrite(int socket, String str)
+UBX_CELL_error_t UBX_CELL::socketWrite(int socket, String str)
 {
   return socketWrite(socket, str.c_str(), str.length());
 }
 
-UBLOX_AT_error_t UBLOX_AT::socketWriteUDP(int socket, const char *address, int port, const char *str, int len)
+UBX_CELL_error_t UBX_CELL::socketWriteUDP(int socket, const char *address, int port, const char *str, int len)
 {
   char *command;
   char *response;
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   int dataLen = len == -1 ? strlen(str) : len;
 
-  command = ublox_at_calloc_char(64);
+  command = ubx_cell_calloc_char(64);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  response = ublox_at_calloc_char(minimumResponseAllocation);
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  response = ubx_cell_calloc_char(minimumResponseAllocation);
   if (response == nullptr)
   {
     free(command);
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
   }
 
-  sprintf(command, "%s=%d,\"%s\",%d,%d", UBLOX_AT_WRITE_UDP_SOCKET,
+  sprintf(command, "%s=%d,\"%s\",%d,%d", UBX_CELL_WRITE_UDP_SOCKET,
           socket, address, port, dataLen);
-  err = sendCommandWithResponse(command, "@", response, UBLOX_AT_STANDARD_RESPONSE_TIMEOUT * 5);
+  err = sendCommandWithResponse(command, "@", response, UBX_CELL_STANDARD_RESPONSE_TIMEOUT * 5);
 
-  if (err == UBLOX_AT_ERROR_SUCCESS)
+  if (err == UBX_CELL_ERROR_SUCCESS)
   {
     if (len == -1) //If binary data we need to send a length.
     {
@@ -2872,7 +2872,7 @@ UBLOX_AT_error_t UBLOX_AT::socketWriteUDP(int socket, const char *address, int p
     {
       hwWriteData(str, len);
     }
-    err = waitForResponse(UBLOX_AT_RESPONSE_OK, UBLOX_AT_RESPONSE_ERROR, UBLOX_AT_SOCKET_WRITE_TIMEOUT);
+    err = waitForResponse(UBX_CELL_RESPONSE_OK, UBX_CELL_RESPONSE_ERROR, UBX_CELL_SOCKET_WRITE_TIMEOUT);
   }
   else
   {
@@ -2887,30 +2887,30 @@ UBLOX_AT_error_t UBLOX_AT::socketWriteUDP(int socket, const char *address, int p
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::socketWriteUDP(int socket, IPAddress address, int port, const char *str, int len)
+UBX_CELL_error_t UBX_CELL::socketWriteUDP(int socket, IPAddress address, int port, const char *str, int len)
 {
-  char *charAddress = ublox_at_calloc_char(16);
+  char *charAddress = ubx_cell_calloc_char(16);
   if (charAddress == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
   memset(charAddress, 0, 16);
   sprintf(charAddress, "%d.%d.%d.%d", address[0], address[1], address[2], address[3]);
 
   return (socketWriteUDP(socket, (const char *)charAddress, port, str, len));
 }
 
-UBLOX_AT_error_t UBLOX_AT::socketWriteUDP(int socket, String address, int port, String str)
+UBX_CELL_error_t UBX_CELL::socketWriteUDP(int socket, String address, int port, String str)
 {
   return socketWriteUDP(socket, address.c_str(), port, str.c_str(), str.length());
 }
 
-UBLOX_AT_error_t UBLOX_AT::socketRead(int socket, int length, char *readDest, int *bytesRead)
+UBX_CELL_error_t UBX_CELL::socketRead(int socket, int length, char *readDest, int *bytesRead)
 {
   char *command;
   char *response;
   char *strBegin;
   int readIndexTotal = 0;
   int readIndexThisRead = 0;
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   int scanNum = 0;
   int readLength = 0;
   int socketStore = 0;
@@ -2926,22 +2926,22 @@ UBLOX_AT_error_t UBLOX_AT::socketRead(int socket, int length, char *readDest, in
   {
     if (_printDebug == true)
       _debugPort->print(F("socketRead: length is 0! Call socketReadAvailable?"));
-    return UBLOX_AT_ERROR_UNEXPECTED_PARAM;
+    return UBX_CELL_ERROR_UNEXPECTED_PARAM;
   }
 
   // Allocate memory for the command
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_READ_SOCKET) + 32);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_READ_SOCKET) + 32);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
 
   // Allocate memory for the response
   // We only need enough to read _saraR5maxSocketRead bytes - not the whole thing
-  int responseLength = _saraR5maxSocketRead + strlen(UBLOX_AT_READ_SOCKET) + minimumResponseAllocation;
-  response = ublox_at_calloc_char(responseLength);
+  int responseLength = _saraR5maxSocketRead + strlen(UBX_CELL_READ_SOCKET) + minimumResponseAllocation;
+  response = ubx_cell_calloc_char(responseLength);
   if (response == nullptr)
   {
     free(command);
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
   }
 
   // If there are more than _saraR5maxSocketRead (1024) bytes to be read,
@@ -2954,12 +2954,12 @@ UBLOX_AT_error_t UBLOX_AT::socketRead(int socket, int length, char *readDest, in
     else
       bytesToRead = bytesLeftToRead;
 
-    sprintf(command, "%s=%d,%d", UBLOX_AT_READ_SOCKET, socket, bytesToRead);
+    sprintf(command, "%s=%d,%d", UBX_CELL_READ_SOCKET, socket, bytesToRead);
 
-    err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, response,
-                                  UBLOX_AT_STANDARD_RESPONSE_TIMEOUT, responseLength);
+    err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, response,
+                                  UBX_CELL_STANDARD_RESPONSE_TIMEOUT, responseLength);
 
-    if (err != UBLOX_AT_ERROR_SUCCESS)
+    if (err != UBX_CELL_ERROR_SUCCESS)
     {
       if (_printDebug == true)
       {
@@ -2989,7 +2989,7 @@ UBLOX_AT_error_t UBLOX_AT::socketRead(int socket, int length, char *readDest, in
       }
       free(command);
       free(response);
-      return UBLOX_AT_ERROR_UNEXPECTED_RESPONSE;
+      return UBX_CELL_ERROR_UNEXPECTED_RESPONSE;
     }
 
     // Check that readLength == bytesToRead
@@ -3013,7 +3013,7 @@ UBLOX_AT_error_t UBLOX_AT::socketRead(int socket, int length, char *readDest, in
       }
       free(command);
       free(response);
-      return UBLOX_AT_ERROR_ZERO_READ_LENGTH;
+      return UBX_CELL_ERROR_ZERO_READ_LENGTH;
     }
 
     // Find the first double-quote:
@@ -3023,7 +3023,7 @@ UBLOX_AT_error_t UBLOX_AT::socketRead(int socket, int length, char *readDest, in
     {
       free(command);
       free(response);
-      return UBLOX_AT_ERROR_UNEXPECTED_RESPONSE;
+      return UBX_CELL_ERROR_UNEXPECTED_RESPONSE;
     }
 
     // Now copy the data into readDest
@@ -3060,34 +3060,34 @@ UBLOX_AT_error_t UBLOX_AT::socketRead(int socket, int length, char *readDest, in
   free(command);
   free(response);
 
-  return UBLOX_AT_ERROR_SUCCESS;
+  return UBX_CELL_ERROR_SUCCESS;
 }
 
-UBLOX_AT_error_t UBLOX_AT::socketReadAvailable(int socket, int *length)
+UBX_CELL_error_t UBX_CELL::socketReadAvailable(int socket, int *length)
 {
   char *command;
   char *response;
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   int scanNum = 0;
   int readLength = 0;
   int socketStore = 0;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_READ_SOCKET) + 32);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_READ_SOCKET) + 32);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=%d,0", UBLOX_AT_READ_SOCKET, socket);
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s=%d,0", UBX_CELL_READ_SOCKET, socket);
 
-  response = ublox_at_calloc_char(minimumResponseAllocation);
+  response = ubx_cell_calloc_char(minimumResponseAllocation);
   if (response == nullptr)
   {
     free(command);
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
   }
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, response,
-                                UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, response,
+                                UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
-  if (err == UBLOX_AT_ERROR_SUCCESS)
+  if (err == UBX_CELL_ERROR_SUCCESS)
   {
     char *searchPtr = strstr(response, "+USORD:");
     if (searchPtr != nullptr)
@@ -3106,7 +3106,7 @@ UBLOX_AT_error_t UBLOX_AT::socketReadAvailable(int socket, int *length)
       }
       free(command);
       free(response);
-      return UBLOX_AT_ERROR_UNEXPECTED_RESPONSE;
+      return UBX_CELL_ERROR_UNEXPECTED_RESPONSE;
     }
 
     *length = readLength;
@@ -3118,7 +3118,7 @@ UBLOX_AT_error_t UBLOX_AT::socketReadAvailable(int socket, int *length)
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::socketReadUDP(int socket, int length, char *readDest,
+UBX_CELL_error_t UBX_CELL::socketReadUDP(int socket, int length, char *readDest,
                                       IPAddress *remoteIPAddress, int *remotePort, int *bytesRead)
 {
   char *command;
@@ -3126,7 +3126,7 @@ UBLOX_AT_error_t UBLOX_AT::socketReadUDP(int socket, int length, char *readDest,
   char *strBegin;
   int readIndexTotal = 0;
   int readIndexThisRead = 0;
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   int scanNum = 0;
   int remoteIPstore[4] = { 0, 0, 0, 0 };
   int portStore = 0;
@@ -3144,22 +3144,22 @@ UBLOX_AT_error_t UBLOX_AT::socketReadUDP(int socket, int length, char *readDest,
   {
     if (_printDebug == true)
       _debugPort->print(F("socketReadUDP: length is 0! Call socketReadAvailableUDP?"));
-    return UBLOX_AT_ERROR_UNEXPECTED_PARAM;
+    return UBX_CELL_ERROR_UNEXPECTED_PARAM;
   }
 
   // Allocate memory for the command
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_READ_UDP_SOCKET) + 32);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_READ_UDP_SOCKET) + 32);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
 
   // Allocate memory for the response
   // We only need enough to read _saraR5maxSocketRead bytes - not the whole thing
-  int responseLength = _saraR5maxSocketRead + strlen(UBLOX_AT_READ_UDP_SOCKET) + minimumResponseAllocation;
-  response = ublox_at_calloc_char(responseLength);
+  int responseLength = _saraR5maxSocketRead + strlen(UBX_CELL_READ_UDP_SOCKET) + minimumResponseAllocation;
+  response = ubx_cell_calloc_char(responseLength);
   if (response == nullptr)
   {
     free(command);
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
   }
 
   // If there are more than _saraR5maxSocketRead (1024) bytes to be read,
@@ -3172,12 +3172,12 @@ UBLOX_AT_error_t UBLOX_AT::socketReadUDP(int socket, int length, char *readDest,
     else
       bytesToRead = bytesLeftToRead;
 
-    sprintf(command, "%s=%d,%d", UBLOX_AT_READ_UDP_SOCKET, socket, bytesToRead);
+    sprintf(command, "%s=%d,%d", UBX_CELL_READ_UDP_SOCKET, socket, bytesToRead);
 
-    err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, response,
-                                  UBLOX_AT_STANDARD_RESPONSE_TIMEOUT, responseLength);
+    err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, response,
+                                  UBX_CELL_STANDARD_RESPONSE_TIMEOUT, responseLength);
 
-    if (err != UBLOX_AT_ERROR_SUCCESS)
+    if (err != UBX_CELL_ERROR_SUCCESS)
     {
       if (_printDebug == true)
       {
@@ -3208,7 +3208,7 @@ UBLOX_AT_error_t UBLOX_AT::socketReadUDP(int socket, int length, char *readDest,
       }
       free(command);
       free(response);
-      return UBLOX_AT_ERROR_UNEXPECTED_RESPONSE;
+      return UBX_CELL_ERROR_UNEXPECTED_RESPONSE;
     }
 
     // Check that readLength == bytesToRead
@@ -3232,7 +3232,7 @@ UBLOX_AT_error_t UBLOX_AT::socketReadUDP(int socket, int length, char *readDest,
       }
       free(command);
       free(response);
-      return UBLOX_AT_ERROR_ZERO_READ_LENGTH;
+      return UBX_CELL_ERROR_ZERO_READ_LENGTH;
     }
 
     // Find the third double-quote
@@ -3244,7 +3244,7 @@ UBLOX_AT_error_t UBLOX_AT::socketReadUDP(int socket, int length, char *readDest,
     {
       free(command);
       free(response);
-      return UBLOX_AT_ERROR_UNEXPECTED_RESPONSE;
+      return UBX_CELL_ERROR_UNEXPECTED_RESPONSE;
     }
 
     // Now copy the data into readDest
@@ -3298,34 +3298,34 @@ UBLOX_AT_error_t UBLOX_AT::socketReadUDP(int socket, int length, char *readDest,
   free(command);
   free(response);
 
-  return UBLOX_AT_ERROR_SUCCESS;
+  return UBX_CELL_ERROR_SUCCESS;
 }
 
-UBLOX_AT_error_t UBLOX_AT::socketReadAvailableUDP(int socket, int *length)
+UBX_CELL_error_t UBX_CELL::socketReadAvailableUDP(int socket, int *length)
 {
   char *command;
   char *response;
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   int scanNum = 0;
   int readLength = 0;
   int socketStore = 0;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_READ_UDP_SOCKET) + 32);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_READ_UDP_SOCKET) + 32);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=%d,0", UBLOX_AT_READ_UDP_SOCKET, socket);
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s=%d,0", UBX_CELL_READ_UDP_SOCKET, socket);
 
-  response = ublox_at_calloc_char(minimumResponseAllocation);
+  response = ubx_cell_calloc_char(minimumResponseAllocation);
   if (response == nullptr)
   {
     free(command);
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
   }
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, response,
-                                UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, response,
+                                UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
-  if (err == UBLOX_AT_ERROR_SUCCESS)
+  if (err == UBX_CELL_ERROR_SUCCESS)
   {
     char *searchPtr = strstr(response, "+USORF:");
     if (searchPtr != nullptr)
@@ -3344,7 +3344,7 @@ UBLOX_AT_error_t UBLOX_AT::socketReadAvailableUDP(int socket, int *length)
       }
       free(command);
       free(response);
-      return UBLOX_AT_ERROR_UNEXPECTED_RESPONSE;
+      return UBX_CELL_ERROR_UNEXPECTED_RESPONSE;
     }
 
     *length = readLength;
@@ -3356,149 +3356,149 @@ UBLOX_AT_error_t UBLOX_AT::socketReadAvailableUDP(int socket, int *length)
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::socketListen(int socket, unsigned int port)
+UBX_CELL_error_t UBX_CELL::socketListen(int socket, unsigned int port)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_LISTEN_SOCKET) + 9);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_LISTEN_SOCKET) + 9);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=%d,%d", UBLOX_AT_LISTEN_SOCKET, socket, port);
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s=%d,%d", UBX_CELL_LISTEN_SOCKET, socket, port);
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, nullptr,
-                                UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr,
+                                UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
   free(command);
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::socketDirectLinkMode(int socket)
+UBX_CELL_error_t UBX_CELL::socketDirectLinkMode(int socket)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_SOCKET_DIRECT_LINK) + 8);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_SOCKET_DIRECT_LINK) + 8);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=%d", UBLOX_AT_SOCKET_DIRECT_LINK, socket);
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s=%d", UBX_CELL_SOCKET_DIRECT_LINK, socket);
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_CONNECT, nullptr,
-                                UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_CONNECT, nullptr,
+                                UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
   free(command);
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::socketDirectLinkTimeTrigger(int socket, unsigned long timerTrigger)
+UBX_CELL_error_t UBX_CELL::socketDirectLinkTimeTrigger(int socket, unsigned long timerTrigger)
 {
   // valid range is 0 (trigger disabled), 100-120000
   if (!((timerTrigger == 0) || ((timerTrigger >= 100) && (timerTrigger <= 120000))))
-    return UBLOX_AT_ERROR_ERROR;
+    return UBX_CELL_ERROR_ERROR;
 
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_UD_CONFIGURATION) + 16);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_UD_CONFIGURATION) + 16);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=5,%d,%ld", UBLOX_AT_UD_CONFIGURATION, socket, timerTrigger);
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s=5,%d,%ld", UBX_CELL_UD_CONFIGURATION, socket, timerTrigger);
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, nullptr,
-                                UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr,
+                                UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
   free(command);
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::socketDirectLinkDataLengthTrigger(int socket, int dataLengthTrigger)
+UBX_CELL_error_t UBX_CELL::socketDirectLinkDataLengthTrigger(int socket, int dataLengthTrigger)
 {
   // valid range is 0, 3-1472 for UDP
   if (!((dataLengthTrigger == 0) || ((dataLengthTrigger >= 3) && (dataLengthTrigger <= 1472))))
-    return UBLOX_AT_ERROR_ERROR;
+    return UBX_CELL_ERROR_ERROR;
 
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_UD_CONFIGURATION) + 16);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_UD_CONFIGURATION) + 16);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=6,%d,%d", UBLOX_AT_UD_CONFIGURATION, socket, dataLengthTrigger);
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s=6,%d,%d", UBX_CELL_UD_CONFIGURATION, socket, dataLengthTrigger);
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, nullptr,
-                                UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr,
+                                UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
   free(command);
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::socketDirectLinkCharacterTrigger(int socket, int characterTrigger)
+UBX_CELL_error_t UBX_CELL::socketDirectLinkCharacterTrigger(int socket, int characterTrigger)
 {
   // The allowed range is -1, 0-255, the factory-programmed value is -1; -1 means trigger disabled.
   if (!((characterTrigger >= -1) && (characterTrigger <= 255)))
-    return UBLOX_AT_ERROR_ERROR;
+    return UBX_CELL_ERROR_ERROR;
 
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_UD_CONFIGURATION) + 16);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_UD_CONFIGURATION) + 16);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=7,%d,%d", UBLOX_AT_UD_CONFIGURATION, socket, characterTrigger);
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s=7,%d,%d", UBX_CELL_UD_CONFIGURATION, socket, characterTrigger);
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, nullptr,
-                                UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr,
+                                UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
   free(command);
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::socketDirectLinkCongestionTimer(int socket, unsigned long congestionTimer)
+UBX_CELL_error_t UBX_CELL::socketDirectLinkCongestionTimer(int socket, unsigned long congestionTimer)
 {
   // valid range is 0, 1000-72000
   if (!((congestionTimer == 0) || ((congestionTimer >= 1000) && (congestionTimer <= 72000))))
-    return UBLOX_AT_ERROR_ERROR;
+    return UBX_CELL_ERROR_ERROR;
 
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_UD_CONFIGURATION) + 16);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_UD_CONFIGURATION) + 16);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=8,%d,%ld", UBLOX_AT_UD_CONFIGURATION, socket, congestionTimer);
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s=8,%d,%ld", UBX_CELL_UD_CONFIGURATION, socket, congestionTimer);
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, nullptr,
-                                UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr,
+                                UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
   free(command);
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::querySocketType(int socket, UBLOX_AT_socket_protocol_t *protocol)
+UBX_CELL_error_t UBX_CELL::querySocketType(int socket, UBX_CELL_socket_protocol_t *protocol)
 {
   char *command;
   char *response;
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   int scanNum = 0;
   int socketStore = 0;
   int paramVal;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_SOCKET_CONTROL) + 16);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_SOCKET_CONTROL) + 16);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=%d,0", UBLOX_AT_SOCKET_CONTROL, socket);
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s=%d,0", UBX_CELL_SOCKET_CONTROL, socket);
 
-  response = ublox_at_calloc_char(minimumResponseAllocation);
+  response = ubx_cell_calloc_char(minimumResponseAllocation);
   if (response == nullptr)
   {
     free(command);
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
   }
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, response,
-                                UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, response,
+                                UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
-  if (err == UBLOX_AT_ERROR_SUCCESS)
+  if (err == UBX_CELL_ERROR_SUCCESS)
   {
     char *searchPtr = strstr(response, "+USOCTL:");
     if (searchPtr != nullptr)
@@ -3517,10 +3517,10 @@ UBLOX_AT_error_t UBLOX_AT::querySocketType(int socket, UBLOX_AT_socket_protocol_
       }
       free(command);
       free(response);
-      return UBLOX_AT_ERROR_UNEXPECTED_RESPONSE;
+      return UBX_CELL_ERROR_UNEXPECTED_RESPONSE;
     }
 
-    *protocol = (UBLOX_AT_socket_protocol_t)paramVal;
+    *protocol = (UBX_CELL_socket_protocol_t)paramVal;
     _lastSocketProtocol[socketStore] = paramVal;
   }
 
@@ -3530,31 +3530,31 @@ UBLOX_AT_error_t UBLOX_AT::querySocketType(int socket, UBLOX_AT_socket_protocol_
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::querySocketLastError(int socket, int *error)
+UBX_CELL_error_t UBX_CELL::querySocketLastError(int socket, int *error)
 {
   char *command;
   char *response;
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   int scanNum = 0;
   int socketStore = 0;
   int paramVal;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_SOCKET_CONTROL) + 16);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_SOCKET_CONTROL) + 16);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=%d,1", UBLOX_AT_SOCKET_CONTROL, socket);
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s=%d,1", UBX_CELL_SOCKET_CONTROL, socket);
 
-  response = ublox_at_calloc_char(minimumResponseAllocation);
+  response = ubx_cell_calloc_char(minimumResponseAllocation);
   if (response == nullptr)
   {
     free(command);
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
   }
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, response,
-                                UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, response,
+                                UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
-  if (err == UBLOX_AT_ERROR_SUCCESS)
+  if (err == UBX_CELL_ERROR_SUCCESS)
   {
     char *searchPtr = strstr(response, "+USOCTL:");
     if (searchPtr != nullptr)
@@ -3573,7 +3573,7 @@ UBLOX_AT_error_t UBLOX_AT::querySocketLastError(int socket, int *error)
       }
       free(command);
       free(response);
-      return UBLOX_AT_ERROR_UNEXPECTED_RESPONSE;
+      return UBX_CELL_ERROR_UNEXPECTED_RESPONSE;
     }
 
     *error = paramVal;
@@ -3585,31 +3585,31 @@ UBLOX_AT_error_t UBLOX_AT::querySocketLastError(int socket, int *error)
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::querySocketTotalBytesSent(int socket, uint32_t *total)
+UBX_CELL_error_t UBX_CELL::querySocketTotalBytesSent(int socket, uint32_t *total)
 {
   char *command;
   char *response;
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   int scanNum = 0;
   int socketStore = 0;
   long unsigned int paramVal;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_SOCKET_CONTROL) + 16);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_SOCKET_CONTROL) + 16);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=%d,2", UBLOX_AT_SOCKET_CONTROL, socket);
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s=%d,2", UBX_CELL_SOCKET_CONTROL, socket);
 
-  response = ublox_at_calloc_char(minimumResponseAllocation);
+  response = ubx_cell_calloc_char(minimumResponseAllocation);
   if (response == nullptr)
   {
     free(command);
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
   }
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, response,
-                                UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, response,
+                                UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
-  if (err == UBLOX_AT_ERROR_SUCCESS)
+  if (err == UBX_CELL_ERROR_SUCCESS)
   {
     char *searchPtr = strstr(response, "+USOCTL:");
     if (searchPtr != nullptr)
@@ -3628,7 +3628,7 @@ UBLOX_AT_error_t UBLOX_AT::querySocketTotalBytesSent(int socket, uint32_t *total
       }
       free(command);
       free(response);
-      return UBLOX_AT_ERROR_UNEXPECTED_RESPONSE;
+      return UBX_CELL_ERROR_UNEXPECTED_RESPONSE;
     }
 
     *total = (uint32_t)paramVal;
@@ -3640,31 +3640,31 @@ UBLOX_AT_error_t UBLOX_AT::querySocketTotalBytesSent(int socket, uint32_t *total
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::querySocketTotalBytesReceived(int socket, uint32_t *total)
+UBX_CELL_error_t UBX_CELL::querySocketTotalBytesReceived(int socket, uint32_t *total)
 {
   char *command;
   char *response;
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   int scanNum = 0;
   int socketStore = 0;
   long unsigned int paramVal;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_SOCKET_CONTROL) + 16);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_SOCKET_CONTROL) + 16);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=%d,3", UBLOX_AT_SOCKET_CONTROL, socket);
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s=%d,3", UBX_CELL_SOCKET_CONTROL, socket);
 
-  response = ublox_at_calloc_char(minimumResponseAllocation);
+  response = ubx_cell_calloc_char(minimumResponseAllocation);
   if (response == nullptr)
   {
     free(command);
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
   }
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, response,
-                                UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, response,
+                                UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
-  if (err == UBLOX_AT_ERROR_SUCCESS)
+  if (err == UBX_CELL_ERROR_SUCCESS)
   {
     char *searchPtr = strstr(response, "+USOCTL:");
     if (searchPtr != nullptr)
@@ -3683,7 +3683,7 @@ UBLOX_AT_error_t UBLOX_AT::querySocketTotalBytesReceived(int socket, uint32_t *t
       }
       free(command);
       free(response);
-      return UBLOX_AT_ERROR_UNEXPECTED_RESPONSE;
+      return UBX_CELL_ERROR_UNEXPECTED_RESPONSE;
     }
 
     *total = (uint32_t)paramVal;
@@ -3695,31 +3695,31 @@ UBLOX_AT_error_t UBLOX_AT::querySocketTotalBytesReceived(int socket, uint32_t *t
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::querySocketRemoteIPAddress(int socket, IPAddress *address, int *port)
+UBX_CELL_error_t UBX_CELL::querySocketRemoteIPAddress(int socket, IPAddress *address, int *port)
 {
   char *command;
   char *response;
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   int scanNum = 0;
   int socketStore = 0;
   int paramVals[5];
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_SOCKET_CONTROL) + 16);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_SOCKET_CONTROL) + 16);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=%d,4", UBLOX_AT_SOCKET_CONTROL, socket);
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s=%d,4", UBX_CELL_SOCKET_CONTROL, socket);
 
-  response = ublox_at_calloc_char(minimumResponseAllocation);
+  response = ubx_cell_calloc_char(minimumResponseAllocation);
   if (response == nullptr)
   {
     free(command);
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
   }
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, response,
-                                UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, response,
+                                UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
-  if (err == UBLOX_AT_ERROR_SUCCESS)
+  if (err == UBX_CELL_ERROR_SUCCESS)
   {
     char *searchPtr = strstr(response, "+USOCTL:");
     if (searchPtr != nullptr)
@@ -3740,7 +3740,7 @@ UBLOX_AT_error_t UBLOX_AT::querySocketRemoteIPAddress(int socket, IPAddress *add
       }
       free(command);
       free(response);
-      return UBLOX_AT_ERROR_UNEXPECTED_RESPONSE;
+      return UBX_CELL_ERROR_UNEXPECTED_RESPONSE;
     }
 
     IPAddress tempAddress = { (uint8_t)paramVals[0], (uint8_t)paramVals[1],
@@ -3755,31 +3755,31 @@ UBLOX_AT_error_t UBLOX_AT::querySocketRemoteIPAddress(int socket, IPAddress *add
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::querySocketStatusTCP(int socket, UBLOX_AT_tcp_socket_status_t *status)
+UBX_CELL_error_t UBX_CELL::querySocketStatusTCP(int socket, UBX_CELL_tcp_socket_status_t *status)
 {
   char *command;
   char *response;
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   int scanNum = 0;
   int socketStore = 0;
   int paramVal;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_SOCKET_CONTROL) + 16);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_SOCKET_CONTROL) + 16);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=%d,10", UBLOX_AT_SOCKET_CONTROL, socket);
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s=%d,10", UBX_CELL_SOCKET_CONTROL, socket);
 
-  response = ublox_at_calloc_char(minimumResponseAllocation);
+  response = ubx_cell_calloc_char(minimumResponseAllocation);
   if (response == nullptr)
   {
     free(command);
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
   }
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, response,
-                                UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, response,
+                                UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
-  if (err == UBLOX_AT_ERROR_SUCCESS)
+  if (err == UBX_CELL_ERROR_SUCCESS)
   {
     char *searchPtr = strstr(response, "+USOCTL:");
     if (searchPtr != nullptr)
@@ -3798,10 +3798,10 @@ UBLOX_AT_error_t UBLOX_AT::querySocketStatusTCP(int socket, UBLOX_AT_tcp_socket_
       }
       free(command);
       free(response);
-      return UBLOX_AT_ERROR_UNEXPECTED_RESPONSE;
+      return UBX_CELL_ERROR_UNEXPECTED_RESPONSE;
     }
 
-    *status = (UBLOX_AT_tcp_socket_status_t)paramVal;
+    *status = (UBX_CELL_tcp_socket_status_t)paramVal;
   }
 
   free(command);
@@ -3810,31 +3810,31 @@ UBLOX_AT_error_t UBLOX_AT::querySocketStatusTCP(int socket, UBLOX_AT_tcp_socket_
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::querySocketOutUnackData(int socket, uint32_t *total)
+UBX_CELL_error_t UBX_CELL::querySocketOutUnackData(int socket, uint32_t *total)
 {
   char *command;
   char *response;
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   int scanNum = 0;
   int socketStore = 0;
   long unsigned int paramVal;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_SOCKET_CONTROL) + 16);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_SOCKET_CONTROL) + 16);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=%d,11", UBLOX_AT_SOCKET_CONTROL, socket);
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s=%d,11", UBX_CELL_SOCKET_CONTROL, socket);
 
-  response = ublox_at_calloc_char(minimumResponseAllocation);
+  response = ubx_cell_calloc_char(minimumResponseAllocation);
   if (response == nullptr)
   {
     free(command);
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
   }
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, response,
-                                UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, response,
+                                UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
-  if (err == UBLOX_AT_ERROR_SUCCESS)
+  if (err == UBX_CELL_ERROR_SUCCESS)
   {
     char *searchPtr = strstr(response, "+USOCTL:");
     if (searchPtr != nullptr)
@@ -3853,7 +3853,7 @@ UBLOX_AT_error_t UBLOX_AT::querySocketOutUnackData(int socket, uint32_t *total)
       }
       free(command);
       free(response);
-      return UBLOX_AT_ERROR_UNEXPECTED_RESPONSE;
+      return UBX_CELL_ERROR_UNEXPECTED_RESPONSE;
     }
 
     *total = (uint32_t)paramVal;
@@ -3866,30 +3866,30 @@ UBLOX_AT_error_t UBLOX_AT::querySocketOutUnackData(int socket, uint32_t *total)
 }
 
 //Issues command to get last socket error, then prints to serial. Also updates rx/backlog buffers.
-int UBLOX_AT::socketGetLastError()
+int UBX_CELL::socketGetLastError()
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
   char *response;
   int errorCode = -1;
 
-  command = ublox_at_calloc_char(64);
+  command = ubx_cell_calloc_char(64);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
 
-  response = ublox_at_calloc_char(minimumResponseAllocation);
+  response = ubx_cell_calloc_char(minimumResponseAllocation);
   if (response == nullptr)
   {
     free(command);
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
   }
 
-  sprintf(command, "%s", UBLOX_AT_GET_ERROR);
+  sprintf(command, "%s", UBX_CELL_GET_ERROR);
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, response,
-                                UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, response,
+                                UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
-  if (err == UBLOX_AT_ERROR_SUCCESS)
+  if (err == UBX_CELL_ERROR_SUCCESS)
   {
     char *searchPtr = strstr(response, "+USOER:");
     if (searchPtr != nullptr)
@@ -3906,314 +3906,314 @@ int UBLOX_AT::socketGetLastError()
   return errorCode;
 }
 
-IPAddress UBLOX_AT::lastRemoteIP(void)
+IPAddress UBX_CELL::lastRemoteIP(void)
 {
   return _lastRemoteIP;
 }
 
-UBLOX_AT_error_t UBLOX_AT::resetHTTPprofile(int profile)
+UBX_CELL_error_t UBX_CELL::resetHTTPprofile(int profile)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
 
-  if (profile >= UBLOX_AT_NUM_HTTP_PROFILES)
-    return UBLOX_AT_ERROR_ERROR;
+  if (profile >= UBX_CELL_NUM_HTTP_PROFILES)
+    return UBX_CELL_ERROR_ERROR;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_HTTP_PROFILE) + 16);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_HTTP_PROFILE) + 16);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=%d", UBLOX_AT_HTTP_PROFILE, profile);
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s=%d", UBX_CELL_HTTP_PROFILE, profile);
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, nullptr,
-                                UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr,
+                                UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
   free(command);
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::setHTTPserverIPaddress(int profile, IPAddress address)
+UBX_CELL_error_t UBX_CELL::setHTTPserverIPaddress(int profile, IPAddress address)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
 
-  if (profile >= UBLOX_AT_NUM_HTTP_PROFILES)
-    return UBLOX_AT_ERROR_ERROR;
+  if (profile >= UBX_CELL_NUM_HTTP_PROFILES)
+    return UBX_CELL_ERROR_ERROR;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_HTTP_PROFILE) + 64);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_HTTP_PROFILE) + 64);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=%d,%d,\"%d.%d.%d.%d\"", UBLOX_AT_HTTP_PROFILE, profile, UBLOX_AT_HTTP_OP_CODE_SERVER_IP,
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s=%d,%d,\"%d.%d.%d.%d\"", UBX_CELL_HTTP_PROFILE, profile, UBX_CELL_HTTP_OP_CODE_SERVER_IP,
           address[0], address[1], address[2], address[3]);
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, nullptr,
-                                UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr,
+                                UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
   free(command);
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::setHTTPserverName(int profile, String server)
+UBX_CELL_error_t UBX_CELL::setHTTPserverName(int profile, String server)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
 
-  if (profile >= UBLOX_AT_NUM_HTTP_PROFILES)
-    return UBLOX_AT_ERROR_ERROR;
+  if (profile >= UBX_CELL_NUM_HTTP_PROFILES)
+    return UBX_CELL_ERROR_ERROR;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_HTTP_PROFILE) + 12 + server.length());
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_HTTP_PROFILE) + 12 + server.length());
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=%d,%d,\"%s\"", UBLOX_AT_HTTP_PROFILE, profile, UBLOX_AT_HTTP_OP_CODE_SERVER_NAME,
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s=%d,%d,\"%s\"", UBX_CELL_HTTP_PROFILE, profile, UBX_CELL_HTTP_OP_CODE_SERVER_NAME,
           server.c_str());
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, nullptr,
-                                UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr,
+                                UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
   free(command);
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::setHTTPusername(int profile, String username)
+UBX_CELL_error_t UBX_CELL::setHTTPusername(int profile, String username)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
 
-  if (profile >= UBLOX_AT_NUM_HTTP_PROFILES)
-    return UBLOX_AT_ERROR_ERROR;
+  if (profile >= UBX_CELL_NUM_HTTP_PROFILES)
+    return UBX_CELL_ERROR_ERROR;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_HTTP_PROFILE) + 12 + username.length());
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_HTTP_PROFILE) + 12 + username.length());
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=%d,%d,\"%s\"", UBLOX_AT_HTTP_PROFILE, profile, UBLOX_AT_HTTP_OP_CODE_USERNAME,
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s=%d,%d,\"%s\"", UBX_CELL_HTTP_PROFILE, profile, UBX_CELL_HTTP_OP_CODE_USERNAME,
           username.c_str());
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, nullptr,
-                                UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr,
+                                UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
   free(command);
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::setHTTPpassword(int profile, String password)
+UBX_CELL_error_t UBX_CELL::setHTTPpassword(int profile, String password)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
 
-  if (profile >= UBLOX_AT_NUM_HTTP_PROFILES)
-    return UBLOX_AT_ERROR_ERROR;
+  if (profile >= UBX_CELL_NUM_HTTP_PROFILES)
+    return UBX_CELL_ERROR_ERROR;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_HTTP_PROFILE) + 12 + password.length());
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_HTTP_PROFILE) + 12 + password.length());
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=%d,%d,\"%s\"", UBLOX_AT_HTTP_PROFILE, profile, UBLOX_AT_HTTP_OP_CODE_PASSWORD,
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s=%d,%d,\"%s\"", UBX_CELL_HTTP_PROFILE, profile, UBX_CELL_HTTP_OP_CODE_PASSWORD,
           password.c_str());
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, nullptr,
-                                UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr,
+                                UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
   free(command);
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::setHTTPauthentication(int profile, bool authenticate)
+UBX_CELL_error_t UBX_CELL::setHTTPauthentication(int profile, bool authenticate)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
 
-  if (profile >= UBLOX_AT_NUM_HTTP_PROFILES)
-    return UBLOX_AT_ERROR_ERROR;
+  if (profile >= UBX_CELL_NUM_HTTP_PROFILES)
+    return UBX_CELL_ERROR_ERROR;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_HTTP_PROFILE) + 32);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_HTTP_PROFILE) + 32);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=%d,%d,%d", UBLOX_AT_HTTP_PROFILE, profile, UBLOX_AT_HTTP_OP_CODE_AUTHENTICATION,
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s=%d,%d,%d", UBX_CELL_HTTP_PROFILE, profile, UBX_CELL_HTTP_OP_CODE_AUTHENTICATION,
           authenticate);
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, nullptr,
-                                UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr,
+                                UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
   free(command);
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::setHTTPserverPort(int profile, int port)
+UBX_CELL_error_t UBX_CELL::setHTTPserverPort(int profile, int port)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
 
-  if (profile >= UBLOX_AT_NUM_HTTP_PROFILES)
-    return UBLOX_AT_ERROR_ERROR;
+  if (profile >= UBX_CELL_NUM_HTTP_PROFILES)
+    return UBX_CELL_ERROR_ERROR;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_HTTP_PROFILE) + 32);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_HTTP_PROFILE) + 32);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=%d,%d,%d", UBLOX_AT_HTTP_PROFILE, profile, UBLOX_AT_HTTP_OP_CODE_SERVER_PORT,
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s=%d,%d,%d", UBX_CELL_HTTP_PROFILE, profile, UBX_CELL_HTTP_OP_CODE_SERVER_PORT,
           port);
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, nullptr,
-                                UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr,
+                                UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
   free(command);
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::setHTTPcustomHeader(int profile, String header)
+UBX_CELL_error_t UBX_CELL::setHTTPcustomHeader(int profile, String header)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
 
-  if (profile >= UBLOX_AT_NUM_HTTP_PROFILES)
-    return UBLOX_AT_ERROR_ERROR;
+  if (profile >= UBX_CELL_NUM_HTTP_PROFILES)
+    return UBX_CELL_ERROR_ERROR;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_HTTP_PROFILE) + 12 + header.length());
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_HTTP_PROFILE) + 12 + header.length());
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=%d,%d,\"%s\"", UBLOX_AT_HTTP_PROFILE, profile, UBLOX_AT_HTTP_OP_CODE_ADD_CUSTOM_HEADERS,
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s=%d,%d,\"%s\"", UBX_CELL_HTTP_PROFILE, profile, UBX_CELL_HTTP_OP_CODE_ADD_CUSTOM_HEADERS,
           header.c_str());
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, nullptr,
-                                UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr,
+                                UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
   free(command);
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::setHTTPsecure(int profile, bool secure, int secprofile)
+UBX_CELL_error_t UBX_CELL::setHTTPsecure(int profile, bool secure, int secprofile)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
 
-  if (profile >= UBLOX_AT_NUM_HTTP_PROFILES)
-    return UBLOX_AT_ERROR_ERROR;
+  if (profile >= UBX_CELL_NUM_HTTP_PROFILES)
+    return UBX_CELL_ERROR_ERROR;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_HTTP_PROFILE) + 32);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_HTTP_PROFILE) + 32);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
   if (secprofile == -1)
-      sprintf(command, "%s=%d,%d,%d", UBLOX_AT_HTTP_PROFILE, profile, UBLOX_AT_HTTP_OP_CODE_SECURE,
+      sprintf(command, "%s=%d,%d,%d", UBX_CELL_HTTP_PROFILE, profile, UBX_CELL_HTTP_OP_CODE_SECURE,
           secure);
-  else sprintf(command, "%s=%d,%d,%d,%d", UBLOX_AT_HTTP_PROFILE, profile, UBLOX_AT_HTTP_OP_CODE_SECURE,
+  else sprintf(command, "%s=%d,%d,%d,%d", UBX_CELL_HTTP_PROFILE, profile, UBX_CELL_HTTP_OP_CODE_SECURE,
         secure, secprofile);
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, nullptr,
-                                UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr,
+                                UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
   free(command);
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::ping(String remote_host, int retry, int p_size,
+UBX_CELL_error_t UBX_CELL::ping(String remote_host, int retry, int p_size,
                               unsigned long timeout, int ttl)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_PING_COMMAND) + 48 +
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_PING_COMMAND) + 48 +
                                 remote_host.length());
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=\"%s\",%d,%d,%ld,%d", UBLOX_AT_PING_COMMAND,
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s=\"%s\",%d,%d,%ld,%d", UBX_CELL_PING_COMMAND,
           remote_host.c_str(), retry, p_size, timeout, ttl);
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, nullptr,
-                                UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr,
+                                UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
   free(command);
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::sendHTTPGET(int profile, String path, String responseFilename)
+UBX_CELL_error_t UBX_CELL::sendHTTPGET(int profile, String path, String responseFilename)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
 
-  if (profile >= UBLOX_AT_NUM_HTTP_PROFILES)
-    return UBLOX_AT_ERROR_ERROR;
+  if (profile >= UBX_CELL_NUM_HTTP_PROFILES)
+    return UBX_CELL_ERROR_ERROR;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_HTTP_COMMAND) + 24 +
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_HTTP_COMMAND) + 24 +
                                 path.length() + responseFilename.length());
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=%d,%d,\"%s\",\"%s\"", UBLOX_AT_HTTP_COMMAND, profile, UBLOX_AT_HTTP_COMMAND_GET,
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s=%d,%d,\"%s\",\"%s\"", UBX_CELL_HTTP_COMMAND, profile, UBX_CELL_HTTP_COMMAND_GET,
           path.c_str(), responseFilename.c_str());
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, nullptr,
-                                UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr,
+                                UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
   free(command);
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::sendHTTPPOSTdata(int profile, String path, String responseFilename,
-                                          String data, UBLOX_AT_http_content_types_t httpContentType)
+UBX_CELL_error_t UBX_CELL::sendHTTPPOSTdata(int profile, String path, String responseFilename,
+                                          String data, UBX_CELL_http_content_types_t httpContentType)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
 
-  if (profile >= UBLOX_AT_NUM_HTTP_PROFILES)
-    return UBLOX_AT_ERROR_ERROR;
+  if (profile >= UBX_CELL_NUM_HTTP_PROFILES)
+    return UBX_CELL_ERROR_ERROR;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_HTTP_COMMAND) + 24 +
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_HTTP_COMMAND) + 24 +
                                 path.length() + responseFilename.length() + data.length());
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=%d,%d,\"%s\",\"%s\",\"%s\",%d", UBLOX_AT_HTTP_COMMAND, profile, UBLOX_AT_HTTP_COMMAND_POST_DATA,
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s=%d,%d,\"%s\",\"%s\",\"%s\",%d", UBX_CELL_HTTP_COMMAND, profile, UBX_CELL_HTTP_COMMAND_POST_DATA,
           path.c_str(), responseFilename.c_str(), data.c_str(), httpContentType);
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, nullptr,
-                                UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr,
+                                UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
   free(command);
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::sendHTTPPOSTfile(int profile, String path, String responseFilename,
-                                          String requestFile, UBLOX_AT_http_content_types_t httpContentType)
+UBX_CELL_error_t UBX_CELL::sendHTTPPOSTfile(int profile, String path, String responseFilename,
+                                          String requestFile, UBX_CELL_http_content_types_t httpContentType)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
 
-  if (profile >= UBLOX_AT_NUM_HTTP_PROFILES)
-    return UBLOX_AT_ERROR_ERROR;
+  if (profile >= UBX_CELL_NUM_HTTP_PROFILES)
+    return UBX_CELL_ERROR_ERROR;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_HTTP_COMMAND) + 24 +
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_HTTP_COMMAND) + 24 +
                                 path.length() + responseFilename.length() + requestFile.length());
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=%d,%d,\"%s\",\"%s\",\"%s\",%d", UBLOX_AT_HTTP_COMMAND, profile, UBLOX_AT_HTTP_COMMAND_POST_FILE,
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s=%d,%d,\"%s\",\"%s\",\"%s\",%d", UBX_CELL_HTTP_COMMAND, profile, UBX_CELL_HTTP_COMMAND_POST_FILE,
           path.c_str(), responseFilename.c_str(), requestFile.c_str(), httpContentType);
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, nullptr,
-                                UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr,
+                                UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
   free(command);
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::getHTTPprotocolError(int profile, int *error_class, int *error_code)
+UBX_CELL_error_t UBX_CELL::getHTTPprotocolError(int profile, int *error_class, int *error_code)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
   char *response;
 
   int rprofile, eclass, ecode;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_HTTP_PROTOCOL_ERROR) + 4);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_HTTP_PROTOCOL_ERROR) + 4);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=%d", UBLOX_AT_HTTP_PROTOCOL_ERROR, profile);
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s=%d", UBX_CELL_HTTP_PROTOCOL_ERROR, profile);
 
-  response = ublox_at_calloc_char(minimumResponseAllocation);
+  response = ubx_cell_calloc_char(minimumResponseAllocation);
   if (response == nullptr)
   {
     free(command);
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
   }
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR,
-                                response, UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR,
+                                response, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
-  if (err == UBLOX_AT_ERROR_SUCCESS)
+  if (err == UBX_CELL_ERROR_SUCCESS)
   {
     int scanned = 0;
     char *searchPtr = strstr(response, "+UHTTPER:");
@@ -4230,7 +4230,7 @@ UBLOX_AT_error_t UBLOX_AT::getHTTPprotocolError(int profile, int *error_class, i
       *error_code = ecode;
     }
     else
-      err = UBLOX_AT_ERROR_UNEXPECTED_RESPONSE;
+      err = UBX_CELL_ERROR_UNEXPECTED_RESPONSE;
   }
 
   free(command);
@@ -4238,139 +4238,139 @@ UBLOX_AT_error_t UBLOX_AT::getHTTPprotocolError(int profile, int *error_class, i
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::nvMQTT(UBLOX_AT_mqtt_nv_parameter_t parameter)
+UBX_CELL_error_t UBX_CELL::nvMQTT(UBX_CELL_mqtt_nv_parameter_t parameter)
 {
-    UBLOX_AT_error_t err;
+    UBX_CELL_error_t err;
     char *command;
-    command = ublox_at_calloc_char(strlen(UBLOX_AT_MQTT_NVM) + 10);
+    command = ubx_cell_calloc_char(strlen(UBX_CELL_MQTT_NVM) + 10);
     if (command == nullptr)
-      return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-    sprintf(command, "%s=%d", UBLOX_AT_MQTT_NVM, parameter);
-    err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, nullptr,
-                                  UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+      return UBX_CELL_ERROR_OUT_OF_MEMORY;
+    sprintf(command, "%s=%d", UBX_CELL_MQTT_NVM, parameter);
+    err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr,
+                                  UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
     free(command);
     return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::setMQTTclientId(const String& clientId)
+UBX_CELL_error_t UBX_CELL::setMQTTclientId(const String& clientId)
 {
-    UBLOX_AT_error_t err;
+    UBX_CELL_error_t err;
     char *command;
-    command = ublox_at_calloc_char(strlen(UBLOX_AT_MQTT_PROFILE) + clientId.length() + 10);
+    command = ubx_cell_calloc_char(strlen(UBX_CELL_MQTT_PROFILE) + clientId.length() + 10);
     if (command == nullptr)
-      return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-    sprintf(command, "%s=%d,\"%s\"", UBLOX_AT_MQTT_PROFILE, UBLOX_AT_MQTT_PROFILE_CLIENT_ID, clientId.c_str());
-    err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, nullptr,
-                                  UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+      return UBX_CELL_ERROR_OUT_OF_MEMORY;
+    sprintf(command, "%s=%d,\"%s\"", UBX_CELL_MQTT_PROFILE, UBX_CELL_MQTT_PROFILE_CLIENT_ID, clientId.c_str());
+    err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr,
+                                  UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
     free(command);
     return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::setMQTTserver(const String& serverName, int port)
+UBX_CELL_error_t UBX_CELL::setMQTTserver(const String& serverName, int port)
 {
-    UBLOX_AT_error_t err;
+    UBX_CELL_error_t err;
     char *command;
-    command = ublox_at_calloc_char(strlen(UBLOX_AT_MQTT_PROFILE) + serverName.length() + 16);
+    command = ubx_cell_calloc_char(strlen(UBX_CELL_MQTT_PROFILE) + serverName.length() + 16);
     if (command == nullptr)
-      return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-    sprintf(command, "%s=%d,\"%s\",%d", UBLOX_AT_MQTT_PROFILE, UBLOX_AT_MQTT_PROFILE_SERVERNAME, serverName.c_str(), port);
-    err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, nullptr,
-                                  UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+      return UBX_CELL_ERROR_OUT_OF_MEMORY;
+    sprintf(command, "%s=%d,\"%s\",%d", UBX_CELL_MQTT_PROFILE, UBX_CELL_MQTT_PROFILE_SERVERNAME, serverName.c_str(), port);
+    err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr,
+                                  UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
     free(command);
     return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::setMQTTcredentials(const String& userName, const String& pwd)
+UBX_CELL_error_t UBX_CELL::setMQTTcredentials(const String& userName, const String& pwd)
 {
-    UBLOX_AT_error_t err;
+    UBX_CELL_error_t err;
     char *command;
-    command = ublox_at_calloc_char(strlen(UBLOX_AT_MQTT_PROFILE) + userName.length() + pwd.length() + 16);
+    command = ubx_cell_calloc_char(strlen(UBX_CELL_MQTT_PROFILE) + userName.length() + pwd.length() + 16);
     if (command == nullptr) {
-        return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+        return UBX_CELL_ERROR_OUT_OF_MEMORY;
     }
-    sprintf(command, "%s=%d,\"%s\",\"%s\"", UBLOX_AT_MQTT_PROFILE, UBLOX_AT_MQTT_PROFILE_USERNAMEPWD, userName.c_str(), pwd.c_str());
-    err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, nullptr,
-                                  UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+    sprintf(command, "%s=%d,\"%s\",\"%s\"", UBX_CELL_MQTT_PROFILE, UBX_CELL_MQTT_PROFILE_USERNAMEPWD, userName.c_str(), pwd.c_str());
+    err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr,
+                                  UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
     free(command);
     return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::setMQTTsecure(bool secure, int secprofile)
+UBX_CELL_error_t UBX_CELL::setMQTTsecure(bool secure, int secprofile)
 {
-    UBLOX_AT_error_t err;
+    UBX_CELL_error_t err;
     char *command;
-    command = ublox_at_calloc_char(strlen(UBLOX_AT_MQTT_PROFILE) + 16);
+    command = ubx_cell_calloc_char(strlen(UBX_CELL_MQTT_PROFILE) + 16);
     if (command == nullptr)
-      return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-    if (secprofile == -1) sprintf(command, "%s=%d,%d", UBLOX_AT_MQTT_PROFILE, UBLOX_AT_MQTT_PROFILE_SECURE, secure);
-    else sprintf(command, "%s=%d,%d,%d", UBLOX_AT_MQTT_PROFILE, UBLOX_AT_MQTT_PROFILE_SECURE, secure, secprofile);
-    err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, nullptr,
-                                  UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+      return UBX_CELL_ERROR_OUT_OF_MEMORY;
+    if (secprofile == -1) sprintf(command, "%s=%d,%d", UBX_CELL_MQTT_PROFILE, UBX_CELL_MQTT_PROFILE_SECURE, secure);
+    else sprintf(command, "%s=%d,%d,%d", UBX_CELL_MQTT_PROFILE, UBX_CELL_MQTT_PROFILE_SECURE, secure, secprofile);
+    err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr,
+                                  UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
     free(command);
     return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::connectMQTT(void)
+UBX_CELL_error_t UBX_CELL::connectMQTT(void)
 {
-    UBLOX_AT_error_t err;
+    UBX_CELL_error_t err;
     char *command;
-    command = ublox_at_calloc_char(strlen(UBLOX_AT_MQTT_COMMAND) + 10);
+    command = ubx_cell_calloc_char(strlen(UBX_CELL_MQTT_COMMAND) + 10);
     if (command == nullptr)
-      return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-    sprintf(command, "%s=%d", UBLOX_AT_MQTT_COMMAND, UBLOX_AT_MQTT_COMMAND_LOGIN);
-    err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, nullptr,
-                                  UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+      return UBX_CELL_ERROR_OUT_OF_MEMORY;
+    sprintf(command, "%s=%d", UBX_CELL_MQTT_COMMAND, UBX_CELL_MQTT_COMMAND_LOGIN);
+    err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr,
+                                  UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
     free(command);
     return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::disconnectMQTT(void)
+UBX_CELL_error_t UBX_CELL::disconnectMQTT(void)
 {
-    UBLOX_AT_error_t err;
+    UBX_CELL_error_t err;
     char *command;
-    command = ublox_at_calloc_char(strlen(UBLOX_AT_MQTT_COMMAND) + 10);
+    command = ubx_cell_calloc_char(strlen(UBX_CELL_MQTT_COMMAND) + 10);
     if (command == nullptr)
-      return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-    sprintf(command, "%s=%d", UBLOX_AT_MQTT_COMMAND, UBLOX_AT_MQTT_COMMAND_LOGOUT);
-    err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, nullptr,
-                                  UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+      return UBX_CELL_ERROR_OUT_OF_MEMORY;
+    sprintf(command, "%s=%d", UBX_CELL_MQTT_COMMAND, UBX_CELL_MQTT_COMMAND_LOGOUT);
+    err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr,
+                                  UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
     free(command);
     return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::subscribeMQTTtopic(int max_Qos, const String& topic)
+UBX_CELL_error_t UBX_CELL::subscribeMQTTtopic(int max_Qos, const String& topic)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_MQTT_COMMAND) + 16 + topic.length());
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_MQTT_COMMAND) + 16 + topic.length());
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=%d,%d,\"%s\"", UBLOX_AT_MQTT_COMMAND, UBLOX_AT_MQTT_COMMAND_SUBSCRIBE, max_Qos, topic.c_str());
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, nullptr,
-                                UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s=%d,%d,\"%s\"", UBX_CELL_MQTT_COMMAND, UBX_CELL_MQTT_COMMAND_SUBSCRIBE, max_Qos, topic.c_str());
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr,
+                                UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
   free(command);
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::unsubscribeMQTTtopic(const String& topic)
+UBX_CELL_error_t UBX_CELL::unsubscribeMQTTtopic(const String& topic)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_MQTT_COMMAND) + 16 + topic.length());
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_MQTT_COMMAND) + 16 + topic.length());
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=%d,\"%s\"", UBLOX_AT_MQTT_COMMAND, UBLOX_AT_MQTT_COMMAND_UNSUBSCRIBE, topic.c_str());
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, nullptr,
-                                UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s=%d,\"%s\"", UBX_CELL_MQTT_COMMAND, UBX_CELL_MQTT_COMMAND_UNSUBSCRIBE, topic.c_str());
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr,
+                                UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
   free(command);
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::readMQTT(int* pQos, String* pTopic, uint8_t *readDest, int readLength, int *bytesRead)
+UBX_CELL_error_t UBX_CELL::readMQTT(int* pQos, String* pTopic, uint8_t *readDest, int readLength, int *bytesRead)
 {
   char *command;
   char *response;
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   int scanNum = 0;
   int total_length, topic_length, data_length;
 
@@ -4379,27 +4379,27 @@ UBLOX_AT_error_t UBLOX_AT::readMQTT(int* pQos, String* pTopic, uint8_t *readDest
     *bytesRead = 0;
 
   // Allocate memory for the command
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_MQTT_COMMAND) + 10);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_MQTT_COMMAND) + 10);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
 
   // Allocate memory for the response
   int responseLength = readLength + minimumResponseAllocation;
-  response = ublox_at_calloc_char(responseLength);
+  response = ubx_cell_calloc_char(responseLength);
   if (response == nullptr)
   {
     free(command);
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
   }
 
   // Note to self: if the file contents contain "OK\r\n" sendCommandWithResponse will return true too early...
   // To try and avoid this, look for \"\r\n\r\nOK\r\n there is a extra \r\n beetween " and the the standard \r\nOK\r\n
   const char mqttReadTerm[] = "\"\r\n\r\nOK\r\n";
-  sprintf(command, "%s=%d,%d", UBLOX_AT_MQTT_COMMAND, UBLOX_AT_MQTT_COMMAND_READ, 1);
+  sprintf(command, "%s=%d,%d", UBX_CELL_MQTT_COMMAND, UBX_CELL_MQTT_COMMAND_READ, 1);
   err = sendCommandWithResponse(command, mqttReadTerm, response,
-                                (5 * UBLOX_AT_STANDARD_RESPONSE_TIMEOUT), responseLength);
+                                (5 * UBX_CELL_STANDARD_RESPONSE_TIMEOUT), responseLength);
 
-  if (err != UBLOX_AT_ERROR_SUCCESS)
+  if (err != UBX_CELL_ERROR_SUCCESS)
   {
     if (_printDebug == true)
     {
@@ -4420,7 +4420,7 @@ UBLOX_AT_error_t UBLOX_AT::readMQTT(int* pQos, String* pTopic, uint8_t *readDest
     while (*searchPtr == ' ') searchPtr++; // skip spaces
     scanNum = sscanf(searchPtr, "%d,%d,%d,%d,\"%*[^\"]\",%d,\"", &cmd, pQos, &total_length, &topic_length, &data_length);
   }
-  if ((scanNum != 5) || (cmd != UBLOX_AT_MQTT_COMMAND_READ))
+  if ((scanNum != 5) || (cmd != UBX_CELL_MQTT_COMMAND_READ))
   {
     if (_printDebug == true)
     {
@@ -4429,10 +4429,10 @@ UBLOX_AT_error_t UBLOX_AT::readMQTT(int* pQos, String* pTopic, uint8_t *readDest
     }
     free(command);
     free(response);
-    return UBLOX_AT_ERROR_UNEXPECTED_RESPONSE;
+    return UBX_CELL_ERROR_UNEXPECTED_RESPONSE;
   }
 
-  err = UBLOX_AT_ERROR_SUCCESS;
+  err = UBX_CELL_ERROR_SUCCESS;
   searchPtr = strstr(searchPtr, "\"");
   if (searchPtr!= nullptr) {
     if (pTopic) {
@@ -4447,7 +4447,7 @@ UBLOX_AT_error_t UBLOX_AT::readMQTT(int* pQos, String* pTopic, uint8_t *readDest
         if (_printDebug == true) {
           _debugPort->print(F("readMQTT: error: trucate message"));
         }
-        err = UBLOX_AT_ERROR_OUT_OF_MEMORY;
+        err = UBX_CELL_ERROR_OUT_OF_MEMORY;
       }
       memcpy(readDest, searchPtr+1, data_length);
       *bytesRead = data_length;
@@ -4455,7 +4455,7 @@ UBLOX_AT_error_t UBLOX_AT::readMQTT(int* pQos, String* pTopic, uint8_t *readDest
       if (_printDebug == true) {
         _debugPort->print(F("readMQTT: error: message end "));
       }
-      err = UBLOX_AT_ERROR_UNEXPECTED_RESPONSE;
+      err = UBX_CELL_ERROR_UNEXPECTED_RESPONSE;
     }
   }
   free(command);
@@ -4464,14 +4464,14 @@ UBLOX_AT_error_t UBLOX_AT::readMQTT(int* pQos, String* pTopic, uint8_t *readDest
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::mqttPublishTextMsg(const String& topic, const char * const msg, uint8_t qos, bool retain)
+UBX_CELL_error_t UBX_CELL::mqttPublishTextMsg(const String& topic, const char * const msg, uint8_t qos, bool retain)
 {
   if (topic.length() < 1 || msg == nullptr)
   {
-    return UBLOX_AT_ERROR_INVALID;
+    return UBX_CELL_ERROR_INVALID;
   }
 
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
 
   char sanitized_msg[MAX_MQTT_DIRECT_MSG_LEN + 1];
   memset(sanitized_msg, 0, sizeof(sanitized_msg));
@@ -4495,27 +4495,27 @@ UBLOX_AT_error_t UBLOX_AT::mqttPublishTextMsg(const String& topic, const char * 
     msg_ptr++;
   }
 
-  char *command = ublox_at_calloc_char(strlen(UBLOX_AT_MQTT_COMMAND) + 20 + topic.length() + msg_len);
+  char *command = ubx_cell_calloc_char(strlen(UBX_CELL_MQTT_COMMAND) + 20 + topic.length() + msg_len);
   if (command == nullptr)
   {
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
   }
 
-  sprintf(command, "%s=%d,%u,%u,0,\"%s\",\"%s\"", UBLOX_AT_MQTT_COMMAND, UBLOX_AT_MQTT_COMMAND_PUBLISH, qos, (retain ? 1:0), topic.c_str(), sanitized_msg);
+  sprintf(command, "%s=%d,%u,%u,0,\"%s\",\"%s\"", UBX_CELL_MQTT_COMMAND, UBX_CELL_MQTT_COMMAND_PUBLISH, qos, (retain ? 1:0), topic.c_str(), sanitized_msg);
 
   sendCommand(command, true);
-  err = waitForResponse(UBLOX_AT_RESPONSE_MORE, UBLOX_AT_RESPONSE_ERROR, UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
-  if (err == UBLOX_AT_ERROR_SUCCESS)
+  err = waitForResponse(UBX_CELL_RESPONSE_MORE, UBX_CELL_RESPONSE_ERROR, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
+  if (err == UBX_CELL_ERROR_SUCCESS)
   {
     sendCommand(msg, false);
-    err = waitForResponse(UBLOX_AT_RESPONSE_OK, UBLOX_AT_RESPONSE_ERROR, UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+    err = waitForResponse(UBX_CELL_RESPONSE_OK, UBX_CELL_RESPONSE_ERROR, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
   }
 
   free(command);
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::mqttPublishBinaryMsg(const String& topic, const char * const msg, size_t msg_len, uint8_t qos, bool retain)
+UBX_CELL_error_t UBX_CELL::mqttPublishBinaryMsg(const String& topic, const char * const msg, size_t msg_len, uint8_t qos, bool retain)
 {
   /*
    * The modem prints the '>' as the signal to send the binary message content.
@@ -4528,70 +4528,70 @@ UBLOX_AT_error_t UBLOX_AT::mqttPublishBinaryMsg(const String& topic, const char 
    */
   if (topic.length() < 1|| msg == nullptr || msg_len > MAX_MQTT_DIRECT_MSG_LEN)
   {
-    return UBLOX_AT_ERROR_INVALID;
+    return UBX_CELL_ERROR_INVALID;
   }
 
-  UBLOX_AT_error_t err;
-  char *command = ublox_at_calloc_char(strlen(UBLOX_AT_MQTT_COMMAND) + 20 + topic.length());
+  UBX_CELL_error_t err;
+  char *command = ubx_cell_calloc_char(strlen(UBX_CELL_MQTT_COMMAND) + 20 + topic.length());
   if (command == nullptr)
   {
-     return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+     return UBX_CELL_ERROR_OUT_OF_MEMORY;
   }
 
-  sprintf(command, "%s=%d,%u,%u,\"%s\",%u", UBLOX_AT_MQTT_COMMAND, UBLOX_AT_MQTT_COMMAND_PUBLISHBINARY, qos, (retain ? 1:0), topic.c_str(), msg_len);
+  sprintf(command, "%s=%d,%u,%u,\"%s\",%u", UBX_CELL_MQTT_COMMAND, UBX_CELL_MQTT_COMMAND_PUBLISHBINARY, qos, (retain ? 1:0), topic.c_str(), msg_len);
 
   sendCommand(command, true);
-  err = waitForResponse(UBLOX_AT_RESPONSE_MORE, UBLOX_AT_RESPONSE_ERROR, UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
-  if (err == UBLOX_AT_ERROR_SUCCESS)
+  err = waitForResponse(UBX_CELL_RESPONSE_MORE, UBX_CELL_RESPONSE_ERROR, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
+  if (err == UBX_CELL_ERROR_SUCCESS)
   {
     sendCommand(msg, false);
-    err = waitForResponse(UBLOX_AT_RESPONSE_OK, UBLOX_AT_RESPONSE_ERROR, UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+    err = waitForResponse(UBX_CELL_RESPONSE_OK, UBX_CELL_RESPONSE_ERROR, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
   }
 
   free(command);
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::mqttPublishFromFile(const String& topic, const String& filename, uint8_t qos, bool retain)
+UBX_CELL_error_t UBX_CELL::mqttPublishFromFile(const String& topic, const String& filename, uint8_t qos, bool retain)
 {
   if (topic.length() < 1|| filename.length() < 1)
   {
-    return UBLOX_AT_ERROR_INVALID;
+    return UBX_CELL_ERROR_INVALID;
   }
 
-  UBLOX_AT_error_t err;
-  char *command = ublox_at_calloc_char(strlen(UBLOX_AT_MQTT_COMMAND) + 20 + topic.length() + filename.length());
+  UBX_CELL_error_t err;
+  char *command = ubx_cell_calloc_char(strlen(UBX_CELL_MQTT_COMMAND) + 20 + topic.length() + filename.length());
   if (command == nullptr)
   {
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
   }
 
-  sprintf(command, "%s=%d,%u,%u,\"%s\",\"%s\"", UBLOX_AT_MQTT_COMMAND, UBLOX_AT_MQTT_COMMAND_PUBLISHFILE, qos, (retain ? 1:0), topic.c_str(), filename.c_str());
+  sprintf(command, "%s=%d,%u,%u,\"%s\",\"%s\"", UBX_CELL_MQTT_COMMAND, UBX_CELL_MQTT_COMMAND_PUBLISHFILE, qos, (retain ? 1:0), topic.c_str(), filename.c_str());
 
   sendCommand(command, true);
-  err = waitForResponse(UBLOX_AT_RESPONSE_OK, UBLOX_AT_RESPONSE_ERROR, UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  err = waitForResponse(UBX_CELL_RESPONSE_OK, UBX_CELL_RESPONSE_ERROR, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
   free(command);
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::getMQTTprotocolError(int *error_code, int *error_code2)
+UBX_CELL_error_t UBX_CELL::getMQTTprotocolError(int *error_code, int *error_code2)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *response;
 
   int code, code2;
 
-  response = ublox_at_calloc_char(minimumResponseAllocation);
+  response = ubx_cell_calloc_char(minimumResponseAllocation);
   if (response == nullptr)
   {
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
   }
 
-  err = sendCommandWithResponse(UBLOX_AT_MQTT_PROTOCOL_ERROR, UBLOX_AT_RESPONSE_OK_OR_ERROR,
-                                response, UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  err = sendCommandWithResponse(UBX_CELL_MQTT_PROTOCOL_ERROR, UBX_CELL_RESPONSE_OK_OR_ERROR,
+                                response, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
-  if (err == UBLOX_AT_ERROR_SUCCESS)
+  if (err == UBX_CELL_ERROR_SUCCESS)
   {
     int scanned = 0;
     char *searchPtr = strstr(response, "+UMQTTER:");
@@ -4608,109 +4608,109 @@ UBLOX_AT_error_t UBLOX_AT::getMQTTprotocolError(int *error_code, int *error_code
       *error_code2 = code2;
     }
     else
-      err = UBLOX_AT_ERROR_UNEXPECTED_RESPONSE;
+      err = UBX_CELL_ERROR_UNEXPECTED_RESPONSE;
   }
 
   free(response);
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::setFTPserver(const String& serverName)
+UBX_CELL_error_t UBX_CELL::setFTPserver(const String& serverName)
 {
   constexpr size_t cmd_len = 145;
   char command[cmd_len]; // long enough for AT+UFTP=1,<128 bytes>
 
-  snprintf(command, cmd_len - 1, "%s=%d,\"%s\"", UBLOX_AT_FTP_PROFILE, UBLOX_AT_FTP_PROFILE_SERVERNAME, serverName.c_str());
-  return sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, nullptr,
-                                 UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  snprintf(command, cmd_len - 1, "%s=%d,\"%s\"", UBX_CELL_FTP_PROFILE, UBX_CELL_FTP_PROFILE_SERVERNAME, serverName.c_str());
+  return sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr,
+                                 UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 }
 
-UBLOX_AT_error_t UBLOX_AT::setFTPtimeouts(const unsigned int timeout, const unsigned int cmd_linger, const unsigned int data_linger)
+UBX_CELL_error_t UBX_CELL::setFTPtimeouts(const unsigned int timeout, const unsigned int cmd_linger, const unsigned int data_linger)
 {
   constexpr size_t cmd_len = 64;
   char command[cmd_len]; // long enough for AT+UFTP=1,<128 bytes>
 
-  snprintf(command, cmd_len - 1, "%s=%d,%u,%u,%u", UBLOX_AT_FTP_PROFILE, UBLOX_AT_FTP_PROFILE_TIMEOUT, timeout, cmd_linger, data_linger);
-  return sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, nullptr,
-                                 UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  snprintf(command, cmd_len - 1, "%s=%d,%u,%u,%u", UBX_CELL_FTP_PROFILE, UBX_CELL_FTP_PROFILE_TIMEOUT, timeout, cmd_linger, data_linger);
+  return sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr,
+                                 UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 }
 
-UBLOX_AT_error_t UBLOX_AT::setFTPcredentials(const String& userName, const String& pwd)
+UBX_CELL_error_t UBX_CELL::setFTPcredentials(const String& userName, const String& pwd)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   constexpr size_t cmd_len = 48;
   char command[cmd_len]; // long enough for AT+UFTP=n,<30 bytes>
 
-  snprintf(command, cmd_len - 1, "%s=%d,\"%s\"", UBLOX_AT_FTP_PROFILE, UBLOX_AT_FTP_PROFILE_USERNAME, userName.c_str());
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, nullptr,
-                                UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
-  if (err != UBLOX_AT_ERROR_SUCCESS)
+  snprintf(command, cmd_len - 1, "%s=%d,\"%s\"", UBX_CELL_FTP_PROFILE, UBX_CELL_FTP_PROFILE_USERNAME, userName.c_str());
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr,
+                                UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
+  if (err != UBX_CELL_ERROR_SUCCESS)
   {
     return err;
   }
 
-  snprintf(command, cmd_len - 1, "%s=%d,\"%s\"", UBLOX_AT_FTP_PROFILE, UBLOX_AT_FTP_PROFILE_PWD, pwd.c_str());
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, nullptr,
-                                UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  snprintf(command, cmd_len - 1, "%s=%d,\"%s\"", UBX_CELL_FTP_PROFILE, UBX_CELL_FTP_PROFILE_PWD, pwd.c_str());
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr,
+                                UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::connectFTP(void)
+UBX_CELL_error_t UBX_CELL::connectFTP(void)
 {
   constexpr size_t cmd_len = 16;
   char command[cmd_len]; // long enough for AT+UFTPC=n
 
-  snprintf(command, cmd_len - 1, "%s=%d", UBLOX_AT_FTP_COMMAND, UBLOX_AT_FTP_COMMAND_LOGIN);
-  return sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, nullptr,
-                                 UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  snprintf(command, cmd_len - 1, "%s=%d", UBX_CELL_FTP_COMMAND, UBX_CELL_FTP_COMMAND_LOGIN);
+  return sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr,
+                                 UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 }
 
-UBLOX_AT_error_t UBLOX_AT::disconnectFTP(void)
+UBX_CELL_error_t UBX_CELL::disconnectFTP(void)
 {
   constexpr size_t cmd_len = 16;
   char command[cmd_len]; // long enough for AT+UFTPC=n
 
-  snprintf(command, cmd_len - 1, "%s=%d", UBLOX_AT_FTP_COMMAND, UBLOX_AT_FTP_COMMAND_LOGOUT);
-  return sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, nullptr,
-                                 UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  snprintf(command, cmd_len - 1, "%s=%d", UBX_CELL_FTP_COMMAND, UBX_CELL_FTP_COMMAND_LOGOUT);
+  return sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr,
+                                 UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 }
 
-UBLOX_AT_error_t UBLOX_AT::ftpGetFile(const String& filename)
+UBX_CELL_error_t UBX_CELL::ftpGetFile(const String& filename)
 {
-  char * command = ublox_at_calloc_char(strlen(UBLOX_AT_FTP_COMMAND) + (2 * filename.length()) + 16);
+  char * command = ubx_cell_calloc_char(strlen(UBX_CELL_FTP_COMMAND) + (2 * filename.length()) + 16);
   if (command == nullptr)
   {
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
   }
 
-  sprintf(command, "%s=%d,\"%s\",\"%s\"", UBLOX_AT_FTP_COMMAND, UBLOX_AT_FTP_COMMAND_GET_FILE, filename.c_str(), filename.c_str());
+  sprintf(command, "%s=%d,\"%s\",\"%s\"", UBX_CELL_FTP_COMMAND, UBX_CELL_FTP_COMMAND_GET_FILE, filename.c_str(), filename.c_str());
   //memset(response, 0, sizeof(response));
-  //sendCommandWithResponse(command, UBLOX_AT_RESPONSE_CONNECT, response, 8000 /* ms */, response_len);
-  UBLOX_AT_error_t err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, nullptr,
-                                                UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  //sendCommandWithResponse(command, UBX_CELL_RESPONSE_CONNECT, response, 8000 /* ms */, response_len);
+  UBX_CELL_error_t err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr,
+                                                UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
   free(command);
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::getFTPprotocolError(int *error_code, int *error_code2)
+UBX_CELL_error_t UBX_CELL::getFTPprotocolError(int *error_code, int *error_code2)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *response;
 
   int code, code2;
 
-  response = ublox_at_calloc_char(minimumResponseAllocation);
+  response = ubx_cell_calloc_char(minimumResponseAllocation);
   if (response == nullptr)
   {
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
   }
 
-  err = sendCommandWithResponse(UBLOX_AT_FTP_PROTOCOL_ERROR, UBLOX_AT_RESPONSE_OK_OR_ERROR,
-                                response, UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  err = sendCommandWithResponse(UBX_CELL_FTP_PROTOCOL_ERROR, UBX_CELL_RESPONSE_OK_OR_ERROR,
+                                response, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
-  if (err == UBLOX_AT_ERROR_SUCCESS)
+  if (err == UBX_CELL_ERROR_SUCCESS)
   {
     int scanned = 0;
     char *searchPtr = strstr(response, "+UFTPER:");
@@ -4731,7 +4731,7 @@ UBLOX_AT_error_t UBLOX_AT::getFTPprotocolError(int *error_code, int *error_code2
     }
     else
     {
-      err = UBLOX_AT_ERROR_UNEXPECTED_RESPONSE;
+      err = UBX_CELL_ERROR_UNEXPECTED_RESPONSE;
     }
   }
 
@@ -4739,73 +4739,73 @@ UBLOX_AT_error_t UBLOX_AT::getFTPprotocolError(int *error_code, int *error_code2
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::resetSecurityProfile(int secprofile)
+UBX_CELL_error_t UBX_CELL::resetSecurityProfile(int secprofile)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_SEC_PROFILE) + 6);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_SEC_PROFILE) + 6);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
 
-  sprintf(command, "%s=%d", UBLOX_AT_SEC_PROFILE, secprofile);
+  sprintf(command, "%s=%d", UBX_CELL_SEC_PROFILE, secprofile);
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, nullptr,
-                                UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr,
+                                UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
   free(command);
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::configSecurityProfile(int secprofile, UBLOX_AT_sec_profile_parameter_t parameter, int value)
+UBX_CELL_error_t UBX_CELL::configSecurityProfile(int secprofile, UBX_CELL_sec_profile_parameter_t parameter, int value)
 {
-    UBLOX_AT_error_t err;
+    UBX_CELL_error_t err;
     char *command;
 
-    command = ublox_at_calloc_char(strlen(UBLOX_AT_SEC_PROFILE) + 10);
+    command = ubx_cell_calloc_char(strlen(UBX_CELL_SEC_PROFILE) + 10);
     if (command == nullptr)
-      return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-    sprintf(command, "%s=%d,%d,%d", UBLOX_AT_SEC_PROFILE, secprofile,parameter,value);
-    err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, nullptr,
-                                  UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+      return UBX_CELL_ERROR_OUT_OF_MEMORY;
+    sprintf(command, "%s=%d,%d,%d", UBX_CELL_SEC_PROFILE, secprofile,parameter,value);
+    err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr,
+                                  UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
     free(command);
     return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::configSecurityProfileString(int secprofile, UBLOX_AT_sec_profile_parameter_t parameter, String value)
+UBX_CELL_error_t UBX_CELL::configSecurityProfileString(int secprofile, UBX_CELL_sec_profile_parameter_t parameter, String value)
 {
-    UBLOX_AT_error_t err;
+    UBX_CELL_error_t err;
     char *command;
-    command = ublox_at_calloc_char(strlen(UBLOX_AT_SEC_PROFILE) + value.length() + 10);
+    command = ubx_cell_calloc_char(strlen(UBX_CELL_SEC_PROFILE) + value.length() + 10);
     if (command == nullptr)
-      return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-    sprintf(command, "%s=%d,%d,\"%s\"", UBLOX_AT_SEC_PROFILE, secprofile,parameter,value.c_str());
-    err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, nullptr,
-                                  UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+      return UBX_CELL_ERROR_OUT_OF_MEMORY;
+    sprintf(command, "%s=%d,%d,\"%s\"", UBX_CELL_SEC_PROFILE, secprofile,parameter,value.c_str());
+    err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr,
+                                  UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
     free(command);
     return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::setSecurityManager(UBLOX_AT_sec_manager_opcode_t opcode, UBLOX_AT_sec_manager_parameter_t parameter, String name, String data)
+UBX_CELL_error_t UBX_CELL::setSecurityManager(UBX_CELL_sec_manager_opcode_t opcode, UBX_CELL_sec_manager_parameter_t parameter, String name, String data)
 {
   char *command;
   char *response;
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_SEC_MANAGER) + name.length() + 20);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_SEC_MANAGER) + name.length() + 20);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  response = ublox_at_calloc_char(minimumResponseAllocation);
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  response = ubx_cell_calloc_char(minimumResponseAllocation);
   if (response == nullptr)
   {
     free(command);
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
   }
   int dataLen = data.length();
-  sprintf(command, "%s=%d,%d,\"%s\",%d", UBLOX_AT_SEC_MANAGER, opcode, parameter, name.c_str(), dataLen);
+  sprintf(command, "%s=%d,%d,\"%s\",%d", UBX_CELL_SEC_MANAGER, opcode, parameter, name.c_str(), dataLen);
 
-  err = sendCommandWithResponse(command, ">", response, UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
-  if (err == UBLOX_AT_ERROR_SUCCESS)
+  err = sendCommandWithResponse(command, ">", response, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
+  if (err == UBX_CELL_ERROR_SUCCESS)
   {
     if (_printDebug == true)
     {
@@ -4814,11 +4814,11 @@ UBLOX_AT_error_t UBLOX_AT::setSecurityManager(UBLOX_AT_sec_manager_opcode_t opco
       _debugPort->println(F(" bytes"));
     }
     hwWriteData(data.c_str(), dataLen);
-    err = waitForResponse(UBLOX_AT_RESPONSE_OK, UBLOX_AT_RESPONSE_ERROR, UBLOX_AT_STANDARD_RESPONSE_TIMEOUT*3);
+    err = waitForResponse(UBX_CELL_RESPONSE_OK, UBX_CELL_RESPONSE_ERROR, UBX_CELL_STANDARD_RESPONSE_TIMEOUT*3);
   }
 
 
-  if (err != UBLOX_AT_ERROR_SUCCESS)
+  if (err != UBX_CELL_ERROR_SUCCESS)
   {
     if (_printDebug == true)
     {
@@ -4835,143 +4835,143 @@ UBLOX_AT_error_t UBLOX_AT::setSecurityManager(UBLOX_AT_sec_manager_opcode_t opco
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::setPDPconfiguration(int profile, UBLOX_AT_pdp_configuration_parameter_t parameter, int value)
+UBX_CELL_error_t UBX_CELL::setPDPconfiguration(int profile, UBX_CELL_pdp_configuration_parameter_t parameter, int value)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
 
-  if (profile >= UBLOX_AT_NUM_PSD_PROFILES)
-    return UBLOX_AT_ERROR_ERROR;
+  if (profile >= UBX_CELL_NUM_PSD_PROFILES)
+    return UBX_CELL_ERROR_ERROR;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_MESSAGE_PDP_CONFIG) + 24);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_MESSAGE_PDP_CONFIG) + 24);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=%d,%d,%d", UBLOX_AT_MESSAGE_PDP_CONFIG, profile, parameter,
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s=%d,%d,%d", UBX_CELL_MESSAGE_PDP_CONFIG, profile, parameter,
           value);
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, nullptr,
-                                UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr,
+                                UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
   free(command);
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::setPDPconfiguration(int profile, UBLOX_AT_pdp_configuration_parameter_t parameter, UBLOX_AT_pdp_protocol_type_t value)
+UBX_CELL_error_t UBX_CELL::setPDPconfiguration(int profile, UBX_CELL_pdp_configuration_parameter_t parameter, UBX_CELL_pdp_protocol_type_t value)
 {
   return (setPDPconfiguration(profile, parameter, (int)value));
 }
 
-UBLOX_AT_error_t UBLOX_AT::setPDPconfiguration(int profile, UBLOX_AT_pdp_configuration_parameter_t parameter, String value)
+UBX_CELL_error_t UBX_CELL::setPDPconfiguration(int profile, UBX_CELL_pdp_configuration_parameter_t parameter, String value)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
 
-  if (profile >= UBLOX_AT_NUM_PSD_PROFILES)
-    return UBLOX_AT_ERROR_ERROR;
+  if (profile >= UBX_CELL_NUM_PSD_PROFILES)
+    return UBX_CELL_ERROR_ERROR;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_MESSAGE_PDP_CONFIG) + 64);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_MESSAGE_PDP_CONFIG) + 64);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=%d,%d,\"%s\"", UBLOX_AT_MESSAGE_PDP_CONFIG, profile, parameter,
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s=%d,%d,\"%s\"", UBX_CELL_MESSAGE_PDP_CONFIG, profile, parameter,
           value.c_str());
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, nullptr,
-                                UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr,
+                                UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
   free(command);
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::setPDPconfiguration(int profile, UBLOX_AT_pdp_configuration_parameter_t parameter, IPAddress value)
+UBX_CELL_error_t UBX_CELL::setPDPconfiguration(int profile, UBX_CELL_pdp_configuration_parameter_t parameter, IPAddress value)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
 
-  if (profile >= UBLOX_AT_NUM_PSD_PROFILES)
-    return UBLOX_AT_ERROR_ERROR;
+  if (profile >= UBX_CELL_NUM_PSD_PROFILES)
+    return UBX_CELL_ERROR_ERROR;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_MESSAGE_PDP_CONFIG) + 64);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_MESSAGE_PDP_CONFIG) + 64);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=%d,%d,\"%d.%d.%d.%d\"", UBLOX_AT_MESSAGE_PDP_CONFIG, profile, parameter,
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s=%d,%d,\"%d.%d.%d.%d\"", UBX_CELL_MESSAGE_PDP_CONFIG, profile, parameter,
           value[0], value[1], value[2], value[3]);
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, nullptr,
-                                UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr,
+                                UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
   free(command);
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::performPDPaction(int profile, UBLOX_AT_pdp_actions_t action)
+UBX_CELL_error_t UBX_CELL::performPDPaction(int profile, UBX_CELL_pdp_actions_t action)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
 
-  if (profile >= UBLOX_AT_NUM_PSD_PROFILES)
-    return UBLOX_AT_ERROR_ERROR;
+  if (profile >= UBX_CELL_NUM_PSD_PROFILES)
+    return UBX_CELL_ERROR_ERROR;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_MESSAGE_PDP_ACTION) + 32);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_MESSAGE_PDP_ACTION) + 32);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=%d,%d", UBLOX_AT_MESSAGE_PDP_ACTION, profile, action);
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s=%d,%d", UBX_CELL_MESSAGE_PDP_ACTION, profile, action);
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, nullptr,
-                                UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr,
+                                UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
   free(command);
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::activatePDPcontext(bool status, int cid)
+UBX_CELL_error_t UBX_CELL::activatePDPcontext(bool status, int cid)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
 
-  if (cid >= UBLOX_AT_NUM_PDP_CONTEXT_IDENTIFIERS)
-    return UBLOX_AT_ERROR_ERROR;
+  if (cid >= UBX_CELL_NUM_PDP_CONTEXT_IDENTIFIERS)
+    return UBX_CELL_ERROR_ERROR;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_MESSAGE_PDP_CONTEXT_ACTIVATE) + 32);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_MESSAGE_PDP_CONTEXT_ACTIVATE) + 32);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
   if (cid == -1)
-    sprintf(command, "%s=%d", UBLOX_AT_MESSAGE_PDP_CONTEXT_ACTIVATE, status);
+    sprintf(command, "%s=%d", UBX_CELL_MESSAGE_PDP_CONTEXT_ACTIVATE, status);
   else
-    sprintf(command, "%s=%d,%d", UBLOX_AT_MESSAGE_PDP_CONTEXT_ACTIVATE, status, cid);
+    sprintf(command, "%s=%d,%d", UBX_CELL_MESSAGE_PDP_CONTEXT_ACTIVATE, status, cid);
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, nullptr,
-                                UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr,
+                                UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
   free(command);
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::getNetworkAssignedIPAddress(int profile, IPAddress *address)
+UBX_CELL_error_t UBX_CELL::getNetworkAssignedIPAddress(int profile, IPAddress *address)
 {
   char *command;
   char *response;
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   int scanNum = 0;
   int profileStore = 0;
   int paramTag = 0; // 0: IP address: dynamic IP address assigned during PDP context activation
   int paramVals[4];
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_NETWORK_ASSIGNED_DATA) + 16);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_NETWORK_ASSIGNED_DATA) + 16);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=%d,%d", UBLOX_AT_NETWORK_ASSIGNED_DATA, profile, paramTag);
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s=%d,%d", UBX_CELL_NETWORK_ASSIGNED_DATA, profile, paramTag);
 
-  response = ublox_at_calloc_char(minimumResponseAllocation);
+  response = ubx_cell_calloc_char(minimumResponseAllocation);
   if (response == nullptr)
   {
     free(command);
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
   }
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, response,
-                                UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, response,
+                                UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
-  if (err == UBLOX_AT_ERROR_SUCCESS)
+  if (err == UBX_CELL_ERROR_SUCCESS)
   {
     char *searchPtr = strstr(response, "+UPSND:");
     if (searchPtr != nullptr)
@@ -4991,7 +4991,7 @@ UBLOX_AT_error_t UBLOX_AT::getNetworkAssignedIPAddress(int profile, IPAddress *a
       }
       free(command);
       free(response);
-      return UBLOX_AT_ERROR_UNEXPECTED_RESPONSE;
+      return UBX_CELL_ERROR_UNEXPECTED_RESPONSE;
     }
 
     IPAddress tempAddress = { (uint8_t)paramVals[0], (uint8_t)paramVals[1],
@@ -5005,29 +5005,29 @@ UBLOX_AT_error_t UBLOX_AT::getNetworkAssignedIPAddress(int profile, IPAddress *a
   return err;
 }
 
-bool UBLOX_AT::isGPSon(void)
+bool UBX_CELL::isGPSon(void)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
   char *response;
   bool on = false;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_GNSS_POWER) + 2);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_GNSS_POWER) + 2);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s?", UBLOX_AT_GNSS_POWER);
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s?", UBX_CELL_GNSS_POWER);
 
-  response = ublox_at_calloc_char(minimumResponseAllocation);
+  response = ubx_cell_calloc_char(minimumResponseAllocation);
   if (response == nullptr)
   {
     free(command);
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
   }
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, response,
-                                UBLOX_AT_10_SEC_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, response,
+                                UBX_CELL_10_SEC_TIMEOUT);
 
-  if (err == UBLOX_AT_ERROR_SUCCESS)
+  if (err == UBX_CELL_ERROR_SUCCESS)
   {
     // Example response: "+UGPS: 0" for off "+UGPS: 1,0,1" for on
     // Search for a ':' followed by a '1' or ' 1'
@@ -5046,9 +5046,9 @@ bool UBLOX_AT::isGPSon(void)
   return on;
 }
 
-UBLOX_AT_error_t UBLOX_AT::gpsPower(bool enable, gnss_system_t gnss_sys, gnss_aiding_mode_t gnss_aiding)
+UBX_CELL_error_t UBX_CELL::gpsPower(bool enable, gnss_system_t gnss_sys, gnss_aiding_mode_t gnss_aiding)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
   bool gpsState;
 
@@ -5056,90 +5056,90 @@ UBLOX_AT_error_t UBLOX_AT::gpsPower(bool enable, gnss_system_t gnss_sys, gnss_ai
   gpsState = isGPSon();
   if ((enable && gpsState) || (!enable && !gpsState))
   {
-    return UBLOX_AT_ERROR_SUCCESS;
+    return UBX_CELL_ERROR_SUCCESS;
   }
 
   // GPS power management
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_GNSS_POWER) + 32); // gnss_sys could be up to three digits
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_GNSS_POWER) + 32); // gnss_sys could be up to three digits
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
   if (enable)
   {
-    sprintf(command, "%s=1,%d,%d", UBLOX_AT_GNSS_POWER, gnss_aiding, gnss_sys);
+    sprintf(command, "%s=1,%d,%d", UBX_CELL_GNSS_POWER, gnss_aiding, gnss_sys);
   }
   else
   {
-    sprintf(command, "%s=0", UBLOX_AT_GNSS_POWER);
+    sprintf(command, "%s=0", UBX_CELL_GNSS_POWER);
   }
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, nullptr, 10000);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr, 10000);
 
   free(command);
   return err;
 }
 
 /*
-UBLOX_AT_error_t UBLOX_AT::gpsEnableClock(bool enable)
+UBX_CELL_error_t UBX_CELL::gpsEnableClock(bool enable)
 {
     // AT+UGZDA=<0,1>
-    UBLOX_AT_error_t err = UBLOX_AT_ERROR_SUCCESS;
+    UBX_CELL_error_t err = UBX_CELL_ERROR_SUCCESS;
     return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::gpsGetClock(struct ClockData *clock)
+UBX_CELL_error_t UBX_CELL::gpsGetClock(struct ClockData *clock)
 {
     // AT+UGZDA?
-    UBLOX_AT_error_t err = UBLOX_AT_ERROR_SUCCESS;
+    UBX_CELL_error_t err = UBX_CELL_ERROR_SUCCESS;
     return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::gpsEnableFix(bool enable)
+UBX_CELL_error_t UBX_CELL::gpsEnableFix(bool enable)
 {
     // AT+UGGGA=<0,1>
-    UBLOX_AT_error_t err = UBLOX_AT_ERROR_SUCCESS;
+    UBX_CELL_error_t err = UBX_CELL_ERROR_SUCCESS;
     return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::gpsGetFix(struct PositionData *pos)
+UBX_CELL_error_t UBX_CELL::gpsGetFix(struct PositionData *pos)
 {
     // AT+UGGGA?
-    UBLOX_AT_error_t err = UBLOX_AT_ERROR_SUCCESS;
+    UBX_CELL_error_t err = UBX_CELL_ERROR_SUCCESS;
     return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::gpsEnablePos(bool enable)
+UBX_CELL_error_t UBX_CELL::gpsEnablePos(bool enable)
 {
     // AT+UGGLL=<0,1>
-    UBLOX_AT_error_t err = UBLOX_AT_ERROR_SUCCESS;
+    UBX_CELL_error_t err = UBX_CELL_ERROR_SUCCESS;
     return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::gpsGetPos(struct PositionData *pos)
+UBX_CELL_error_t UBX_CELL::gpsGetPos(struct PositionData *pos)
 {
     // AT+UGGLL?
-    UBLOX_AT_error_t err = UBLOX_AT_ERROR_SUCCESS;
+    UBX_CELL_error_t err = UBX_CELL_ERROR_SUCCESS;
     return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::gpsEnableSat(bool enable)
+UBX_CELL_error_t UBX_CELL::gpsEnableSat(bool enable)
 {
     // AT+UGGSV=<0,1>
-    UBLOX_AT_error_t err = UBLOX_AT_ERROR_SUCCESS;
+    UBX_CELL_error_t err = UBX_CELL_ERROR_SUCCESS;
     return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::gpsGetSat(uint8_t *sats)
+UBX_CELL_error_t UBX_CELL::gpsGetSat(uint8_t *sats)
 {
     // AT+UGGSV?
-    UBLOX_AT_error_t err = UBLOX_AT_ERROR_SUCCESS;
+    UBX_CELL_error_t err = UBX_CELL_ERROR_SUCCESS;
     return err;
 }
 */
 
-UBLOX_AT_error_t UBLOX_AT::gpsEnableRmc(bool enable)
+UBX_CELL_error_t UBX_CELL::gpsEnableRmc(bool enable)
 {
   // AT+UGRMC=<0,1>
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
 
   // ** Don't call gpsPower here. It causes problems for +UTIME and the PPS signal **
@@ -5147,51 +5147,51 @@ UBLOX_AT_error_t UBLOX_AT::gpsEnableRmc(bool enable)
   // if (!isGPSon())
   // {
   //     err = gpsPower(true);
-  //     if (err != UBLOX_AT_ERROR_SUCCESS)
+  //     if (err != UBX_CELL_ERROR_SUCCESS)
   //     {
   //         return err;
   //     }
   // }
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_GNSS_GPRMC) + 3);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_GNSS_GPRMC) + 3);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=%d", UBLOX_AT_GNSS_GPRMC, enable ? 1 : 0);
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s=%d", UBX_CELL_GNSS_GPRMC, enable ? 1 : 0);
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, nullptr, UBLOX_AT_10_SEC_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr, UBX_CELL_10_SEC_TIMEOUT);
 
   free(command);
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::gpsGetRmc(struct PositionData *pos, struct SpeedData *spd,
+UBX_CELL_error_t UBX_CELL::gpsGetRmc(struct PositionData *pos, struct SpeedData *spd,
                                    struct ClockData *clk, bool *valid)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
   char *response;
   char *rmcBegin;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_GNSS_GPRMC) + 2);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_GNSS_GPRMC) + 2);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s?", UBLOX_AT_GNSS_GPRMC);
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s?", UBX_CELL_GNSS_GPRMC);
 
-  response = ublox_at_calloc_char(minimumResponseAllocation);
+  response = ubx_cell_calloc_char(minimumResponseAllocation);
   if (response == nullptr)
   {
     free(command);
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
   }
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, response, UBLOX_AT_10_SEC_TIMEOUT);
-  if (err == UBLOX_AT_ERROR_SUCCESS)
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, response, UBX_CELL_10_SEC_TIMEOUT);
+  if (err == UBX_CELL_ERROR_SUCCESS)
   {
     // Fast-forward response string to $GPRMC starter
     rmcBegin = strstr(response, "$GPRMC");
     if (rmcBegin == nullptr)
     {
-      err = UBLOX_AT_ERROR_UNEXPECTED_RESPONSE;
+      err = UBX_CELL_ERROR_UNEXPECTED_RESPONSE;
     }
     else
     {
@@ -5205,26 +5205,26 @@ UBLOX_AT_error_t UBLOX_AT::gpsGetRmc(struct PositionData *pos, struct SpeedData 
 }
 
 /*
-UBLOX_AT_error_t UBLOX_AT::gpsEnableSpeed(bool enable)
+UBX_CELL_error_t UBX_CELL::gpsEnableSpeed(bool enable)
 {
     // AT+UGVTG=<0,1>
-    UBLOX_AT_error_t err = UBLOX_AT_ERROR_SUCCESS;
+    UBX_CELL_error_t err = UBX_CELL_ERROR_SUCCESS;
     return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::gpsGetSpeed(struct SpeedData *speed)
+UBX_CELL_error_t UBX_CELL::gpsGetSpeed(struct SpeedData *speed)
 {
     // AT+UGVTG?
-    UBLOX_AT_error_t err = UBLOX_AT_ERROR_SUCCESS;
+    UBX_CELL_error_t err = UBX_CELL_ERROR_SUCCESS;
     return err;
 }
 */
 
-UBLOX_AT_error_t UBLOX_AT::gpsRequest(unsigned int timeout, uint32_t accuracy,
+UBX_CELL_error_t UBX_CELL::gpsRequest(unsigned int timeout, uint32_t accuracy,
                                     bool detailed, unsigned int sensor)
 {
   // AT+ULOC=2,<useCellLocate>,<detailed>,<timeout>,<accuracy>
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
 
   // This function will only work if the GPS module is initially turned off.
@@ -5238,40 +5238,40 @@ UBLOX_AT_error_t UBLOX_AT::gpsRequest(unsigned int timeout, uint32_t accuracy,
   if (accuracy > 999999)
     accuracy = 999999;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_GNSS_REQUEST_LOCATION) + 24);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_GNSS_REQUEST_LOCATION) + 24);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
 #if defined(ARDUINO_ARCH_ESP32) || defined(ARDUINO_ARCH_ESP8266)
-  sprintf(command, "%s=2,%d,%d,%d,%d", UBLOX_AT_GNSS_REQUEST_LOCATION,
+  sprintf(command, "%s=2,%d,%d,%d,%d", UBX_CELL_GNSS_REQUEST_LOCATION,
           sensor, detailed ? 1 : 0, timeout, accuracy);
 #else
-  sprintf(command, "%s=2,%d,%d,%d,%ld", UBLOX_AT_GNSS_REQUEST_LOCATION,
+  sprintf(command, "%s=2,%d,%d,%d,%ld", UBX_CELL_GNSS_REQUEST_LOCATION,
           sensor, detailed ? 1 : 0, timeout, accuracy);
 #endif
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, nullptr, UBLOX_AT_10_SEC_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr, UBX_CELL_10_SEC_TIMEOUT);
 
   free(command);
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::gpsAidingServerConf(const char *primaryServer, const char *secondaryServer, const char *authToken,
+UBX_CELL_error_t UBX_CELL::gpsAidingServerConf(const char *primaryServer, const char *secondaryServer, const char *authToken,
                                              unsigned int days, unsigned int period, unsigned int resolution,
                                              unsigned int gnssTypes, unsigned int mode, unsigned int dataType)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_AIDING_SERVER_CONFIGURATION) + 256);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_AIDING_SERVER_CONFIGURATION) + 256);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
 
-  sprintf(command, "%s=\"%s\",\"%s\",\"%s\",%d,%d,%d,%d,%d,%d", UBLOX_AT_AIDING_SERVER_CONFIGURATION,
+  sprintf(command, "%s=\"%s\",\"%s\",\"%s\",%d,%d,%d,%d,%d,%d", UBX_CELL_AIDING_SERVER_CONFIGURATION,
           primaryServer, secondaryServer, authToken,
           days, period, resolution, gnssTypes, mode, dataType);
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, nullptr,
-                                UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr,
+                                UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
   free(command);
   return err;
@@ -5279,32 +5279,32 @@ UBLOX_AT_error_t UBLOX_AT::gpsAidingServerConf(const char *primaryServer, const 
 
 
 // OK for text files. But will fail with binary files (containing \0) on some platforms.
-UBLOX_AT_error_t UBLOX_AT::appendFileContents(String filename, const char *str, int len)
+UBX_CELL_error_t UBX_CELL::appendFileContents(String filename, const char *str, int len)
 {
   char *command;
   char *response;
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_FILE_SYSTEM_DOWNLOAD_FILE) + filename.length() + 10);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_FILE_SYSTEM_DOWNLOAD_FILE) + filename.length() + 10);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  response = ublox_at_calloc_char(minimumResponseAllocation);
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  response = ubx_cell_calloc_char(minimumResponseAllocation);
   if (response == nullptr)
   {
     free(command);
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
   }
   int dataLen = len == -1 ? strlen(str) : len;
-  sprintf(command, "%s=\"%s\",%d", UBLOX_AT_FILE_SYSTEM_DOWNLOAD_FILE, filename.c_str(), dataLen);
+  sprintf(command, "%s=\"%s\",%d", UBX_CELL_FILE_SYSTEM_DOWNLOAD_FILE, filename.c_str(), dataLen);
 
   err = sendCommandWithResponse(command, ">", response,
-                                UBLOX_AT_STANDARD_RESPONSE_TIMEOUT*2);
+                                UBX_CELL_STANDARD_RESPONSE_TIMEOUT*2);
 
   unsigned long writeDelay = millis();
   while (millis() < (writeDelay + 50))
     delay(1); //uBlox specification says to wait 50ms after receiving "@" to write data.
 
-  if (err == UBLOX_AT_ERROR_SUCCESS)
+  if (err == UBX_CELL_ERROR_SUCCESS)
   {
     if (_printDebug == true)
     {
@@ -5314,9 +5314,9 @@ UBLOX_AT_error_t UBLOX_AT::appendFileContents(String filename, const char *str, 
     }
     hwWriteData(str, dataLen);
 
-    err = waitForResponse(UBLOX_AT_RESPONSE_OK, UBLOX_AT_RESPONSE_ERROR, UBLOX_AT_STANDARD_RESPONSE_TIMEOUT*5);
+    err = waitForResponse(UBX_CELL_RESPONSE_OK, UBX_CELL_RESPONSE_ERROR, UBX_CELL_STANDARD_RESPONSE_TIMEOUT*5);
   }
-  if (err != UBLOX_AT_ERROR_SUCCESS)
+  if (err != UBX_CELL_ERROR_SUCCESS)
   {
     if (_printDebug == true)
     {
@@ -5333,23 +5333,23 @@ UBLOX_AT_error_t UBLOX_AT::appendFileContents(String filename, const char *str, 
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::appendFileContents(String filename, String str)
+UBX_CELL_error_t UBX_CELL::appendFileContents(String filename, String str)
 {
     return appendFileContents(filename, str.c_str(), str.length());
 }
 
 
 // OK for text files. But will fail with binary files (containing \0) on some platforms.
-UBLOX_AT_error_t UBLOX_AT::getFileContents(String filename, String *contents)
+UBX_CELL_error_t UBX_CELL::getFileContents(String filename, String *contents)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
   char *response;
 
   // Start by getting the file size so we know in advance how much data to expect
   int fileSize = 0;
   err = getFileSize(filename, &fileSize);
-  if (err != UBLOX_AT_SUCCESS)
+  if (err != UBX_CELL_SUCCESS)
   {
     if (_printDebug == true)
     {
@@ -5359,12 +5359,12 @@ UBLOX_AT_error_t UBLOX_AT::getFileContents(String filename, String *contents)
     return err;
   }
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_FILE_SYSTEM_READ_FILE) + filename.length() + 8);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_FILE_SYSTEM_READ_FILE) + filename.length() + 8);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=\"%s\"", UBLOX_AT_FILE_SYSTEM_READ_FILE, filename.c_str());
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s=\"%s\"", UBX_CELL_FILE_SYSTEM_READ_FILE, filename.c_str());
 
-  response = ublox_at_calloc_char(fileSize + minimumResponseAllocation);
+  response = ubx_cell_calloc_char(fileSize + minimumResponseAllocation);
   if (response == nullptr)
   {
     if (_printDebug == true)
@@ -5373,7 +5373,7 @@ UBLOX_AT_error_t UBLOX_AT::getFileContents(String filename, String *contents)
       _debugPort->println(fileSize + minimumResponseAllocation);
     }
     free(command);
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
   }
 
   // A large file will completely fill the backlog buffer - but it will be pruned afterwards
@@ -5381,10 +5381,10 @@ UBLOX_AT_error_t UBLOX_AT::getFileContents(String filename, String *contents)
   // To try and avoid this, look for \"\r\nOK\r\n
   const char fileReadTerm[] = "\r\nOK\r\n"; //LARA-R6 returns "\"\r\n\r\nOK\r\n" while SARA-R5 return "\"\r\nOK\r\n";
   err = sendCommandWithResponse(command, fileReadTerm,
-                                response, (5 * UBLOX_AT_STANDARD_RESPONSE_TIMEOUT),
+                                response, (5 * UBX_CELL_STANDARD_RESPONSE_TIMEOUT),
                                 (fileSize + minimumResponseAllocation));
 
-  if (err != UBLOX_AT_ERROR_SUCCESS)
+  if (err != UBX_CELL_ERROR_SUCCESS)
   {
     if (_printDebug == true)
     {
@@ -5418,7 +5418,7 @@ UBLOX_AT_error_t UBLOX_AT::getFileContents(String filename, String *contents)
         }
         free(command);
         free(response);
-        return UBLOX_AT_ERROR_UNEXPECTED_RESPONSE;
+        return UBX_CELL_ERROR_UNEXPECTED_RESPONSE;
       }
 
       int bytesRead = 0;
@@ -5437,7 +5437,7 @@ UBLOX_AT_error_t UBLOX_AT::getFileContents(String filename, String *contents)
         _debugPort->print(F("getFileContents: total bytes read: "));
         _debugPort->println(bytesRead);
       }
-      err = UBLOX_AT_ERROR_SUCCESS;
+      err = UBX_CELL_ERROR_SUCCESS;
     }
     else
     {
@@ -5446,14 +5446,14 @@ UBLOX_AT_error_t UBLOX_AT::getFileContents(String filename, String *contents)
         _debugPort->print(F("getFileContents: sscanf failed! scanned is "));
         _debugPort->println(scanned);
       }
-      err = UBLOX_AT_ERROR_UNEXPECTED_RESPONSE;
+      err = UBX_CELL_ERROR_UNEXPECTED_RESPONSE;
     }
   }
   else
   {
     if (_printDebug == true)
       _debugPort->println(F("getFileContents: strstr failed!"));
-    err = UBLOX_AT_ERROR_UNEXPECTED_RESPONSE;
+    err = UBX_CELL_ERROR_UNEXPECTED_RESPONSE;
   }
 
   free(command);
@@ -5462,16 +5462,16 @@ UBLOX_AT_error_t UBLOX_AT::getFileContents(String filename, String *contents)
 }
 
 // OK for binary files. Make sure contents can hold the entire file. Get the size first with getFileSize.
-UBLOX_AT_error_t UBLOX_AT::getFileContents(String filename, char *contents)
+UBX_CELL_error_t UBX_CELL::getFileContents(String filename, char *contents)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
   char *response;
 
   // Start by getting the file size so we know in advance how much data to expect
   int fileSize = 0;
   err = getFileSize(filename, &fileSize);
-  if (err != UBLOX_AT_SUCCESS)
+  if (err != UBX_CELL_SUCCESS)
   {
     if (_printDebug == true)
     {
@@ -5481,12 +5481,12 @@ UBLOX_AT_error_t UBLOX_AT::getFileContents(String filename, char *contents)
     return err;
   }
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_FILE_SYSTEM_READ_FILE) + filename.length() + 8);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_FILE_SYSTEM_READ_FILE) + filename.length() + 8);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=\"%s\"", UBLOX_AT_FILE_SYSTEM_READ_FILE, filename.c_str());
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s=\"%s\"", UBX_CELL_FILE_SYSTEM_READ_FILE, filename.c_str());
 
-  response = ublox_at_calloc_char(fileSize + minimumResponseAllocation);
+  response = ubx_cell_calloc_char(fileSize + minimumResponseAllocation);
   if (response == nullptr)
   {
     if (_printDebug == true)
@@ -5495,7 +5495,7 @@ UBLOX_AT_error_t UBLOX_AT::getFileContents(String filename, char *contents)
       _debugPort->println(fileSize + minimumResponseAllocation);
     }
     free(command);
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
   }
 
   // A large file will completely fill the backlog buffer - but it will be pruned afterwards
@@ -5503,10 +5503,10 @@ UBLOX_AT_error_t UBLOX_AT::getFileContents(String filename, char *contents)
   // To try and avoid this, look for \"\r\nOK\r\n
   const char fileReadTerm[] = "\"\r\nOK\r\n";
   err = sendCommandWithResponse(command, fileReadTerm,
-                                response, (5 * UBLOX_AT_STANDARD_RESPONSE_TIMEOUT),
+                                response, (5 * UBX_CELL_STANDARD_RESPONSE_TIMEOUT),
                                 (fileSize + minimumResponseAllocation));
 
-  if (err != UBLOX_AT_ERROR_SUCCESS)
+  if (err != UBX_CELL_ERROR_SUCCESS)
   {
     if (_printDebug == true)
     {
@@ -5540,7 +5540,7 @@ UBLOX_AT_error_t UBLOX_AT::getFileContents(String filename, char *contents)
         }
         free(command);
         free(response);
-        return UBLOX_AT_ERROR_UNEXPECTED_RESPONSE;
+        return UBX_CELL_ERROR_UNEXPECTED_RESPONSE;
       }
 
       int bytesRead = 0;
@@ -5556,7 +5556,7 @@ UBLOX_AT_error_t UBLOX_AT::getFileContents(String filename, char *contents)
         _debugPort->print(F("getFileContents: total bytes read: "));
         _debugPort->println(bytesRead);
       }
-      err = UBLOX_AT_ERROR_SUCCESS;
+      err = UBX_CELL_ERROR_SUCCESS;
     }
     else
     {
@@ -5565,14 +5565,14 @@ UBLOX_AT_error_t UBLOX_AT::getFileContents(String filename, char *contents)
         _debugPort->print(F("getFileContents: sscanf failed! scanned is "));
         _debugPort->println(scanned);
       }
-      err = UBLOX_AT_ERROR_UNEXPECTED_RESPONSE;
+      err = UBX_CELL_ERROR_UNEXPECTED_RESPONSE;
     }
   }
   else
   {
     if (_printDebug == true)
       _debugPort->println(F("getFileContents: strstr failed!"));
-    err = UBLOX_AT_ERROR_UNEXPECTED_RESPONSE;
+    err = UBX_CELL_ERROR_UNEXPECTED_RESPONSE;
   }
 
   free(command);
@@ -5580,12 +5580,12 @@ UBLOX_AT_error_t UBLOX_AT::getFileContents(String filename, char *contents)
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::getFileBlock(const String& filename, char* buffer, size_t offset, size_t requested_length, size_t& bytes_read)
+UBX_CELL_error_t UBX_CELL::getFileBlock(const String& filename, char* buffer, size_t offset, size_t requested_length, size_t& bytes_read)
 {
   bytes_read = 0;
   if (filename.length() < 1 || buffer == nullptr || requested_length < 1)
   {
-      return UBLOX_AT_ERROR_UNEXPECTED_PARAM;
+      return UBX_CELL_ERROR_UNEXPECTED_PARAM;
   }
 
   // trying to get a byte at a time does not seem to be reliable so this method must use
@@ -5596,11 +5596,11 @@ UBLOX_AT_error_t UBLOX_AT::getFileBlock(const String& filename, char* buffer, si
     {
       _debugPort->println(F("getFileBlock: only works with a hardware UART"));
     }
-    return UBLOX_AT_ERROR_INVALID;
+    return UBX_CELL_ERROR_INVALID;
   }
 
   size_t cmd_len = filename.length() + 32;
-  char* cmd = ublox_at_calloc_char(cmd_len);
+  char* cmd = ubx_cell_calloc_char(cmd_len);
   sprintf(cmd, "at+urdblock=\"%s\",%zu,%zu\r\n", filename.c_str(), offset, requested_length);
   sendCommand(cmd, false);
 
@@ -5646,29 +5646,29 @@ UBLOX_AT_error_t UBLOX_AT::getFileBlock(const String& filename, char* buffer, si
     bytes_remaining -= rc;
   }
 
-  return UBLOX_AT_ERROR_SUCCESS;
+  return UBX_CELL_ERROR_SUCCESS;
 }
 
-UBLOX_AT_error_t UBLOX_AT::getFileSize(String filename, int *size)
+UBX_CELL_error_t UBX_CELL::getFileSize(String filename, int *size)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
   char *response;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_FILE_SYSTEM_LIST_FILES) + filename.length() + 8);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_FILE_SYSTEM_LIST_FILES) + filename.length() + 8);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=2,\"%s\"", UBLOX_AT_FILE_SYSTEM_LIST_FILES, filename.c_str());
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s=2,\"%s\"", UBX_CELL_FILE_SYSTEM_LIST_FILES, filename.c_str());
 
-  response = ublox_at_calloc_char(minimumResponseAllocation);
+  response = ubx_cell_calloc_char(minimumResponseAllocation);
   if (response == nullptr)
   {
     free(command);
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
   }
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, response, UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
-  if (err != UBLOX_AT_ERROR_SUCCESS)
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, response, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
+  if (err != UBX_CELL_ERROR_SUCCESS)
   {
     if (_printDebug == true)
     {
@@ -5694,7 +5694,7 @@ UBLOX_AT_error_t UBLOX_AT::getFileSize(String filename, int *size)
     }
     free(command);
     free(response);
-    return UBLOX_AT_ERROR_UNEXPECTED_RESPONSE;
+    return UBX_CELL_ERROR_UNEXPECTED_RESPONSE;
   }
 
   int fileSize;
@@ -5708,19 +5708,19 @@ UBLOX_AT_error_t UBLOX_AT::getFileSize(String filename, int *size)
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::deleteFile(String filename)
+UBX_CELL_error_t UBX_CELL::deleteFile(String filename)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_FILE_SYSTEM_DELETE_FILE) + filename.length() + 8);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_FILE_SYSTEM_DELETE_FILE) + filename.length() + 8);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=\"%s\"", UBLOX_AT_FILE_SYSTEM_DELETE_FILE, filename.c_str());
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s=\"%s\"", UBX_CELL_FILE_SYSTEM_DELETE_FILE, filename.c_str());
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, nullptr, UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
-  if (err != UBLOX_AT_ERROR_SUCCESS)
+  if (err != UBX_CELL_ERROR_SUCCESS)
   {
     if (_printDebug == true)
     {
@@ -5733,25 +5733,25 @@ UBLOX_AT_error_t UBLOX_AT::deleteFile(String filename)
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::modulePowerOff(void)
+UBX_CELL_error_t UBX_CELL::modulePowerOff(void)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_COMMAND_POWER_OFF) + 6);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_COMMAND_POWER_OFF) + 6);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
 
-  sprintf(command, "%s", UBLOX_AT_COMMAND_POWER_OFF);
+  sprintf(command, "%s", UBX_CELL_COMMAND_POWER_OFF);
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR, nullptr,
-                                UBLOX_AT_POWER_OFF_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr,
+                                UBX_CELL_POWER_OFF_TIMEOUT);
 
   free(command);
   return err;
 }
 
-void UBLOX_AT::modulePowerOn(void)
+void UBX_CELL::modulePowerOn(void)
 {
   if (_powerPin >= 0)
   {
@@ -5768,11 +5768,11 @@ void UBLOX_AT::modulePowerOn(void)
 // Private //
 /////////////
 
-UBLOX_AT_error_t UBLOX_AT::init(unsigned long baud,
-                              UBLOX_AT::UBLOX_AT_init_type_t initType)
+UBX_CELL_error_t UBX_CELL::init(unsigned long baud,
+                              UBX_CELL::UBX_CELL_init_type_t initType)
 {
   int retries = _maxInitTries;
-  UBLOX_AT_error_t err = UBLOX_AT_ERROR_SUCCESS;
+  UBX_CELL_error_t err = UBX_CELL_ERROR_SUCCESS;
 
   beginSerial(baud);
 
@@ -5781,52 +5781,52 @@ UBLOX_AT_error_t UBLOX_AT::init(unsigned long baud,
     if (_printDebug == true)
       _debugPort->println(F("init: Begin module init."));
 
-    if (initType == UBLOX_AT_INIT_AUTOBAUD)
+    if (initType == UBX_CELL_INIT_AUTOBAUD)
     {
       if (_printDebug == true)
         _debugPort->println(F("init: Attempting autobaud connection to module."));
 
       err = autobaud(baud);
 
-      if (err != UBLOX_AT_ERROR_SUCCESS) {
-        initType = UBLOX_AT_INIT_RESET;
+      if (err != UBX_CELL_ERROR_SUCCESS) {
+        initType = UBX_CELL_INIT_RESET;
       }
     }
-    else if (initType == UBLOX_AT_INIT_RESET)
+    else if (initType == UBX_CELL_INIT_RESET)
     {
       if (_printDebug == true)
         _debugPort->println(F("init: Power cycling module."));
 
       powerOff();
-      delay(UBLOX_AT_POWER_OFF_PULSE_PERIOD);
+      delay(UBX_CELL_POWER_OFF_PULSE_PERIOD);
       powerOn();
       beginSerial(baud);
       delay(2000);
 
       err = at();
-      if (err != UBLOX_AT_ERROR_SUCCESS)
+      if (err != UBX_CELL_ERROR_SUCCESS)
       {
-         initType = UBLOX_AT_INIT_AUTOBAUD;
+         initType = UBX_CELL_INIT_AUTOBAUD;
       }
     }
-    if (err == UBLOX_AT_ERROR_SUCCESS)
+    if (err == UBX_CELL_ERROR_SUCCESS)
     {
       err = enableEcho(false); // = disableEcho
-      if (err != UBLOX_AT_ERROR_SUCCESS)
+      if (err != UBX_CELL_ERROR_SUCCESS)
       {
         if (_printDebug == true)
           _debugPort->println(F("init: Module failed echo test."));
-        initType =  UBLOX_AT_INIT_AUTOBAUD;
+        initType =  UBX_CELL_INIT_AUTOBAUD;
       }
     }
   }
-  while ((retries --) && (err != UBLOX_AT_ERROR_SUCCESS));
+  while ((retries --) && (err != UBX_CELL_ERROR_SUCCESS));
 
   // we tried but seems failed
-  if (err != UBLOX_AT_ERROR_SUCCESS) {
+  if (err != UBX_CELL_ERROR_SUCCESS) {
     if (_printDebug == true)
       _debugPort->println(F("init: Module failed to init. Exiting."));
-    return (UBLOX_AT_ERROR_NO_RESPONSE);
+    return (UBX_CELL_ERROR_NO_RESPONSE);
   }
 
   if (_printDebug == true)
@@ -5836,24 +5836,24 @@ UBLOX_AT_error_t UBLOX_AT::init(unsigned long baud,
   setGpioMode(GPIO1, NETWORK_STATUS);
   //setGpioMode(GPIO2, GNSS_SUPPLY_ENABLE);
   setGpioMode(GPIO6, TIME_PULSE_OUTPUT);
-  setSMSMessageFormat(UBLOX_AT_MESSAGE_FORMAT_TEXT);
+  setSMSMessageFormat(UBX_CELL_MESSAGE_FORMAT_TEXT);
   autoTimeZone(_autoTimeZoneForBegin);
-  for (int i = 0; i < UBLOX_AT_NUM_SOCKETS; i++)
+  for (int i = 0; i < UBX_CELL_NUM_SOCKETS; i++)
   {
-    socketClose(i, UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+    socketClose(i, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
   }
 
-  return UBLOX_AT_ERROR_SUCCESS;
+  return UBX_CELL_ERROR_SUCCESS;
 }
 
-void UBLOX_AT::invertPowerPin(bool invert)
+void UBX_CELL::invertPowerPin(bool invert)
 {
   _invertPowerPin = invert;
 }
 
-// Do a graceful power off. Hold the PWR_ON pin low for UBLOX_AT_POWER_OFF_PULSE_PERIOD
+// Do a graceful power off. Hold the PWR_ON pin low for UBX_CELL_POWER_OFF_PULSE_PERIOD
 // Note: +CPWROFF () is preferred to this.
-void UBLOX_AT::powerOff(void)
+void UBX_CELL::powerOff(void)
 {
   if (_powerPin >= 0)
   {
@@ -5866,14 +5866,14 @@ void UBLOX_AT::powerOff(void)
       digitalWrite(_powerPin, HIGH);
     else
       digitalWrite(_powerPin, LOW);
-    delay(UBLOX_AT_POWER_OFF_PULSE_PERIOD);
+    delay(UBX_CELL_POWER_OFF_PULSE_PERIOD);
     pinMode(_powerPin, INPUT); // Return to high-impedance, rely on (e.g.) SARA module internal pull-up
     if (_printDebug == true)
       _debugPort->println(F("powerOff: complete"));
   }
 }
 
-void UBLOX_AT::powerOn(void)
+void UBX_CELL::powerOn(void)
 {
   if (_powerPin >= 0)
   {
@@ -5886,7 +5886,7 @@ void UBLOX_AT::powerOn(void)
       digitalWrite(_powerPin, HIGH);
     else
       digitalWrite(_powerPin, LOW);
-    delay(UBLOX_AT_POWER_ON_PULSE_PERIOD);
+    delay(UBX_CELL_POWER_ON_PULSE_PERIOD);
     pinMode(_powerPin, INPUT); // Return to high-impedance, rely on (e.g.) SARA module internal pull-up
     //delay(2000);               // Do this in init. Wait before sending AT commands to module. 100 is too short.
     if (_printDebug == true)
@@ -5897,7 +5897,7 @@ void UBLOX_AT::powerOn(void)
 //This does an abrupt emergency hardware shutdown of the SARA-R5 series modules.
 //It only works if you have access to both the RESET_N and PWR_ON pins.
 //You cannot use this function on the SparkFun Asset Tracker and RESET_N is tied to the MicroMod processor !RESET!...
-void UBLOX_AT::hwReset(void)
+void UBX_CELL::hwReset(void)
 {
   if ((_resetPin >= 0) && (_powerPin >= 0))
   {
@@ -5918,7 +5918,7 @@ void UBLOX_AT::hwReset(void)
       digitalWrite(_powerPin, LOW);
     }
 
-    delay(UBLOX_AT_RESET_PULSE_PERIOD); // Wait 23 seconds... (Yes, really!)
+    delay(UBX_CELL_RESET_PULSE_PERIOD); // Wait 23 seconds... (Yes, really!)
 
     digitalWrite(_resetPin, LOW); // Now pull RESET_N low
 
@@ -5942,48 +5942,48 @@ void UBLOX_AT::hwReset(void)
   }
 }
 
-UBLOX_AT_error_t UBLOX_AT::functionality(UBLOX_AT_functionality_t function)
+UBX_CELL_error_t UBX_CELL::functionality(UBX_CELL_functionality_t function)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_COMMAND_FUNC) + 16);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_COMMAND_FUNC) + 16);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=%d", UBLOX_AT_COMMAND_FUNC, function);
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s=%d", UBX_CELL_COMMAND_FUNC, function);
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR,
-                                nullptr, UBLOX_AT_3_MIN_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR,
+                                nullptr, UBX_CELL_3_MIN_TIMEOUT);
 
   free(command);
 
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::setMNOprofile(mobile_network_operator_t mno, bool autoReset, bool urcNotification)
+UBX_CELL_error_t UBX_CELL::setMNOprofile(mobile_network_operator_t mno, bool autoReset, bool urcNotification)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_COMMAND_MNO) + 9);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_COMMAND_MNO) + 9);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
   if (mno == MNO_SIM_ICCID) // Only add autoReset and urcNotification if mno is MNO_SIM_ICCID
-    sprintf(command, "%s=%d,%d,%d", UBLOX_AT_COMMAND_MNO, (uint8_t)mno, (uint8_t)autoReset, (uint8_t)urcNotification);
+    sprintf(command, "%s=%d,%d,%d", UBX_CELL_COMMAND_MNO, (uint8_t)mno, (uint8_t)autoReset, (uint8_t)urcNotification);
   else
-    sprintf(command, "%s=%d", UBLOX_AT_COMMAND_MNO, (uint8_t)mno);
+    sprintf(command, "%s=%d", UBX_CELL_COMMAND_MNO, (uint8_t)mno);
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR,
-                                nullptr, UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR,
+                                nullptr, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
   free(command);
 
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::getMNOprofile(mobile_network_operator_t *mno)
+UBX_CELL_error_t UBX_CELL::getMNOprofile(mobile_network_operator_t *mno)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *command;
   char *response;
   mobile_network_operator_t o;
@@ -5992,21 +5992,21 @@ UBLOX_AT_error_t UBLOX_AT::getMNOprofile(mobile_network_operator_t *mno)
   int u;
   int oStore;
 
-  command = ublox_at_calloc_char(strlen(UBLOX_AT_COMMAND_MNO) + 2);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_COMMAND_MNO) + 2);
   if (command == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s?", UBLOX_AT_COMMAND_MNO);
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  sprintf(command, "%s?", UBX_CELL_COMMAND_MNO);
 
-  response = ublox_at_calloc_char(minimumResponseAllocation);
+  response = ubx_cell_calloc_char(minimumResponseAllocation);
   if (response == nullptr)
   {
     free(command);
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
   }
 
-  err = sendCommandWithResponse(command, UBLOX_AT_RESPONSE_OK_OR_ERROR,
-                                response, UBLOX_AT_STANDARD_RESPONSE_TIMEOUT);
-  if (err != UBLOX_AT_ERROR_SUCCESS)
+  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR,
+                                response, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
+  if (err != UBX_CELL_ERROR_SUCCESS)
   {
     free(command);
     free(response);
@@ -6034,7 +6034,7 @@ UBLOX_AT_error_t UBLOX_AT::getMNOprofile(mobile_network_operator_t *mno)
   }
   else
   {
-    err = UBLOX_AT_ERROR_INVALID;
+    err = UBX_CELL_ERROR_INVALID;
   }
 
   free(command);
@@ -6043,7 +6043,7 @@ UBLOX_AT_error_t UBLOX_AT::getMNOprofile(mobile_network_operator_t *mno)
   return err;
 }
 
-UBLOX_AT_error_t UBLOX_AT::waitForResponse(const char *expectedResponse, const char *expectedError, uint16_t timeout)
+UBX_CELL_error_t UBX_CELL::waitForResponse(const char *expectedResponse, const char *expectedError, uint16_t timeout)
 {
   unsigned long timeIn;
   bool found = false;
@@ -6121,13 +6121,13 @@ UBLOX_AT_error_t UBLOX_AT::waitForResponse(const char *expectedResponse, const c
       _debugAtPort->print((error == true) ? expectedError : expectedResponse);
     }
 
-    return (error == true) ? UBLOX_AT_ERROR_ERROR : UBLOX_AT_ERROR_SUCCESS;
+    return (error == true) ? UBX_CELL_ERROR_ERROR : UBX_CELL_ERROR_SUCCESS;
   }
 
-  return UBLOX_AT_ERROR_NO_RESPONSE;
+  return UBX_CELL_ERROR_NO_RESPONSE;
 }
 
-UBLOX_AT_error_t UBLOX_AT::sendCommandWithResponse(
+UBX_CELL_error_t UBX_CELL::sendCommandWithResponse(
     const char *command, const char *expectedResponse, char *responseDest,
     unsigned long commandTimeout, int destSize, bool at)
 {
@@ -6151,11 +6151,11 @@ UBLOX_AT_error_t UBLOX_AT::sendCommandWithResponse(
 
   sendCommand(command, at); //Sending command needs to dump data to backlog buffer as well.
   unsigned long timeIn = millis();
-  if (UBLOX_AT_RESPONSE_OK_OR_ERROR == expectedResponse) {
-    expectedResponse = UBLOX_AT_RESPONSE_OK;
-    expectedError = UBLOX_AT_RESPONSE_ERROR;
-    responseLen = sizeof(UBLOX_AT_RESPONSE_OK)-1;
-    errorLen = sizeof(UBLOX_AT_RESPONSE_ERROR)-1;
+  if (UBX_CELL_RESPONSE_OK_OR_ERROR == expectedResponse) {
+    expectedResponse = UBX_CELL_RESPONSE_OK;
+    expectedError = UBX_CELL_RESPONSE_ERROR;
+    responseLen = sizeof(UBX_CELL_RESPONSE_OK)-1;
+    errorLen = sizeof(UBX_CELL_RESPONSE_ERROR)-1;
   } else {
     responseLen = (int)strlen(expectedResponse);
   }
@@ -6244,30 +6244,30 @@ UBLOX_AT_error_t UBLOX_AT::sendCommandWithResponse(
     if ((true == _printAtDebug) && ((nullptr != responseDest) || (nullptr != expectedResponse))) {
       _debugAtPort->print((nullptr != responseDest) ? responseDest : expectedResponse);
     }
-    return error ? UBLOX_AT_ERROR_ERROR : UBLOX_AT_ERROR_SUCCESS;
+    return error ? UBX_CELL_ERROR_ERROR : UBX_CELL_ERROR_SUCCESS;
   }
   else if (charsRead == 0)
   {
-    return UBLOX_AT_ERROR_NO_RESPONSE;
+    return UBX_CELL_ERROR_NO_RESPONSE;
   }
   else
   {
     if ((true == _printAtDebug) && (nullptr != responseDest)) {
       _debugAtPort->print(responseDest);
     }
-    return UBLOX_AT_ERROR_UNEXPECTED_RESPONSE;
+    return UBX_CELL_ERROR_UNEXPECTED_RESPONSE;
   }
 }
 
 // Send a custom command with an expected (potentially partial) response, store entire response
-UBLOX_AT_error_t UBLOX_AT::sendCustomCommandWithResponse(const char *command, const char *expectedResponse,
+UBX_CELL_error_t UBX_CELL::sendCustomCommandWithResponse(const char *command, const char *expectedResponse,
                                                        char *responseDest, unsigned long commandTimeout, bool at)
 {
   // Assume the user has allocated enough storage for any response. Set destSize to 32766.
   return sendCommandWithResponse(command, expectedResponse, responseDest, commandTimeout, 32766, at);
 }
 
-void UBLOX_AT::sendCommand(const char *command, bool at)
+void UBX_CELL::sendCommand(const char *command, bool at)
 {
   //Check for incoming serial data. Copy it into the backlog
 
@@ -6304,7 +6304,7 @@ void UBLOX_AT::sendCommand(const char *command, bool at)
   //Now send the command
   if (at)
   {
-    hwPrint(UBLOX_AT_COMMAND_AT);
+    hwPrint(UBX_CELL_COMMAND_AT);
     hwPrint(command);
     hwPrint("\r\n");
   }
@@ -6314,27 +6314,27 @@ void UBLOX_AT::sendCommand(const char *command, bool at)
   }
 }
 
-UBLOX_AT_error_t UBLOX_AT::parseSocketReadIndication(int socket, int length)
+UBX_CELL_error_t UBX_CELL::parseSocketReadIndication(int socket, int length)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *readDest;
 
   if ((socket < 0) || (length < 0))
   {
-    return UBLOX_AT_ERROR_UNEXPECTED_RESPONSE;
+    return UBX_CELL_ERROR_UNEXPECTED_RESPONSE;
   }
 
   // Return now if both callbacks pointers are nullptr - otherwise the data will be read and lost!
   if ((_socketReadCallback == nullptr) && (_socketReadCallbackPlus == nullptr))
-    return UBLOX_AT_ERROR_INVALID;
+    return UBX_CELL_ERROR_INVALID;
 
-  readDest = ublox_at_calloc_char(length + 1);
+  readDest = ubx_cell_calloc_char(length + 1);
   if (readDest == nullptr)
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
 
   int bytesRead;
   err = socketRead(socket, length, readDest, &bytesRead);
-  if (err != UBLOX_AT_ERROR_SUCCESS)
+  if (err != UBX_CELL_ERROR_SUCCESS)
   {
     free(readDest);
     return err;
@@ -6360,34 +6360,34 @@ UBLOX_AT_error_t UBLOX_AT::parseSocketReadIndication(int socket, int length)
   }
 
   free(readDest);
-  return UBLOX_AT_ERROR_SUCCESS;
+  return UBX_CELL_ERROR_SUCCESS;
 }
 
-UBLOX_AT_error_t UBLOX_AT::parseSocketReadIndicationUDP(int socket, int length)
+UBX_CELL_error_t UBX_CELL::parseSocketReadIndicationUDP(int socket, int length)
 {
-  UBLOX_AT_error_t err;
+  UBX_CELL_error_t err;
   char *readDest;
   IPAddress remoteAddress = { 0, 0, 0, 0 };
   int remotePort = 0;
 
   if ((socket < 0) || (length < 0))
   {
-    return UBLOX_AT_ERROR_UNEXPECTED_RESPONSE;
+    return UBX_CELL_ERROR_UNEXPECTED_RESPONSE;
   }
 
   // Return now if both callbacks pointers are nullptr - otherwise the data will be read and lost!
   if ((_socketReadCallback == nullptr) && (_socketReadCallbackPlus == nullptr))
-    return UBLOX_AT_ERROR_INVALID;
+    return UBX_CELL_ERROR_INVALID;
 
-  readDest = ublox_at_calloc_char(length + 1);
+  readDest = ubx_cell_calloc_char(length + 1);
   if (readDest == nullptr)
   {
-    return UBLOX_AT_ERROR_OUT_OF_MEMORY;
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
   }
 
   int bytesRead;
   err = socketReadUDP(socket, length, readDest, &remoteAddress, &remotePort, &bytesRead);
-  if (err != UBLOX_AT_ERROR_SUCCESS)
+  if (err != UBX_CELL_ERROR_SUCCESS)
   {
     free(readDest);
     return err;
@@ -6410,10 +6410,10 @@ UBLOX_AT_error_t UBLOX_AT::parseSocketReadIndicationUDP(int socket, int length)
   }
 
   free(readDest);
-  return UBLOX_AT_ERROR_SUCCESS;
+  return UBX_CELL_ERROR_SUCCESS;
 }
 
-UBLOX_AT_error_t UBLOX_AT::parseSocketListenIndication(int listeningSocket, IPAddress localIP, unsigned int listeningPort, int socket, IPAddress remoteIP, unsigned int port)
+UBX_CELL_error_t UBX_CELL::parseSocketListenIndication(int listeningSocket, IPAddress localIP, unsigned int listeningPort, int socket, IPAddress remoteIP, unsigned int port)
 {
   _lastLocalIP = localIP;
   _lastRemoteIP = remoteIP;
@@ -6423,16 +6423,16 @@ UBLOX_AT_error_t UBLOX_AT::parseSocketListenIndication(int listeningSocket, IPAd
     _socketListenCallback(listeningSocket, localIP, listeningPort, socket, remoteIP, port);
   }
 
-  return UBLOX_AT_ERROR_SUCCESS;
+  return UBX_CELL_ERROR_SUCCESS;
 }
 
-UBLOX_AT_error_t UBLOX_AT::parseSocketCloseIndication(String *closeIndication)
+UBX_CELL_error_t UBX_CELL::parseSocketCloseIndication(String *closeIndication)
 {
   int search;
   int socket;
 
-  search = closeIndication->indexOf(UBLOX_AT_CLOSE_SOCKET_URC);
-  search += strlen(UBLOX_AT_CLOSE_SOCKET_URC);
+  search = closeIndication->indexOf(UBX_CELL_CLOSE_SOCKET_URC);
+  search += strlen(UBX_CELL_CLOSE_SOCKET_URC);
   while (closeIndication->charAt(search) == ' ') search ++; // skip spaces
 
   // Socket will be first integer, should be single-digit number between 0-6:
@@ -6443,10 +6443,10 @@ UBLOX_AT_error_t UBLOX_AT::parseSocketCloseIndication(String *closeIndication)
     _socketCloseCallback(socket);
   }
 
-  return UBLOX_AT_ERROR_SUCCESS;
+  return UBX_CELL_ERROR_SUCCESS;
 }
 
-size_t UBLOX_AT::hwPrint(const char *s)
+size_t UBX_CELL::hwPrint(const char *s)
 {
   if ((true == _printAtDebug) && (nullptr != s)) {
     _debugAtPort->print(s);
@@ -6455,7 +6455,7 @@ size_t UBLOX_AT::hwPrint(const char *s)
   {
     return _hardSerial->print(s);
   }
-#ifdef UBLOX_AT_SOFTWARE_SERIAL_ENABLED
+#ifdef UBX_CELL_SOFTWARE_SERIAL_ENABLED
   else if (_softSerial != nullptr)
   {
     return _softSerial->print(s);
@@ -6465,7 +6465,7 @@ size_t UBLOX_AT::hwPrint(const char *s)
   return (size_t)0;
 }
 
-size_t UBLOX_AT::hwWriteData(const char *buff, int len)
+size_t UBX_CELL::hwWriteData(const char *buff, int len)
 {
   if ((true == _printAtDebug) && (nullptr != buff) && (0 < len) ) {
     _debugAtPort->write(buff,len);
@@ -6474,7 +6474,7 @@ size_t UBLOX_AT::hwWriteData(const char *buff, int len)
   {
     return _hardSerial->write((const uint8_t *)buff, len);
   }
-#ifdef UBLOX_AT_SOFTWARE_SERIAL_ENABLED
+#ifdef UBX_CELL_SOFTWARE_SERIAL_ENABLED
   else if (_softSerial != nullptr)
   {
     return _softSerial->write((const uint8_t *)buff, len);
@@ -6483,7 +6483,7 @@ size_t UBLOX_AT::hwWriteData(const char *buff, int len)
   return (size_t)0;
 }
 
-size_t UBLOX_AT::hwWrite(const char c)
+size_t UBX_CELL::hwWrite(const char c)
 {
   if (true == _printAtDebug) {
     _debugAtPort->write(c);
@@ -6492,7 +6492,7 @@ size_t UBLOX_AT::hwWrite(const char c)
   {
     return _hardSerial->write(c);
   }
-#ifdef UBLOX_AT_SOFTWARE_SERIAL_ENABLED
+#ifdef UBX_CELL_SOFTWARE_SERIAL_ENABLED
   else if (_softSerial != nullptr)
   {
     return _softSerial->write(c);
@@ -6502,7 +6502,7 @@ size_t UBLOX_AT::hwWrite(const char c)
   return (size_t)0;
 }
 
-int UBLOX_AT::readAvailable(char *inString)
+int UBX_CELL::readAvailable(char *inString)
 {
   int len = 0;
 
@@ -6523,7 +6523,7 @@ int UBLOX_AT::readAvailable(char *inString)
     //if (_printDebug == true)
     //  _debugPort->println(inString);
   }
-#ifdef UBLOX_AT_SOFTWARE_SERIAL_ENABLED
+#ifdef UBX_CELL_SOFTWARE_SERIAL_ENABLED
   else if (_softSerial != nullptr)
   {
     while (_softSerial->available())
@@ -6544,7 +6544,7 @@ int UBLOX_AT::readAvailable(char *inString)
   return len;
 }
 
-char UBLOX_AT::readChar(void)
+char UBX_CELL::readChar(void)
 {
   char ret = 0;
 
@@ -6552,7 +6552,7 @@ char UBLOX_AT::readChar(void)
   {
     ret = (char)_hardSerial->read();
   }
-#ifdef UBLOX_AT_SOFTWARE_SERIAL_ENABLED
+#ifdef UBX_CELL_SOFTWARE_SERIAL_ENABLED
   else if (_softSerial != nullptr)
   {
     ret = (char)_softSerial->read();
@@ -6562,13 +6562,13 @@ char UBLOX_AT::readChar(void)
   return ret;
 }
 
-int UBLOX_AT::hwAvailable(void)
+int UBX_CELL::hwAvailable(void)
 {
   if (_hardSerial != nullptr)
   {
     return _hardSerial->available();
   }
-#ifdef UBLOX_AT_SOFTWARE_SERIAL_ENABLED
+#ifdef UBX_CELL_SOFTWARE_SERIAL_ENABLED
   else if (_softSerial != nullptr)
   {
     return _softSerial->available();
@@ -6578,7 +6578,7 @@ int UBLOX_AT::hwAvailable(void)
   return -1;
 }
 
-void UBLOX_AT::beginSerial(unsigned long baud)
+void UBX_CELL::beginSerial(unsigned long baud)
 {
   delay(100);
   if (_hardSerial != nullptr)
@@ -6586,7 +6586,7 @@ void UBLOX_AT::beginSerial(unsigned long baud)
     _hardSerial->end();
     _hardSerial->begin(baud);
   }
-#ifdef UBLOX_AT_SOFTWARE_SERIAL_ENABLED
+#ifdef UBX_CELL_SOFTWARE_SERIAL_ENABLED
   else if (_softSerial != nullptr)
   {
     _softSerial->end();
@@ -6596,13 +6596,13 @@ void UBLOX_AT::beginSerial(unsigned long baud)
   delay(100);
 }
 
-void UBLOX_AT::setTimeout(unsigned long timeout)
+void UBX_CELL::setTimeout(unsigned long timeout)
 {
   if (_hardSerial != nullptr)
   {
     _hardSerial->setTimeout(timeout);
   }
-#ifdef UBLOX_AT_SOFTWARE_SERIAL_ENABLED
+#ifdef UBX_CELL_SOFTWARE_SERIAL_ENABLED
   else if (_softSerial != nullptr)
   {
     _softSerial->setTimeout(timeout);
@@ -6610,14 +6610,14 @@ void UBLOX_AT::setTimeout(unsigned long timeout)
 #endif
 }
 
-bool UBLOX_AT::find(char *target)
+bool UBX_CELL::find(char *target)
 {
   bool found = false;
   if (_hardSerial != nullptr)
   {
     found = _hardSerial->find(target);
   }
-#ifdef UBLOX_AT_SOFTWARE_SERIAL_ENABLED
+#ifdef UBX_CELL_SOFTWARE_SERIAL_ENABLED
   else if (_softSerial != nullptr)
   {
     found = _softSerial->find(target);
@@ -6626,32 +6626,32 @@ bool UBLOX_AT::find(char *target)
   return found;
 }
 
-UBLOX_AT_error_t UBLOX_AT::autobaud(unsigned long desiredBaud)
+UBX_CELL_error_t UBX_CELL::autobaud(unsigned long desiredBaud)
 {
-  UBLOX_AT_error_t err = UBLOX_AT_ERROR_INVALID;
+  UBX_CELL_error_t err = UBX_CELL_ERROR_INVALID;
   int b = 0;
 
-  while ((err != UBLOX_AT_ERROR_SUCCESS) && (b < NUM_SUPPORTED_BAUD))
+  while ((err != UBX_CELL_ERROR_SUCCESS) && (b < NUM_SUPPORTED_BAUD))
   {
-    beginSerial(UBLOX_AT_SUPPORTED_BAUD[b++]);
+    beginSerial(UBX_CELL_SUPPORTED_BAUD[b++]);
     setBaud(desiredBaud);
     beginSerial(desiredBaud);
     err = at();
   }
-  if (err == UBLOX_AT_ERROR_SUCCESS)
+  if (err == UBX_CELL_ERROR_SUCCESS)
   {
     beginSerial(desiredBaud);
   }
   return err;
 }
 
-char *UBLOX_AT::ublox_at_calloc_char(size_t num)
+char *UBX_CELL::ubx_cell_calloc_char(size_t num)
 {
   return (char *)calloc(num, sizeof(char));
 }
 
 //This prunes the backlog of non-actionable events. If new actionable events are added, you must modify the if statement.
-void UBLOX_AT::pruneBacklog()
+void UBX_CELL::pruneBacklog()
 {
   char *event;
 
@@ -6679,19 +6679,19 @@ void UBLOX_AT::pruneBacklog()
   while (event != nullptr) //If event is actionable, add it to pruneBuffer.
   {
     // These are the events we want to keep so they can be processed by poll / bufferedPoll
-    if ((strstr(event, UBLOX_AT_READ_SOCKET_URC) != nullptr)
-        || (strstr(event, UBLOX_AT_READ_UDP_SOCKET_URC) != nullptr)
-        || (strstr(event, UBLOX_AT_LISTEN_SOCKET_URC) != nullptr)
-        || (strstr(event, UBLOX_AT_CLOSE_SOCKET_URC) != nullptr)
-        || (strstr(event, UBLOX_AT_GNSS_REQUEST_LOCATION_URC) != nullptr)
-        || (strstr(event, UBLOX_AT_SIM_STATE_URC) != nullptr)
-        || (strstr(event, UBLOX_AT_MESSAGE_PDP_ACTION_URC) != nullptr)
-        || (strstr(event, UBLOX_AT_HTTP_COMMAND_URC) != nullptr)
-        || (strstr(event, UBLOX_AT_MQTT_COMMAND_URC) != nullptr)
-        || (strstr(event, UBLOX_AT_PING_COMMAND_URC) != nullptr)
-        || (strstr(event, UBLOX_AT_REGISTRATION_STATUS_URC) != nullptr)
-        || (strstr(event, UBLOX_AT_EPSREGISTRATION_STATUS_URC) != nullptr)
-        || (strstr(event, UBLOX_AT_FTP_COMMAND_URC) != nullptr))
+    if ((strstr(event, UBX_CELL_READ_SOCKET_URC) != nullptr)
+        || (strstr(event, UBX_CELL_READ_UDP_SOCKET_URC) != nullptr)
+        || (strstr(event, UBX_CELL_LISTEN_SOCKET_URC) != nullptr)
+        || (strstr(event, UBX_CELL_CLOSE_SOCKET_URC) != nullptr)
+        || (strstr(event, UBX_CELL_GNSS_REQUEST_LOCATION_URC) != nullptr)
+        || (strstr(event, UBX_CELL_SIM_STATE_URC) != nullptr)
+        || (strstr(event, UBX_CELL_MESSAGE_PDP_ACTION_URC) != nullptr)
+        || (strstr(event, UBX_CELL_HTTP_COMMAND_URC) != nullptr)
+        || (strstr(event, UBX_CELL_MQTT_COMMAND_URC) != nullptr)
+        || (strstr(event, UBX_CELL_PING_COMMAND_URC) != nullptr)
+        || (strstr(event, UBX_CELL_REGISTRATION_STATUS_URC) != nullptr)
+        || (strstr(event, UBX_CELL_EPSREGISTRATION_STATUS_URC) != nullptr)
+        || (strstr(event, UBX_CELL_FTP_COMMAND_URC) != nullptr))
     {
       strcat(_pruneBuffer, event); // The URCs are all readable text so using strcat is OK
       strcat(_pruneBuffer, "\r\n"); // strtok blows away delimiter, but we want that for later.
@@ -6722,7 +6722,7 @@ void UBLOX_AT::pruneBacklog()
 // GPS Helper Functions:
 
 // Read a source string until a delimiter is hit, store the result in destination
-char *UBLOX_AT::readDataUntil(char *destination, unsigned int destSize,
+char *UBX_CELL::readDataUntil(char *destination, unsigned int destSize,
                              char *source, char delimiter)
 {
 
@@ -6741,7 +6741,7 @@ char *UBLOX_AT::readDataUntil(char *destination, unsigned int destSize,
   return strEnd;
 }
 
-bool UBLOX_AT::parseGPRMCString(char *rmcString, PositionData *pos,
+bool UBX_CELL::parseGPRMCString(char *rmcString, PositionData *pos,
                                ClockData *clk, SpeedData *spd)
 {
   char *ptr, *search;
