@@ -1024,7 +1024,7 @@ public:
   UBX_CELL_error_t sendCustomCommandWithResponse(const char *command, const char *expectedResponse,
                                                 char *responseDest, unsigned long commandTimeout = UBX_CELL_STANDARD_RESPONSE_TIMEOUT, bool at = true);
 
-private:
+protected:
   HardwareSerial *_hardSerial;
 #ifdef UBX_CELL_SOFTWARE_SERIAL_ENABLED
   SoftwareSerial *_softSerial;
