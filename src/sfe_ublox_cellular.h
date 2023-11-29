@@ -1024,6 +1024,12 @@ public:
   UBX_CELL_error_t sendCustomCommandWithResponse(const char *command, const char *expectedResponse,
                                                 char *responseDest, unsigned long commandTimeout = UBX_CELL_STANDARD_RESPONSE_TIMEOUT, bool at = true);
 
+  // Send command with an expected (potentially partial) response, store entire response
+  UBX_CELL_error_t sendCommandWithResponse(const char *command, const char *expectedResponse,
+                                          char *responseDest, unsigned long commandTimeout, int destSize = minimumResponseAllocation, bool at = true);
+
+  char *ubx_cell_calloc_char(size_t num);
+
 protected:
   HardwareSerial *_hardSerial;
 #ifdef UBX_CELL_SOFTWARE_SERIAL_ENABLED
@@ -1091,10 +1097,6 @@ protected:
   // Wait for an expected response (don't send a command)
   UBX_CELL_error_t waitForResponse(const char *expectedResponse, const char *expectedError, uint16_t timeout);
 
-  // Send command with an expected (potentially partial) response, store entire response
-  UBX_CELL_error_t sendCommandWithResponse(const char *command, const char *expectedResponse,
-                                          char *responseDest, unsigned long commandTimeout, int destSize = minimumResponseAllocation, bool at = true);
-
   // Send a command -- prepend AT if at is true
   void sendCommand(const char *command, bool at);
 
@@ -1117,8 +1119,6 @@ protected:
   bool find(char *target);
 
   UBX_CELL_error_t autobaud(unsigned long desiredBaud);
-
-  char *ubx_cell_calloc_char(size_t num);
 
   bool processURCEvent(const char *event);
   void pruneBacklog(void);
