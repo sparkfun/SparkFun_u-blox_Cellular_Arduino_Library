@@ -646,9 +646,9 @@ public:
   ~UBX_CELL();
   // Begin -- initialize module and ensure it's connected
 #ifdef UBX_CELL_SOFTWARE_SERIAL_ENABLED
-  bool begin(SoftwareSerial &softSerial, unsigned long baud = 9600);
+  bool begin(SoftwareSerial &softSerial, unsigned long baud = UBX_CELL_DEFAULT_BAUD_RATE);
 #endif
-  bool begin(HardwareSerial &hardSerial, unsigned long baud = 9600);
+  bool begin(HardwareSerial &hardSerial, unsigned long baud = UBX_CELL_DEFAULT_BAUD_RATE);
 
   // Debug prints
   void enableDebugging(Print &debugPort = Serial); //Turn on debug printing. If user doesn't specify then Serial will be used.

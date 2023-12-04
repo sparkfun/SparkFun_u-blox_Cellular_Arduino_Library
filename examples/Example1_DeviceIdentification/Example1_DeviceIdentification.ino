@@ -63,7 +63,7 @@ void setup()
   myModule.invertPowerPin(true); 
 
   // Initialize the SARA
-  if (myModule.begin(mySerial, 9600) )
+  if (myModule.begin(mySerial, UBX_CELL_DEFAULT_BAUD_RATE) )
   {
     Serial.println(F("SARA-R5 connected!"));
   }
