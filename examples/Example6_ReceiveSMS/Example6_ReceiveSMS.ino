@@ -28,7 +28,7 @@ void setup()
   Serial.begin(115200); // Start the serial console
 
   // Wait for user to press key to begin
-  Serial.println(F("u-blox Cellular Example 5 - Receive SMS"));
+  Serial.println(F("u-blox Cellular Example 6 - Receive SMS"));
   Serial.println(F("Press any key to begin"));
   
   while (!Serial.available()) // Wait for the user to press a key (send any serial character)
