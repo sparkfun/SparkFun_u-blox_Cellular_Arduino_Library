@@ -21,6 +21,7 @@
 #define SPARKFUN_SARA_R5_ARDUINO_LIBRARY_H
 
 #include "sfe_sara_r5.h"
+#include "sfe_ublox_cellular.h"
 
 #define SARA_R5_POWER_PIN -1 // Default to no pin
 #define SARA_R5_RESET_PIN -1
@@ -42,125 +43,119 @@
 
 // ## Suported AT Commands
 // ### General
-const char SARA_R5_COMMAND_AT[] = "AT";           // AT "Test"
-const char SARA_R5_COMMAND_ECHO[] = "E";          // Local Echo
-const char SARA_R5_COMMAND_MANU_ID[] = "+CGMI";   // Manufacturer identification
-const char SARA_R5_COMMAND_MODEL_ID[] = "+CGMM";  // Model identification
-const char SARA_R5_COMMAND_FW_VER_ID[] = "+CGMR"; // Firmware version identification
-const char SARA_R5_COMMAND_SERIAL_NO[] = "+CGSN"; // Product serial number
-const char SARA_R5_COMMAND_IMEI[] = "+GSN";       // IMEI identification
-const char SARA_R5_COMMAND_IMSI[] = "+CIMI";      // IMSI identification
-const char SARA_R5_COMMAND_CCID[] = "+CCID";      // SIM CCID
-const char SARA_R5_COMMAND_REQ_CAP[] = "+GCAP";   // Request capabilities list
+#define SARA_R5_COMMAND_AT UBX_CELL_COMMAND_AT
+#define SARA_R5_COMMAND_ECHO UBX_CELL_COMMAND_ECHO
+#define SARA_R5_COMMAND_MANU_ID UBX_CELL_COMMAND_MANU_ID
+#define SARA_R5_COMMAND_MODEL_ID UBX_CELL_COMMAND_MODEL_ID
+#define SARA_R5_COMMAND_FW_VER_ID UBX_CELL_COMMAND_FW_VER_ID
+#define SARA_R5_COMMAND_SERIAL_NO UBX_CELL_COMMAND_SERIAL_NO
+#define SARA_R5_COMMAND_IMEI UBX_CELL_COMMAND_IMEI
+#define SARA_R5_COMMAND_IMSI UBX_CELL_COMMAND_IMSI
+#define SARA_R5_COMMAND_CCID UBX_CELL_COMMAND_CCID
+#define SARA_R5_COMMAND_REQ_CAP UBX_CELL_COMMAND_REQ_CAP
 // ### Control and status
-const char SARA_R5_COMMAND_POWER_OFF[] = "+CPWROFF"; // Module switch off
-const char SARA_R5_COMMAND_FUNC[] = "+CFUN";         // Functionality (reset, etc.)
-const char SARA_R5_COMMAND_CLOCK[] = "+CCLK";        // Real-time clock
-const char SARA_R5_COMMAND_AUTO_TZ[] = "+CTZU";      // Automatic time zone update
-const char SARA_R5_COMMAND_TZ_REPORT[] = "+CTZR";    // Time zone reporting
+#define SARA_R5_COMMAND_POWER_OFF UBX_CELL_COMMAND_POWER_OFF
+#define SARA_R5_COMMAND_FUNC UBX_CELL_COMMAND_FUNC
+#define SARA_R5_COMMAND_CLOCK UBX_CELL_COMMAND_CLOCK
+#define SARA_R5_COMMAND_AUTO_TZ UBX_CELL_COMMAND_AUTO_TZ
+#define SARA_R5_COMMAND_TZ_REPORT UBX_CELL_COMMAND_TZ_REPORT
 // ### Network service
-const char SARA_R5_COMMAND_CNUM[] = "+CNUM"; // Subscriber number
-const char SARA_R5_SIGNAL_QUALITY[] = "+CSQ";
-const char SARA_R5_EXT_SIGNAL_QUALITY[] = "+CESQ";
-const char SARA_R5_OPERATOR_SELECTION[] = "+COPS";
-const char SARA_R5_REGISTRATION_STATUS[] = "+CREG";
-const char SARA_R5_EPSREGISTRATION_STATUS[] = "+CEREG";
-const char SARA_R5_READ_OPERATOR_NAMES[] = "+COPN";
-const char SARA_R5_COMMAND_MNO[] = "+UMNOPROF"; // MNO (mobile network operator) Profile
+#define SARA_R5_COMMAND_CNUM UBX_CELL_COMMAND_CNUM
+#define SARA_R5_SIGNAL_QUALITY UBX_CELL_SIGNAL_QUALITY
+#define SARA_R5_EXT_SIGNAL_QUALITY UBX_CELL_EXT_SIGNAL_QUALITY
+#define SARA_R5_OPERATOR_SELECTION UBX_CELL_OPERATOR_SELECTION
+#define SARA_R5_REGISTRATION_STATUS UBX_CELL_REGISTRATION_STATUS
+#define SARA_R5_EPSREGISTRATION_STATUS UBX_CELL_EPSREGISTRATION_STATUS
+#define SARA_R5_READ_OPERATOR_NAMES UBX_CELL_READ_OPERATOR_NAMES
+#define SARA_R5_COMMAND_MNO UBX_CELL_COMMAND_MNO
 // ### SIM
-const char SARA_R5_SIM_STATE[] = "+USIMSTAT";
-const char SARA_R5_COMMAND_SIMPIN[] = "+CPIN";    // SIM PIN
+#define SARA_R5_SIM_STATE UBX_CELL_SIM_STATE
+#define SARA_R5_COMMAND_SIMPIN UBX_CELL_COMMAND_SIMPIN
 // ### SMS
-const char SARA_R5_MESSAGE_FORMAT[] = "+CMGF";     // Set SMS message format
-const char SARA_R5_SEND_TEXT[] = "+CMGS";          // Send SMS message
-const char SARA_R5_NEW_MESSAGE_IND[] = "+CNMI";    // New [SMS] message indication
-const char SARA_R5_PREF_MESSAGE_STORE[] = "+CPMS"; // Preferred message storage
-const char SARA_R5_READ_TEXT_MESSAGE[] = "+CMGR";  // Read message
-const char SARA_R5_DELETE_MESSAGE[] = "+CMGD";     // Delete message
+#define SARA_R5_MESSAGE_FORMAT UBX_CELL_MESSAGE_FORMAT
+#define SARA_R5_SEND_TEXT UBX_CELL_SEND_TEXT
+#define SARA_R5_NEW_MESSAGE_IND UBX_CELL_NEW_MESSAGE_IND
+#define SARA_R5_PREF_MESSAGE_STORE UBX_CELL_PREF_MESSAGE_STORE
+#define SARA_R5_READ_TEXT_MESSAGE UBX_CELL_READ_TEXT_MESSAGE
+#define SARA_R5_DELETE_MESSAGE UBX_CELL_DELETE_MESSAGE
 // V24 control and V25ter (UART interface)
-const char SARA_R5_FLOW_CONTROL[] = "&K";   // Flow control
-const char SARA_R5_COMMAND_BAUD[] = "+IPR"; // Baud rate
+#define SARA_R5_FLOW_CONTROL UBX_CELL_FLOW_CONTROL
+#define SARA_R5_COMMAND_BAUD UBX_CELL_COMMAND_BAUD
 // ### Packet switched data services
-const char SARA_R5_MESSAGE_PDP_DEF[] = "+CGDCONT";            // Packet switched Data Profile context definition
-const char SARA_R5_MESSAGE_PDP_CONFIG[] = "+UPSD";            // Packet switched Data Profile configuration
-const char SARA_R5_MESSAGE_PDP_ACTION[] = "+UPSDA";           // Perform the action for the specified PSD profile
-const char SARA_R5_MESSAGE_PDP_CONTEXT_ACTIVATE[] = "+CGACT"; // Activates or deactivates the specified PDP context
-const char SARA_R5_MESSAGE_ENTER_PPP[] = "D";
-const char SARA_R5_NETWORK_ASSIGNED_DATA[] = "+UPSND";        // Packet switched network-assigned data
+#define SARA_R5_MESSAGE_PDP_DEF UBX_CELL_MESSAGE_PDP_DEF
+#define SARA_R5_MESSAGE_PDP_CONTEXT_ACTIVATE UBX_CELL_MESSAGE_PDP_CONTEXT_ACTIVATE
+#define SARA_R5_MESSAGE_ENTER_PPP UBX_CELL_MESSAGE_ENTER_PPP
 // ### GPIO
-const char SARA_R5_COMMAND_GPIO[] = "+UGPIOC"; // GPIO Configuration
+#define SARA_R5_COMMAND_GPIO UBX_CELL_COMMAND_GPIO
 // ### IP
-const char SARA_R5_CREATE_SOCKET[] = "+USOCR";      // Create a new socket
-const char SARA_R5_CLOSE_SOCKET[] = "+USOCL";       // Close a socket
-const char SARA_R5_CONNECT_SOCKET[] = "+USOCO";     // Connect to server on socket
-const char SARA_R5_WRITE_SOCKET[] = "+USOWR";       // Write data to a socket
-const char SARA_R5_WRITE_UDP_SOCKET[] = "+USOST";   // Write data to a UDP socket
-const char SARA_R5_READ_SOCKET[] = "+USORD";        // Read from a socket
-const char SARA_R5_READ_UDP_SOCKET[] = "+USORF";    // Read UDP data from a socket
-const char SARA_R5_LISTEN_SOCKET[] = "+USOLI";      // Listen for connection on socket
-const char SARA_R5_GET_ERROR[] = "+USOER";          // Get last socket error.
-const char SARA_R5_SOCKET_DIRECT_LINK[] = "+USODL"; // Set socket in Direct Link mode
-const char SARA_R5_SOCKET_CONTROL[] = "+USOCTL";    // Query the socket parameters
-const char SARA_R5_UD_CONFIGURATION[] = "+UDCONF";  // User Datagram Configuration
+#define SARA_R5_CREATE_SOCKET UBX_CELL_CREATE_SOCKET
+#define SARA_R5_CLOSE_SOCKET UBX_CELL_CLOSE_SOCKET
+#define SARA_R5_CONNECT_SOCKET UBX_CELL_CONNECT_SOCKET
+#define SARA_R5_WRITE_SOCKET UBX_CELL_WRITE_SOCKET
+#define SARA_R5_WRITE_UDP_SOCKET UBX_CELL_WRITE_UDP_SOCKET
+#define SARA_R5_READ_SOCKET UBX_CELL_READ_SOCKET
+#define SARA_R5_READ_UDP_SOCKET UBX_CELL_READ_UDP_SOCKET
+#define SARA_R5_LISTEN_SOCKET UBX_CELL_LISTEN_SOCKET
+#define SARA_R5_GET_ERROR UBX_CELL_GET_ERROR
+#define SARA_R5_SOCKET_DIRECT_LINK UBX_CELL_SOCKET_DIRECT_LINK
+#define SARA_R5_SOCKET_CONTROL UBX_CELL_SOCKET_CONTROL
+#define SARA_R5_UD_CONFIGURATION UBX_CELL_UD_CONFIGURATION
 // ### Ping
-const char SARA_R5_PING_COMMAND[] = "+UPING"; // Ping
+#define SARA_R5_PING_COMMAND UBX_CELL_PING_COMMAND
 // ### HTTP
-const char SARA_R5_HTTP_PROFILE[] = "+UHTTP";          // Configure the HTTP profile. Up to 4 different profiles can be defined
-const char SARA_R5_HTTP_COMMAND[] = "+UHTTPC";         // Trigger the specified HTTP command
-const char SARA_R5_HTTP_PROTOCOL_ERROR[] = "+UHTTPER"; // Retrieves the error class and code of the latest HTTP operation on the specified HTTP profile.
+#define SARA_R5_HTTP_PROFILE UBX_CELL_HTTP_PROFILE
+#define SARA_R5_HTTP_COMMAND UBX_CELL_HTTP_COMMAND
+#define SARA_R5_HTTP_PROTOCOL_ERROR UBX_CELL_HTTP_PROTOCOL_ERROR
 
-const char SARA_R5_MQTT_NVM[] = "+UMQTTNV";
-const char SARA_R5_MQTT_PROFILE[] = "+UMQTT";
-const char SARA_R5_MQTT_COMMAND[] = "+UMQTTC";
-const char SARA_R5_MQTT_PROTOCOL_ERROR[] = "+UMQTTER";
+#define SARA_R5_MQTT_NVM UBX_CELL_MQTT_NVM
+#define SARA_R5_MQTT_PROFILE UBX_CELL_MQTT_PROFILE
+#define SARA_R5_MQTT_COMMAND UBX_CELL_MQTT_COMMAND
+#define SARA_R5_MQTT_PROTOCOL_ERROR UBX_CELL_MQTT_PROTOCOL_ERROR
 // ### FTP
-const char SARA_R5_FTP_PROFILE[] = "+UFTP";
-const char SARA_R5_FTP_COMMAND[] = "+UFTPC";
-const char SARA_R5_FTP_PROTOCOL_ERROR[] = "+UFTPER";
+#define SARA_R5_FTP_PROFILE UBX_CELL_FTP_PROFILE
+#define SARA_R5_FTP_COMMAND UBX_CELL_FTP_COMMAND
+#define SARA_R5_FTP_PROTOCOL_ERROR UBX_CELL_FTP_PROTOCOL_ERROR
 // ### GNSS
-const char SARA_R5_GNSS_POWER[] = "+UGPS";                   // GNSS power management configuration
-const char SARA_R5_GNSS_ASSISTED_IND[] = "+UGIND";           // Assisted GNSS unsolicited indication
-const char SARA_R5_GNSS_REQUEST_LOCATION[] = "+ULOC";        // Ask for localization information
-const char SARA_R5_GNSS_GPRMC[] = "+UGRMC";                  // Ask for localization information
-const char SARA_R5_GNSS_REQUEST_TIME[] = "+UTIME";           // Ask for time information from cellular modem (CellTime)
-const char SARA_R5_GNSS_TIME_INDICATION[] = "+UTIMEIND";     // Time information request status unsolicited indication
-const char SARA_R5_GNSS_TIME_CONFIGURATION[] = "+UTIMECFG";  // Sets time configuration
-const char SARA_R5_GNSS_CONFIGURE_SENSOR[] = "+ULOCGNSS";    // Configure GNSS sensor
-const char SARA_R5_GNSS_CONFIGURE_LOCATION[] = "+ULOCCELL";  // Configure cellular location sensor (CellLocate®)
-const char SARA_R5_AIDING_SERVER_CONFIGURATION[] = "+UGSRV"; // Configure aiding server (CellLocate®)
+#define SARA_R5_GNSS_POWER UBX_CELL_GNSS_POWER
+#define SARA_R5_GNSS_ASSISTED_IND UBX_CELL_GNSS_ASSISTED_IND
+#define SARA_R5_GNSS_REQUEST_LOCATION UBX_CELL_GNSS_REQUEST_LOCATION
+#define SARA_R5_GNSS_GPRMC UBX_CELL_GNSS_GPRMC
+#define SARA_R5_GNSS_CONFIGURE_SENSOR UBX_CELL_GNSS_CONFIGURE_SENSOR
+#define SARA_R5_GNSS_CONFIGURE_LOCATION UBX_CELL_GNSS_CONFIGURE_LOCATION
+#define SARA_R5_AIDING_SERVER_CONFIGURATION UBX_CELL_AIDING_SERVER_CONFIGURATION
 // ### File System
 // TO DO: Add support for file tags. Default tag to USER
-const char SARA_R5_FILE_SYSTEM_READ_FILE[] = "+URDFILE";      // Read a file
-const char SARA_R5_FILE_SYSTEM_READ_BLOCK[] = "+URDBLOCK";      // Read a block from a file
-const char SARA_R5_FILE_SYSTEM_DOWNLOAD_FILE[] = "+UDWNFILE";    // Download a file into the module
-const char SARA_R5_FILE_SYSTEM_LIST_FILES[] = "+ULSTFILE";    // List of files, size of file, etc.
-const char SARA_R5_FILE_SYSTEM_DELETE_FILE[] = "+UDELFILE";   // Delete a file
+#define SARA_R5_FILE_SYSTEM_READ_FILE UBX_CELL_FILE_SYSTEM_READ_FILE
+#define SARA_R5_FILE_SYSTEM_READ_BLOCK UBX_CELL_FILE_SYSTEM_READ_BLOCK
+#define SARA_R5_FILE_SYSTEM_DOWNLOAD_FILE UBX_CELL_FILE_SYSTEM_DOWNLOAD_FILE
+#define SARA_R5_FILE_SYSTEM_LIST_FILES UBX_CELL_FILE_SYSTEM_LIST_FILES
+#define SARA_R5_FILE_SYSTEM_DELETE_FILE UBX_CELL_FILE_SYSTEM_DELETE_FILE
 // ### File System
 // TO DO: Add support for file tags. Default tag to USER
-const char SARA_R5_SEC_PROFILE[] = "+USECPRF";
-const char SARA_R5_SEC_MANAGER[] = "+USECMNG";
+#define SARA_R5_SEC_PROFILE UBX_CELL_SEC_PROFILE
+#define SARA_R5_SEC_MANAGER UBX_CELL_SEC_MANAGER
 
 
 // ### URC strings
-const char SARA_R5_READ_SOCKET_URC[] = "+UUSORD:";
-const char SARA_R5_READ_UDP_SOCKET_URC[] = "+UUSORF:";
-const char SARA_R5_LISTEN_SOCKET_URC[] = "+UUSOLI:";
-const char SARA_R5_CLOSE_SOCKET_URC[] = "+UUSOCL:";
-const char SARA_R5_GNSS_REQUEST_LOCATION_URC[] = "+UULOC:";
-const char SARA_R5_SIM_STATE_URC[] = "+UUSIMSTAT:";
-const char SARA_R5_MESSAGE_PDP_ACTION_URC[] = "+UUPSDA:";
-const char SARA_R5_HTTP_COMMAND_URC[] = "+UUHTTPCR:";
-const char SARA_R5_MQTT_COMMAND_URC[] = "+UUMQTTC:";
-const char SARA_R5_PING_COMMAND_URC[] = "+UUPING:";
-const char SARA_R5_REGISTRATION_STATUS_URC[] = "+CREG:";
-const char SARA_R5_EPSREGISTRATION_STATUS_URC[] = "+CEREG:";
-const char SARA_R5_FTP_COMMAND_URC[] = "+UUFTPCR:";
+#define SARA_R5_READ_SOCKET_URC UBX_CELL_READ_SOCKET_URC
+#define SARA_R5_READ_UDP_SOCKET_URC UBX_CELL_READ_UDP_SOCKET_URC
+#define SARA_R5_LISTEN_SOCKET_URC UBX_CELL_LISTEN_SOCKET_URC
+#define SARA_R5_CLOSE_SOCKET_URC UBX_CELL_CLOSE_SOCKET_URC
+#define SARA_R5_GNSS_REQUEST_LOCATION_URC UBX_CELL_GNSS_REQUEST_LOCATION_URC
+#define SARA_R5_SIM_STATE_URC UBX_CELL_SIM_STATE_URC
+#define SARA_R5_MESSAGE_PDP_ACTION_URC UBX_CELL_MESSAGE_PDP_ACTION_URC
+#define SARA_R5_HTTP_COMMAND_URC UBX_CELL_HTTP_COMMAND_URC
+#define SARA_R5_MQTT_COMMAND_URC UBX_CELL_MQTT_COMMAND_URC
+#define SARA_R5_PING_COMMAND_URC UBX_CELL_PING_COMMAND_URC
+#define SARA_R5_REGISTRATION_STATUS_URC UBX_CELL_REGISTRATION_STATUS_URC
+#define SARA_R5_EPSREGISTRATION_STATUS_URC UBX_CELL_EPSREGISTRATION_STATUS_URC
+#define SARA_R5_FTP_COMMAND_URC UBX_CELL_FTP_COMMAND_URC
 
 // ### Response
-const char SARA_R5_RESPONSE_MORE[] = "\n>";
-const char SARA_R5_RESPONSE_OK[] = "\nOK\r\n";
-const char SARA_R5_RESPONSE_ERROR[] = "\nERROR\r\n";
-const char SARA_R5_RESPONSE_CONNECT[] = "\r\nCONNECT\r\n";
+#define SARA_R5_RESPONSE_MORE UBX_CELL_RESPONSE_MORE
+#define SARA_R5_RESPONSE_OK UBX_CELL_RESPONSE_OK
+#define SARA_R5_RESPONSE_ERROR UBX_CELL_RESPONSE_ERROR
+#define SARA_R5_RESPONSE_CONNECT UBX_CELL_RESPONSE_CONNECT
 #define SARA_R5_RESPONSE_OK_OR_ERROR nullptr
 
 #define SARA_R5_NUM_SOCKETS 6
