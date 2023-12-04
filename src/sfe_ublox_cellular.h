@@ -132,11 +132,8 @@ const char UBX_CELL_FLOW_CONTROL[] = "&K";   // Flow control
 const char UBX_CELL_COMMAND_BAUD[] = "+IPR"; // Baud rate
 // ### Packet switched data services
 const char UBX_CELL_MESSAGE_PDP_DEF[] = "+CGDCONT";            // Packet switched Data Profile context definition
-const char UBX_CELL_MESSAGE_PDP_CONFIG[] = "+UPSD";            // Packet switched Data Profile configuration
-const char UBX_CELL_MESSAGE_PDP_ACTION[] = "+UPSDA";           // Perform the action for the specified PSD profile
 const char UBX_CELL_MESSAGE_PDP_CONTEXT_ACTIVATE[] = "+CGACT"; // Activates or deactivates the specified PDP context
 const char UBX_CELL_MESSAGE_ENTER_PPP[] = "D";
-const char UBX_CELL_NETWORK_ASSIGNED_DATA[] = "+UPSND";        // Packet switched network-assigned data
 // ### GPIO
 const char UBX_CELL_COMMAND_GPIO[] = "+UGPIOC"; // GPIO Configuration
 // ### IP
@@ -172,9 +169,6 @@ const char UBX_CELL_GNSS_POWER[] = "+UGPS";                   // GNSS power mana
 const char UBX_CELL_GNSS_ASSISTED_IND[] = "+UGIND";           // Assisted GNSS unsolicited indication
 const char UBX_CELL_GNSS_REQUEST_LOCATION[] = "+ULOC";        // Ask for localization information
 const char UBX_CELL_GNSS_GPRMC[] = "+UGRMC";                  // Ask for localization information
-const char UBX_CELL_GNSS_REQUEST_TIME[] = "+UTIME";           // Ask for time information from cellular modem (CellTime)
-const char UBX_CELL_GNSS_TIME_INDICATION[] = "+UTIMEIND";     // Time information request status unsolicited indication
-const char UBX_CELL_GNSS_TIME_CONFIGURATION[] = "+UTIMECFG";  // Sets time configuration
 const char UBX_CELL_GNSS_CONFIGURE_SENSOR[] = "+ULOCGNSS";    // Configure GNSS sensor
 const char UBX_CELL_GNSS_CONFIGURE_LOCATION[] = "+ULOCCELL";  // Configure cellular location sensor (CellLocate®)
 const char UBX_CELL_AIDING_SERVER_CONFIGURATION[] = "+UGSRV"; // Configure aiding server (CellLocate®)
@@ -728,12 +722,6 @@ public:
                             uint8_t h, uint8_t min, uint8_t s, int8_t tz); // TZ can be +/- and is in increments of 15 minutes. -28 == 7 hours behind UTC/GMT
   void autoTimeZoneForBegin(bool enable = true); // Call autoTimeZoneForBegin(false) _before_ .begin if you want to disable the automatic time zone
   UBX_CELL_error_t autoTimeZone(bool enable); // Enable/disable automatic time zone adjustment
-  UBX_CELL_error_t setUtimeMode(UBX_CELL_utime_mode_t mode = UBX_CELL_UTIME_MODE_PPS, UBX_CELL_utime_sensor_t sensor = UBX_CELL_UTIME_SENSOR_GNSS_LTE); // Time mode, source etc. (+UTIME)
-  UBX_CELL_error_t getUtimeMode(UBX_CELL_utime_mode_t *mode, UBX_CELL_utime_sensor_t *sensor);
-  UBX_CELL_error_t setUtimeIndication(UBX_CELL_utime_urc_configuration_t config = UBX_CELL_UTIME_URC_CONFIGURATION_ENABLED); // +UTIMEIND
-  UBX_CELL_error_t getUtimeIndication(UBX_CELL_utime_urc_configuration_t *config);
-  UBX_CELL_error_t setUtimeConfiguration(int32_t offsetNanoseconds = 0, int32_t offsetSeconds = 0); // +UTIMECFG
-  UBX_CELL_error_t getUtimeConfiguration(int32_t *offsetNanoseconds, int32_t *offsetSeconds);
 
   // Network service AT commands
   int8_t rssi(void); // Receive signal strength
@@ -951,15 +939,7 @@ public:
   UBX_CELL_error_t configSecurityProfile(int secprofile, UBX_CELL_sec_profile_parameter_t parameter, int value);
   UBX_CELL_error_t setSecurityManager(UBX_CELL_sec_manager_opcode_t opcode, UBX_CELL_sec_manager_parameter_t parameter, String name, String data);
 
-  // Packet Switched Data
-  // Configure the PDP using +UPSD. See UBX_CELL_pdp_configuration_parameter_t for the list of parameters: protocol, APN, username, DNS, etc.
-  UBX_CELL_error_t setPDPconfiguration(int profile, UBX_CELL_pdp_configuration_parameter_t parameter, int value);                         // Set parameters in the chosen PSD profile
-  UBX_CELL_error_t setPDPconfiguration(int profile, UBX_CELL_pdp_configuration_parameter_t parameter, UBX_CELL_pdp_protocol_type_t value); // Set parameters in the chosen PSD profile
-  UBX_CELL_error_t setPDPconfiguration(int profile, UBX_CELL_pdp_configuration_parameter_t parameter, String value);                      // Set parameters in the chosen PSD profile
-  UBX_CELL_error_t setPDPconfiguration(int profile, UBX_CELL_pdp_configuration_parameter_t parameter, IPAddress value);                   // Set parameters in the chosen PSD profile
-  UBX_CELL_error_t performPDPaction(int profile, UBX_CELL_pdp_actions_t action);  // Performs the requested action for the specified PSD profile: reset, store, load, activate, deactivate
   UBX_CELL_error_t activatePDPcontext(bool status, int cid = -1);                // Activates or deactivates the specified PDP context. Default to all (cid = -1)
-  UBX_CELL_error_t getNetworkAssignedIPAddress(int profile, IPAddress *address); // Get the dynamic IP address assigned during PDP context activation
 
   // GPS
   typedef enum
