@@ -33,7 +33,7 @@ String simStateString[] =
   "Operational"       // 6
 };
 
-// processSIMstate is provided to the SARA-R5 library via a 
+// processSIMstate is provided to the u-blox cellular library via a 
 // callback setter -- setSIMstateReadCallback. (See setup())
 void processSIMstate(UBX_CELL_sim_states_t state)
 {
@@ -48,7 +48,7 @@ void setup()
   Serial.begin(115200); // Start the serial console
 
   // Wait for user to press key to begin
-  Serial.println(F("SARA-R5 Example"));
+  Serial.println(F("u-blox Cellular Example 1 - Device Identification"));
   Serial.println(F("Press any key to begin"));
   
   while (!Serial.available()) // Wait for the user to press a key (send any serial character)
@@ -56,21 +56,23 @@ void setup()
   while (Serial.available()) // Empty the serial RX buffer
     Serial.read();
 
-  //myModule.enableDebugging(); // Uncomment this line to enable helpful debug messages on Serial
+  Serial.println(F("Beginning..."));
+
+  // myModule.enableDebugging(); // Uncomment this line to enable helpful debug messages on Serial
 
   // For the MicroMod Asset Tracker, we need to invert the power pin so it pulls high instead of low
-  // Comment the next line if required
-  myModule.invertPowerPin(true); 
+  // Uncomment the next line if required
+  // myModule.invertPowerPin(true); 
 
-  // Initialize the SARA
+  // Initialize the module
   if (myModule.begin(mySerial, UBX_CELL_DEFAULT_BAUD_RATE) )
   {
-    Serial.println(F("SARA-R5 connected!"));
+    Serial.println(F("Module connected!"));
   }
   else
   {
-    Serial.println(F("Unable to communicate with the SARA."));
-    Serial.println(F("Manually power-on (hold the SARA On button for 3 seconds) on and try again."));
+    Serial.println(F("Unable to communicate with the module."));
+    Serial.println(F("Manually power-on (hold the module's On button for 3 seconds) and try again."));
     while (1) ; // Loop forever on fail
   }
   Serial.println();
@@ -95,5 +97,5 @@ void setup()
 
 void loop()
 {
-  myModule.poll(); // Keep processing data from the SARA so we can extract the SIM status
+  myModule.poll(); // Keep processing data from the module so we can extract the SIM status
 }
