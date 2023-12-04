@@ -684,19 +684,37 @@ bool UBX_CELL::processURCEvent(const char *event)
 
         if (*searchPtr != '\0') // Make sure we found a quote
         {
+          // Extract IP address
           int remoteIPstore[4];
-          scanNum = sscanf(searchPtr, "\",\"%d.%d.%d.%d\",%d,%ld",
-                            &remoteIPstore[0], &remoteIPstore[1], &remoteIPstore[2], &remoteIPstore[3], &ttl, &rtt);
+          scanNum = sscanf(searchPtr, "\",\"%d.%d.%d.%d",
+                            &remoteIPstore[0], &remoteIPstore[1], &remoteIPstore[2], &remoteIPstore[3]);
           for (int i = 0; i <= 3; i++)
           {
             remoteIP[i] = (uint8_t)remoteIPstore[i];
           }
 
-          if (scanNum == 6) // Make sure we extracted enough data
+          if (scanNum == 4) // Make sure we extracted enough data
           {
-            if (_pingRequestCallback != nullptr)
+            // Extract TTL, should be immediately after IP address
+            searchPtr = strchr(searchPtr + 2, ','); // +2 to skip the quote and comma
+            if(searchPtr != nullptr)
             {
-              _pingRequestCallback(retry, p_size, remote_host, remoteIP, ttl, rtt);
+              // It's possible the TTL is not present (eg. on LARA-R6), so we
+              // can ignore scanNum since ttl defaults to 0 anyways
+              scanNum = sscanf(searchPtr, ",%d", &ttl);
+
+              // Extract RTT, should be immediately after TTL
+              searchPtr = strchr(searchPtr + 1, ','); // +1 to skip the comma
+              if(searchPtr != nullptr)
+              {
+                scanNum = sscanf(searchPtr, ",%ld", &rtt);
+
+                // Callback, if it exists
+                if (_pingRequestCallback != nullptr)
+                {
+                  _pingRequestCallback(retry, p_size, remote_host, remoteIP, ttl, rtt);
+                }
+              }
             }
           }
         }
