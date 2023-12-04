@@ -7,12 +7,12 @@
 // Uncomment the module you're using. If your module is not listed below, then
 // it's not supported for this example
 UBX_CELL myModule; // This example works with all modules, so the base class can be used
-// UBX_CELL myModule; // Base SARA-R5 class
-// UBX_CELL00S myModule;
-// UBX_CELL00S_01B myModule;
-// UBX_CELL00S_61B myModule;
-// UBX_CELL10M8S_61B myModule;
-// UBX_CELL10S myModule;
+// SARA_R5 myModule; // Base SARA-R5 class
+// SARA_R500S myModule;
+// SARA_R500S_01B myModule;
+// SARA_R500S_61B myModule;
+// SARA_R510M8S_61B myModule;
+// SARA_R510S myModule;
 // LARA_R6 myModule; // Base LARA-R6 class
 // LARA_R6001 myModule;
 // LARA_R6001D myModule;
@@ -103,7 +103,7 @@ int convertOperatorNumber( mobile_network_operator_t mno)
 // of MNO_SW_DEFAULT.
 #define MAX_OPERATORS 10
 
-// Uncomment this line if you want to be able to communicate directly with the SARA in the main loop
+// Uncomment this line if you want to be able to communicate directly with the module in the main loop
 //#define DEBUG_PASSTHROUGH_ENABLED
 
 void setup()

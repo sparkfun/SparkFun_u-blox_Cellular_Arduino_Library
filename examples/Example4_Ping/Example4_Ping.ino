@@ -7,12 +7,12 @@
 // Uncomment the module you're using. If your module is not listed below, then
 // it's not supported for this example
 UBX_CELL myModule; // This example works with all modules, so the base class can be used
-// UBX_CELL myModule; // Base SARA-R5 class
-// UBX_CELL00S myModule;
-// UBX_CELL00S_01B myModule;
-// UBX_CELL00S_61B myModule;
-// UBX_CELL10M8S_61B myModule;
-// UBX_CELL10S myModule;
+// SARA_R5 myModule; // Base SARA-R5 class
+// SARA_R500S myModule;
+// SARA_R500S_01B myModule;
+// SARA_R500S_61B myModule;
+// SARA_R510M8S_61B myModule;
+// SARA_R510S myModule;
 // LARA_R6 myModule; // Base LARA-R6 class
 // LARA_R6001 myModule;
 // LARA_R6001D myModule;
@@ -23,7 +23,7 @@ UBX_CELL myModule; // This example works with all modules, so the base class can
 
 String pingMe = ""; // The name of the server we are going to ping
 
-// processPingResult is provided to the SARA-R5 library via a 
+// processPingResult is provided to the u-blox cellular library via a 
 // callback setter -- setPingCallback. (See the end of setup())
 void processPingResult(int retry, int p_size, String remote_hostname, IPAddress ip, int ttl, long rtt)
 {
@@ -93,7 +93,7 @@ void setup()
   }
   else
   {
-    Serial.print(F("The SARA is not yet connected to an operator. Please use the previous examples to connect. Or wait and retry. Freezing..."));
+    Serial.print(F("The module is not yet connected to an operator. Please use the previous examples to connect. Or wait and retry. Freezing..."));
     while (1)
       ; // Do nothing more
   }
@@ -136,5 +136,5 @@ void loop()
     }
   }
   
-  myModule.poll(); // Keep processing data from the SARA so we can catch the Ping result
+  myModule.poll(); // Keep processing data from the module so we can catch the Ping result
 }
