@@ -3,12 +3,12 @@
 
 #include "sfe_ublox_cellular.h"
 
-const char SARA_R5_MESSAGE_PDP_CONFIG[] = "+UPSD";          // Packet switched Data Profile configuration
-const char SARA_R5_MESSAGE_PDP_ACTION[] = "+UPSDA";         // Perform the action for the specified PSD profile
-const char SARA_R5_NETWORK_ASSIGNED_DATA[] = "+UPSND";      // Packet switched network-assigned data
-const char SARA_R5_GNSS_REQUEST_TIME[] = "+UTIME";          // Ask for time information from cellular modem (CellTime)
-const char SARA_R5_GNSS_TIME_INDICATION[] = "+UTIMEIND";    // Time information request status unsolicited indication
-const char SARA_R5_GNSS_TIME_CONFIGURATION[] = "+UTIMECFG"; // Sets time configuration
+const char UBX_CELL_MESSAGE_PDP_CONFIG[] = "+UPSD";          // Packet switched Data Profile configuration
+const char UBX_CELL_MESSAGE_PDP_ACTION[] = "+UPSDA";         // Perform the action for the specified PSD profile
+const char UBX_CELL_NETWORK_ASSIGNED_DATA[] = "+UPSND";      // Packet switched network-assigned data
+const char UBX_CELL_GNSS_REQUEST_TIME[] = "+UTIME";          // Ask for time information from cellular modem (CellTime)
+const char UBX_CELL_GNSS_TIME_INDICATION[] = "+UTIMEIND";    // Time information request status unsolicited indication
+const char UBX_CELL_GNSS_TIME_CONFIGURATION[] = "+UTIMECFG"; // Sets time configuration
 
 // Base SARA-R5 class
 class SARA_R5: public UBX_CELL
