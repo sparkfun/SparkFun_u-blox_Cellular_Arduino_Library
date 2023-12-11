@@ -3,12 +3,12 @@
 
 #include "sfe_ublox_cellular.h"
 
-const char UBX_CELL_COMMAND_DIAL[] = "D";              // Dial command
-const char UBX_CELL_COMMAND_ANSWER[] = "A";            // Answer call
-const char UBX_CELL_COMMAND_HANG_UP[] = "+CHUP";       // Hang up call
-const char UBX_CELL_COMMAND_PLAY_AUDIO[] = "+UPAR";    // Play audio resource
-const char UBX_CELL_COMMAND_STOP_AUDIO[] = "+USAR";    // Stop audio resource
-const char UBX_CELL_COMMAND_GENERATE_TONE[] = "+UTGN"; // Tone generator
+const char* const UBX_CELL_COMMAND_DIAL = "D";              // Dial command
+const char* const UBX_CELL_COMMAND_ANSWER = "A";            // Answer call
+const char* const UBX_CELL_COMMAND_HANG_UP = "+CHUP";       // Hang up call
+const char* const UBX_CELL_COMMAND_PLAY_AUDIO = "+UPAR";    // Play audio resource
+const char* const UBX_CELL_COMMAND_STOP_AUDIO = "+USAR";    // Stop audio resource
+const char* const UBX_CELL_COMMAND_GENERATE_TONE = "+UTGN"; // Tone generator
 
 // Base class for any modules supporting voice calls
 template <typename T>
