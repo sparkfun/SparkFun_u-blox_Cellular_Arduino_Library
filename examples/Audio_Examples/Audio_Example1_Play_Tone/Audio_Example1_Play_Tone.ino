@@ -17,6 +17,15 @@ void setup()
 
   // Wait for user to press key to begin
   Serial.println(F("u-blox Cellular Audio Example 1 - Play Tone"));
+
+  Serial.println();
+  Serial.println(F("!!!!!!!! ATTENTION !!!!!!!! ATTENTION !!!!!!!! ATTENTION !!!!!!!!"));
+  Serial.println(F("This example requires an audio codec attached to the I2S interface"));
+  Serial.println(F("of the cellular modem. Please add one and update this example as"));
+  Serial.println(F("needed to configure your audio codec!"));
+  Serial.println(F("!!!!!!!! ATTENTION !!!!!!!! ATTENTION !!!!!!!! ATTENTION !!!!!!!!"));
+  Serial.println();
+
   Serial.println(F("Press any key to begin"));
   
   while (!Serial.available()) // Wait for the user to press a key (send any serial character)
