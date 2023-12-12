@@ -127,4 +127,9 @@ public:
   }
 };
 
+class UBX_CELL_VOICE_BASE : public UBX_CELL, public UBX_CELL_VOICE<UBX_CELL_VOICE_BASE>
+{
+
+};
+
 #endif
