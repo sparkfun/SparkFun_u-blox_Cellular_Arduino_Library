@@ -10,11 +10,29 @@ const char* const UBX_CELL_COMMAND_PLAY_AUDIO = "+UPAR";    // Play audio resour
 const char* const UBX_CELL_COMMAND_STOP_AUDIO = "+USAR";    // Stop audio resource
 const char* const UBX_CELL_COMMAND_GENERATE_TONE = "+UTGN"; // Tone generator
 
+const char* const UBX_CELL_RING_URC = "RING";
+
+typedef enum
+{
+  UBX_CELL_AUDIO_RESOURCE_TONE = 0,
+  UBX_CELL_AUDIO_RESOURCE_MIDI = 1,
+  UBX_CELL_AUDIO_RESOURCE_LOOPBACK = 2
+} UBX_CELL_audio_resource_t;
+
 // Base class for any modules supporting voice calls
 template <typename T>
 class UBX_CELL_VOICE
 {
 public:
+  UBX_CELL_VOICE(void)
+  {
+    // Set ring URC callback to nullptr
+    _ringCallback = nullptr;
+
+    // Add handler for ring URC
+    static_cast<T*>(this)->addURCHandler(UBX_CELL_RING_URC, [this](const char* event){return this->urcCheckRing(event);});
+  }
+
   UBX_CELL_error_t dial(String number)
   {
     char *command;
@@ -60,7 +78,7 @@ public:
                                   nullptr, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
   }
 
-  UBX_CELL_error_t playAudioResource(uint8_t audio_resource, uint8_t tone_id, uint8_t nof_repeat)
+  UBX_CELL_error_t playAudioResource(uint8_t audio_resource, uint8_t tone_id = 0, uint8_t nof_repeat = 0)
   {
     UBX_CELL_error_t err;
     char *command;
@@ -125,6 +143,36 @@ public:
     free(command);
     return err;
   }
+
+  void setRingCallback(void (*callback)(void))
+  {
+    _ringCallback = callback;
+  }
+
+protected:
+  // Callback for incoming calls
+  void (*_ringCallback)(void);
+  
+  bool urcCheckRing(const char *event)
+  {
+    int socket, length;
+    char *searchPtr = strstr(event, UBX_CELL_RING_URC);
+    if (searchPtr != nullptr)
+    {
+      if(_ringCallback != nullptr)
+      {
+        _ringCallback();
+      }
+      return true;
+    }
+
+    return false;
+  }
+};
+
+class UBX_CELL_VOICE_BASE : public UBX_CELL, public UBX_CELL_VOICE<UBX_CELL_VOICE_BASE>
+{
+
 };
 
 #endif
