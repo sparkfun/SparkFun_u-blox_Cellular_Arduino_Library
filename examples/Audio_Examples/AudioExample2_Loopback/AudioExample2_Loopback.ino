@@ -19,11 +19,11 @@ void setup()
   Serial.println(F("u-blox Cellular Audio Example 2 - Loopback"));
 
   Serial.println();
-  Serial.println(F("!!!!!!!! ATTENTION !!!!!!!! ATTENTION !!!!!!!! ATTENTION !!!!!!!!"));
+  Serial.println(F("! ! ! ! ! ATTENTION ! ! ! ! ! ATTENTION ! ! ! ! ! ATTENTION ! ! ! ! !"));
   Serial.println(F("This example requires an audio codec attached to the I2S interface"));
   Serial.println(F("of the cellular modem. Please add one and update this example as"));
   Serial.println(F("needed to configure your audio codec!"));
-  Serial.println(F("!!!!!!!! ATTENTION !!!!!!!! ATTENTION !!!!!!!! ATTENTION !!!!!!!!"));
+  Serial.println(F("! ! ! ! ! ATTENTION ! ! ! ! ! ATTENTION ! ! ! ! ! ATTENTION ! ! ! ! !"));
   Serial.println();
 
   Serial.println(F("Press any key to begin"));
