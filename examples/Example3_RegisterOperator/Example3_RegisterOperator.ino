@@ -58,43 +58,30 @@ int convertOperatorNumber( mobile_network_operator_t mno)
     case 5:
     case 6:
       return ((int)mno);
-      break;
     case 8:
       return 7;
-      break;
     case 19:
       return 8;
-      break;
     case 20:
       return 9;
-      break;
     case 21:
       return 10;
-      break;
     case 28:
       return 11;
-      break;
     case 31:
       return 12;
-      break;
     case 32:
       return 13;
-      break;
     case 39:
       return 14;
-      break;
     case 90:
       return 15;
-      break;
     case 100:
       return 16;
-      break;
     case 101:
       return 17;
-      break;
     default: // NOT RECOGNIZED
       return 18;
-      break;
   }
 }
 
