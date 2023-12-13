@@ -71,6 +71,7 @@
 #endif
 
 #include <IPAddress.h>
+#include <vector>
 
 #define UBX_CELL_POWER_PIN -1 // Default to no pin
 #define UBX_CELL_RESET_PIN -1
@@ -206,6 +207,9 @@ const char* const UBX_CELL_RESPONSE_OK = "\nOK\r\n";
 const char* const UBX_CELL_RESPONSE_ERROR = "\nERROR\r\n";
 const char* const UBX_CELL_RESPONSE_CONNECT = "\r\nCONNECT\r\n";
 #define UBX_CELL_RESPONSE_OK_OR_ERROR nullptr
+
+// URC handler type definition
+typedef std::function<bool(const char*)> UBX_CELL_urc_handler_t;
 
 // CTRL+Z and ESC ASCII codes for SMS message sends
 const char ASCII_CTRL_Z = 0x1A;
@@ -1010,6 +1014,9 @@ public:
 
   char *ubx_cell_calloc_char(size_t num);
 
+  // Add a URC handler
+  void addURCHandler(const char* urcString, UBX_CELL_urc_handler_t urcHandler);
+
 protected:
   HardwareSerial *_hardSerial;
 #ifdef UBX_CELL_SOFTWARE_SERIAL_ENABLED
@@ -1054,6 +1061,9 @@ protected:
   void (*_registrationCallback)(UBX_CELL_registration_status_t status, unsigned int lac, unsigned int ci, int Act);
   void (*_epsRegistrationCallback)(UBX_CELL_registration_status_t status, unsigned int tac, unsigned int ci, int Act);
 
+  // Vectors of URC strings and handlers
+  std::vector<const char*> _urcStrings;
+  std::vector<UBX_CELL_urc_handler_t> _urcHandlers;
 
   int _lastSocketProtocol[UBX_CELL_NUM_SOCKETS]; // Record the protocol for each socket to avoid having to call querySocketType in parseSocketReadIndication
 
@@ -1099,6 +1109,20 @@ protected:
   bool find(char *target);
 
   UBX_CELL_error_t autobaud(unsigned long desiredBaud);
+
+  bool urcHandlerReadSocket(const char* event);
+  bool urcHandlerReadUDPSocket(const char* event);
+  bool urcHandlerListeningSocket(const char* event);
+  bool urcHandlerCloseSocket(const char* event);
+  bool urcHandlerGNSSRequestLocation(const char* event);
+  bool urcHandlerSIMState(const char* event);
+  bool urcHandlerPDPAction(const char* event);
+  bool urcHandlerHTTPCommand(const char* event);
+  bool urcHandlerMQTTCommand(const char* event);
+  bool urcHandlerPingCommand(const char* event);
+  bool urcHandlerFTPCommand(const char* event);
+  bool urcHandlerRegistrationStatus(const char* event);
+  bool urcHandlerEPSRegistrationStatus(const char* event);
 
   bool processURCEvent(const char *event);
   void pruneBacklog(void);
