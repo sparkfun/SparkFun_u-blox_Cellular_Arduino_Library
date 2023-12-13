@@ -53,6 +53,21 @@ UBX_CELL::UBX_CELL(int powerPin, int resetPin, uint8_t maxInitTries)
   _saraRXBuffer = nullptr;
   _pruneBuffer = nullptr;
   _saraResponseBacklog = nullptr;
+
+  // Add base URC handlers
+  addURCHandler(UBX_CELL_READ_SOCKET_URC,            [this](const char* event){return this->urcHandlerReadSocket(event);});
+  addURCHandler(UBX_CELL_READ_UDP_SOCKET_URC,        [this](const char* event){return this->urcHandlerReadUDPSocket(event);});
+  addURCHandler(UBX_CELL_LISTEN_SOCKET_URC,          [this](const char* event){return this->urcHandlerListeningSocket(event);});
+  addURCHandler(UBX_CELL_CLOSE_SOCKET_URC,           [this](const char* event){return this->urcHandlerCloseSocket(event);});
+  addURCHandler(UBX_CELL_GNSS_REQUEST_LOCATION_URC,  [this](const char* event){return this->urcHandlerGNSSRequestLocation(event);});
+  addURCHandler(UBX_CELL_SIM_STATE_URC,              [this](const char* event){return this->urcHandlerSIMState(event);});
+  addURCHandler(UBX_CELL_MESSAGE_PDP_ACTION_URC,     [this](const char* event){return this->urcHandlerPDPAction(event);});
+  addURCHandler(UBX_CELL_HTTP_COMMAND_URC,           [this](const char* event){return this->urcHandlerHTTPCommand(event);});
+  addURCHandler(UBX_CELL_MQTT_COMMAND_URC,           [this](const char* event){return this->urcHandlerMQTTCommand(event);});
+  addURCHandler(UBX_CELL_PING_COMMAND_URC,           [this](const char* event){return this->urcHandlerPingCommand(event);});
+  addURCHandler(UBX_CELL_FTP_COMMAND_URC,            [this](const char* event){return this->urcHandlerFTPCommand(event);});
+  addURCHandler(UBX_CELL_REGISTRATION_STATUS_URC,    [this](const char* event){return this->urcHandlerRegistrationStatus(event);});
+  addURCHandler(UBX_CELL_EPSREGISTRATION_STATUS_URC, [this](const char* event){return this->urcHandlerEPSRegistrationStatus(event);});
 }
 
 UBX_CELL::~UBX_CELL(void) {
@@ -313,463 +328,543 @@ bool UBX_CELL::bufferedPoll(void)
   return handled;
 } // /bufferedPoll
 
-// Parse incoming URC's - the associated parse functions pass the data to the user via the callbacks (if defined)
-bool UBX_CELL::processURCEvent(const char *event)
+bool UBX_CELL::urcHandlerReadSocket(const char* event)
 {
-  { // URC: +UUSORD (Read Socket Data)
-    int socket, length;
-    char *searchPtr = strstr(event, UBX_CELL_READ_SOCKET_URC);
-    if (searchPtr != nullptr)
+  // URC: +UUSORD (Read Socket Data)
+  int socket, length;
+  char *searchPtr = strstr(event, UBX_CELL_READ_SOCKET_URC);
+  if (searchPtr != nullptr)
+  {
+    searchPtr += strlen(UBX_CELL_READ_SOCKET_URC); // Move searchPtr to first character - probably a space
+    while (*searchPtr == ' ') searchPtr++; // Skip spaces
+    int ret = sscanf(searchPtr, "%d,%d", &socket, &length);
+    if (ret == 2)
     {
-      searchPtr += strlen(UBX_CELL_READ_SOCKET_URC); // Move searchPtr to first character - probably a space
-      while (*searchPtr == ' ') searchPtr++; // Skip spaces
-      int ret = sscanf(searchPtr, "%d,%d", &socket, &length);
-      if (ret == 2)
+      if (_printDebug == true)
+        _debugPort->println(F("processReadEvent: read socket data"));
+      // From the UBX_CELL AT Commands Manual:
+      // "For the UDP socket type the URC +UUSORD: <socket>,<length> notifies that a UDP packet has been received,
+      //  either when buffer is empty or after a UDP packet has been read and one or more packets are stored in the
+      //  buffer."
+      // So we need to check if this is a TCP socket or a UDP socket:
+      //  If UDP, we call parseSocketReadIndicationUDP.
+      //  Otherwise, we call parseSocketReadIndication.
+      if (_lastSocketProtocol[socket] == UBX_CELL_UDP)
       {
         if (_printDebug == true)
-          _debugPort->println(F("processReadEvent: read socket data"));
-        // From the UBX_CELL AT Commands Manual:
-        // "For the UDP socket type the URC +UUSORD: <socket>,<length> notifies that a UDP packet has been received,
-        //  either when buffer is empty or after a UDP packet has been read and one or more packets are stored in the
-        //  buffer."
-        // So we need to check if this is a TCP socket or a UDP socket:
-        //  If UDP, we call parseSocketReadIndicationUDP.
-        //  Otherwise, we call parseSocketReadIndication.
-        if (_lastSocketProtocol[socket] == UBX_CELL_UDP)
-        {
-          if (_printDebug == true)
-            _debugPort->println(F("processReadEvent: received +UUSORD but socket is UDP. Calling parseSocketReadIndicationUDP"));
-          parseSocketReadIndicationUDP(socket, length);
-        }
-        else
-          parseSocketReadIndication(socket, length);
-        return true;
-      }
-    }
-  }
-  { // URC: +UUSORF (Receive From command (UDP only))
-    int socket, length;
-    char *searchPtr = strstr(event, UBX_CELL_READ_UDP_SOCKET_URC);
-    if (searchPtr != nullptr)
-    {
-      searchPtr += strlen(UBX_CELL_READ_UDP_SOCKET_URC); // Move searchPtr to first character - probably a space
-      while (*searchPtr == ' ') searchPtr++; // skip spaces
-      int ret = sscanf(searchPtr, "%d,%d", &socket, &length);
-      if (ret == 2)
-      {
-        if (_printDebug == true)
-          _debugPort->println(F("processReadEvent: UDP receive"));
+          _debugPort->println(F("processReadEvent: received +UUSORD but socket is UDP. Calling parseSocketReadIndicationUDP"));
         parseSocketReadIndicationUDP(socket, length);
-        return true;
       }
+      else
+        parseSocketReadIndication(socket, length);
+      return true;
     }
   }
-  { // URC: +UUSOLI (Set Listening Socket)
-    int socket = 0;
-    int listenSocket = 0;
-    unsigned int port = 0;
-    unsigned int listenPort = 0;
-    IPAddress remoteIP = {0,0,0,0};
-    IPAddress localIP = {0,0,0,0};
-    int remoteIPstore[4]  = {0,0,0,0};
-    int localIPstore[4] = {0,0,0,0};
 
-    char *searchPtr = strstr(event, UBX_CELL_LISTEN_SOCKET_URC);
-    if (searchPtr != nullptr)
+  return false;
+}
+
+bool UBX_CELL::urcHandlerReadUDPSocket(const char* event)
+{
+  // URC: +UUSORF (Receive From command (UDP only))
+  int socket, length;
+  char *searchPtr = strstr(event, UBX_CELL_READ_UDP_SOCKET_URC);
+  if (searchPtr != nullptr)
+  {
+    searchPtr += strlen(UBX_CELL_READ_UDP_SOCKET_URC); // Move searchPtr to first character - probably a space
+    while (*searchPtr == ' ') searchPtr++; // skip spaces
+    int ret = sscanf(searchPtr, "%d,%d", &socket, &length);
+    if (ret == 2)
     {
-      searchPtr += strlen(UBX_CELL_LISTEN_SOCKET_URC); // Move searchPtr to first character - probably a space
-      while (*searchPtr == ' ') searchPtr++; // skip spaces
-      int ret = sscanf(searchPtr,
-                      "%d,\"%d.%d.%d.%d\",%u,%d,\"%d.%d.%d.%d\",%u",
-                      &socket,
-                      &remoteIPstore[0], &remoteIPstore[1], &remoteIPstore[2], &remoteIPstore[3],
-                      &port, &listenSocket,
-                      &localIPstore[0], &localIPstore[1], &localIPstore[2], &localIPstore[3],
-                      &listenPort);
+      if (_printDebug == true)
+        _debugPort->println(F("processReadEvent: UDP receive"));
+      parseSocketReadIndicationUDP(socket, length);
+      return true;
+    }
+  }
+
+  return false;
+}
+
+bool UBX_CELL::urcHandlerListeningSocket(const char* event)
+{
+  // URC: +UUSOLI (Set Listening Socket)
+  int socket = 0;
+  int listenSocket = 0;
+  unsigned int port = 0;
+  unsigned int listenPort = 0;
+  IPAddress remoteIP = {0,0,0,0};
+  IPAddress localIP = {0,0,0,0};
+  int remoteIPstore[4]  = {0,0,0,0};
+  int localIPstore[4] = {0,0,0,0};
+
+  char *searchPtr = strstr(event, UBX_CELL_LISTEN_SOCKET_URC);
+  if (searchPtr != nullptr)
+  {
+    searchPtr += strlen(UBX_CELL_LISTEN_SOCKET_URC); // Move searchPtr to first character - probably a space
+    while (*searchPtr == ' ') searchPtr++; // skip spaces
+    int ret = sscanf(searchPtr,
+                    "%d,\"%d.%d.%d.%d\",%u,%d,\"%d.%d.%d.%d\",%u",
+                    &socket,
+                    &remoteIPstore[0], &remoteIPstore[1], &remoteIPstore[2], &remoteIPstore[3],
+                    &port, &listenSocket,
+                    &localIPstore[0], &localIPstore[1], &localIPstore[2], &localIPstore[3],
+                    &listenPort);
+    for (int i = 0; i <= 3; i++)
+    {
+      if (ret >= 5)
+        remoteIP[i] = (uint8_t)remoteIPstore[i];
+      if (ret >= 11)
+        localIP[i] = (uint8_t)localIPstore[i];
+    }
+    if (ret >= 5)
+    {
+      if (_printDebug == true)
+        _debugPort->println(F("processReadEvent: socket listen"));
+      parseSocketListenIndication(listenSocket, localIP, listenPort, socket, remoteIP, port);
+      return true;
+    }
+  }
+
+  return false;
+}
+
+bool UBX_CELL::urcHandlerCloseSocket(const char* event)
+{
+  // URC: +UUSOCL (Close Socket)
+  int socket;
+  char *searchPtr = strstr(event, UBX_CELL_CLOSE_SOCKET_URC);
+  if (searchPtr != nullptr)
+  {
+    searchPtr += strlen(UBX_CELL_CLOSE_SOCKET_URC); // Move searchPtr to first character - probably a space
+    while (*searchPtr == ' ') searchPtr++; // skip spaces
+    int ret = sscanf(searchPtr, "%d", &socket);
+    if (ret == 1)
+    {
+      if (_printDebug == true)
+        _debugPort->println(F("processReadEvent: socket close"));
+      if ((socket >= 0) && (socket <= 6))
+      {
+        if (_socketCloseCallback != nullptr)
+        {
+          _socketCloseCallback(socket);
+        }
+      }
+      return true;
+    }
+  }
+
+  return false;
+}
+
+bool UBX_CELL::urcHandlerGNSSRequestLocation(const char* event)
+{
+  // URC: +UULOC (Localization information - CellLocate and hybrid positioning)
+  ClockData clck;
+  PositionData gps;
+  SpeedData spd;
+  unsigned long uncertainty;
+  int scanNum;
+  int latH, lonH, alt;
+  unsigned int speedU, cogU;
+  char latL[10], lonL[10];
+  int dateStore[5];
+
+  // Maybe we should also scan for +UUGIND and extract the activated gnss system?
+
+  // This assumes the ULOC response type is "0" or "1" - as selected by gpsRequest detailed
+  char *searchPtr = strstr(event, UBX_CELL_GNSS_REQUEST_LOCATION_URC);
+  if (searchPtr != nullptr)
+  {
+    searchPtr += strlen(UBX_CELL_GNSS_REQUEST_LOCATION_URC); // Move searchPtr to first character - probably a space
+    while (*searchPtr == ' ') searchPtr++; // skip spaces
+    scanNum = sscanf(searchPtr,
+                      "%d/%d/%d,%d:%d:%d.%d,%d.%[^,],%d.%[^,],%d,%lu,%u,%u,%*s",
+                      &dateStore[0], &dateStore[1], &clck.date.year,
+                      &dateStore[2], &dateStore[3], &dateStore[4], &clck.time.ms,
+                      &latH, latL, &lonH, lonL, &alt, &uncertainty,
+                      &speedU, &cogU);
+    clck.date.day = dateStore[0];
+    clck.date.month = dateStore[1];
+    clck.time.hour = dateStore[2];
+    clck.time.minute = dateStore[3];
+    clck.time.second = dateStore[4];
+
+    if (scanNum >= 13)
+    {
+      // Found a Location string!
+      if (_printDebug == true)
+      {
+        _debugPort->println(F("processReadEvent: location"));
+      }
+
+      if (latH >= 0)
+        gps.lat = (float)latH + ((float)atol(latL) / pow(10, strlen(latL)));
+      else
+        gps.lat = (float)latH - ((float)atol(latL) / pow(10, strlen(latL)));
+      if (lonH >= 0)
+        gps.lon = (float)lonH + ((float)atol(lonL) / pow(10, strlen(lonL)));
+      else
+        gps.lon = (float)lonH - ((float)atol(lonL) / pow(10, strlen(lonL)));
+      gps.alt = (float)alt;
+      if (scanNum >= 15) // If detailed response, get speed data
+      {
+        spd.speed = (float)speedU;
+        spd.cog = (float)cogU;
+      }
+
+      // if (_printDebug == true)
+      // {
+      //   _debugPort->print(F("processReadEvent: location:  lat: "));
+      //   _debugPort->print(gps.lat, 7);
+      //   _debugPort->print(F(" lon: "));
+      //   _debugPort->print(gps.lon, 7);
+      //   _debugPort->print(F(" alt: "));
+      //   _debugPort->print(gps.alt, 2);
+      //   _debugPort->print(F(" speed: "));
+      //   _debugPort->print(spd.speed, 2);
+      //   _debugPort->print(F(" cog: "));
+      //   _debugPort->println(spd.cog, 2);
+      // }
+
+      if (_gpsRequestCallback != nullptr)
+      {
+        _gpsRequestCallback(clck, gps, spd, uncertainty);
+      }
+
+      return true;
+    }
+  }
+
+  return false;
+}
+
+bool UBX_CELL::urcHandlerSIMState(const char* event)
+{
+  // URC: +UUSIMSTAT (SIM Status)
+  UBX_CELL_sim_states_t state;
+  int scanNum;
+  int stateStore;
+
+  char *searchPtr = strstr(event, UBX_CELL_SIM_STATE_URC);
+  if (searchPtr != nullptr)
+  {
+    searchPtr += strlen(UBX_CELL_SIM_STATE_URC); // Move searchPtr to first character - probably a space
+    while (*searchPtr == ' ') searchPtr++; // skip spaces
+    scanNum = sscanf(searchPtr, "%d", &stateStore);
+
+    if (scanNum == 1)
+    {
+      if (_printDebug == true)
+        _debugPort->println(F("processReadEvent: SIM status"));
+
+      state = (UBX_CELL_sim_states_t)stateStore;
+
+      if (_simStateReportCallback != nullptr)
+      {
+        _simStateReportCallback(state);
+      }
+
+      return true;
+    }
+  }
+
+  return false;
+}
+
+bool UBX_CELL::urcHandlerPDPAction(const char* event)
+{
+  // URC: +UUPSDA (Packet Switched Data Action)
+  int result;
+  IPAddress remoteIP = {0, 0, 0, 0};
+  int scanNum;
+  int remoteIPstore[4];
+
+  char *searchPtr = strstr(event, UBX_CELL_MESSAGE_PDP_ACTION_URC);
+  if (searchPtr != nullptr)
+  {
+    searchPtr += strlen(UBX_CELL_MESSAGE_PDP_ACTION_URC); // Move searchPtr to first character - probably a space
+    while (*searchPtr == ' ') searchPtr++; // skip spaces
+    scanNum = sscanf(searchPtr, "%d,\"%d.%d.%d.%d\"",
+                      &result, &remoteIPstore[0], &remoteIPstore[1], &remoteIPstore[2], &remoteIPstore[3]);
+
+    if (scanNum == 5)
+    {
+      if (_printDebug == true)
+        _debugPort->println(F("processReadEvent: packet switched data action"));
+
       for (int i = 0; i <= 3; i++)
       {
-        if (ret >= 5)
-          remoteIP[i] = (uint8_t)remoteIPstore[i];
-        if (ret >= 11)
-          localIP[i] = (uint8_t)localIPstore[i];
+        remoteIP[i] = (uint8_t)remoteIPstore[i];
       }
-      if (ret >= 5)
+
+      if (_psdActionRequestCallback != nullptr)
       {
-        if (_printDebug == true)
-          _debugPort->println(F("processReadEvent: socket listen"));
-        parseSocketListenIndication(listenSocket, localIP, listenPort, socket, remoteIP, port);
-        return true;
+        _psdActionRequestCallback(result, remoteIP);
       }
+
+      return true;
     }
   }
-  { // URC: +UUSOCL (Close Socket)
-    int socket;
-    char *searchPtr = strstr(event, UBX_CELL_CLOSE_SOCKET_URC);
-    if (searchPtr != nullptr)
+
+  return false;
+}
+
+bool UBX_CELL::urcHandlerHTTPCommand(const char* event)
+{
+  // URC: +UUHTTPCR (HTTP Command Result)
+  int profile, command, result;
+  int scanNum;
+
+  char *searchPtr = strstr(event, UBX_CELL_HTTP_COMMAND_URC);
+  if (searchPtr != nullptr)
+  {
+    searchPtr += strlen(UBX_CELL_HTTP_COMMAND_URC); // Move searchPtr to first character - probably a space
+    while (*searchPtr == ' ') searchPtr++; // skip spaces
+    scanNum = sscanf(searchPtr, "%d,%d,%d", &profile, &command, &result);
+
+    if (scanNum == 3)
     {
-      searchPtr += strlen(UBX_CELL_CLOSE_SOCKET_URC); // Move searchPtr to first character - probably a space
-      while (*searchPtr == ' ') searchPtr++; // skip spaces
-      int ret = sscanf(searchPtr, "%d", &socket);
-      if (ret == 1)
+      if (_printDebug == true)
+        _debugPort->println(F("processReadEvent: HTTP command result"));
+
+      if ((profile >= 0) && (profile < UBX_CELL_NUM_HTTP_PROFILES))
       {
-        if (_printDebug == true)
-          _debugPort->println(F("processReadEvent: socket close"));
-        if ((socket >= 0) && (socket <= 6))
+        if (_httpCommandRequestCallback != nullptr)
         {
-          if (_socketCloseCallback != nullptr)
-          {
-            _socketCloseCallback(socket);
-          }
+          _httpCommandRequestCallback(profile, command, result);
         }
-        return true;
       }
+
+      return true;
     }
   }
-  { // URC: +UULOC (Localization information - CellLocate and hybrid positioning)
-    ClockData clck;
-    PositionData gps;
-    SpeedData spd;
-    unsigned long uncertainty;
-    int scanNum;
-    int latH, lonH, alt;
-    unsigned int speedU, cogU;
-    char latL[10], lonL[10];
-    int dateStore[5];
 
-    // Maybe we should also scan for +UUGIND and extract the activated gnss system?
+  return false;
+}
 
-    // This assumes the ULOC response type is "0" or "1" - as selected by gpsRequest detailed
-    char *searchPtr = strstr(event, UBX_CELL_GNSS_REQUEST_LOCATION_URC);
-    if (searchPtr != nullptr)
+bool UBX_CELL::urcHandlerMQTTCommand(const char* event)
+{
+  // URC: +UUMQTTC (MQTT Command Result)
+  int command, result;
+  int scanNum;
+  int qos = -1;
+  String topic;
+
+  char *searchPtr = strstr(event, UBX_CELL_MQTT_COMMAND_URC);
+  if (searchPtr != nullptr)
+  {
+    searchPtr += strlen(UBX_CELL_MQTT_COMMAND_URC); // Move searchPtr to first character - probably a space
+    while (*searchPtr == ' ')
     {
-      searchPtr += strlen(UBX_CELL_GNSS_REQUEST_LOCATION_URC); // Move searchPtr to first character - probably a space
-      while (*searchPtr == ' ') searchPtr++; // skip spaces
-      scanNum = sscanf(searchPtr,
-                        "%d/%d/%d,%d:%d:%d.%d,%d.%[^,],%d.%[^,],%d,%lu,%u,%u,%*s",
-                        &dateStore[0], &dateStore[1], &clck.date.year,
-                        &dateStore[2], &dateStore[3], &dateStore[4], &clck.time.ms,
-                        &latH, latL, &lonH, lonL, &alt, &uncertainty,
-                        &speedU, &cogU);
-      clck.date.day = dateStore[0];
-      clck.date.month = dateStore[1];
-      clck.time.hour = dateStore[2];
-      clck.time.minute = dateStore[3];
-      clck.time.second = dateStore[4];
+      searchPtr++; // skip spaces
+    }
 
-      if (scanNum >= 13)
+    scanNum = sscanf(searchPtr, "%d,%d", &command, &result);
+    if ((scanNum == 2) && (command == UBX_CELL_MQTT_COMMAND_SUBSCRIBE))
+    {
+      char topicC[100] = "";
+      scanNum = sscanf(searchPtr, "%*d,%*d,%d,\"%[^\"]\"", &qos, topicC);
+      topic = topicC;
+    }
+    if ((scanNum == 2) || (scanNum == 4))
+    {
+      if (_printDebug == true)
       {
-        // Found a Location string!
-        if (_printDebug == true)
-        {
-          _debugPort->println(F("processReadEvent: location"));
-        }
-
-        if (latH >= 0)
-          gps.lat = (float)latH + ((float)atol(latL) / pow(10, strlen(latL)));
-        else
-          gps.lat = (float)latH - ((float)atol(latL) / pow(10, strlen(latL)));
-        if (lonH >= 0)
-          gps.lon = (float)lonH + ((float)atol(lonL) / pow(10, strlen(lonL)));
-        else
-          gps.lon = (float)lonH - ((float)atol(lonL) / pow(10, strlen(lonL)));
-        gps.alt = (float)alt;
-        if (scanNum >= 15) // If detailed response, get speed data
-        {
-          spd.speed = (float)speedU;
-          spd.cog = (float)cogU;
-        }
-
-        // if (_printDebug == true)
-        // {
-        //   _debugPort->print(F("processReadEvent: location:  lat: "));
-        //   _debugPort->print(gps.lat, 7);
-        //   _debugPort->print(F(" lon: "));
-        //   _debugPort->print(gps.lon, 7);
-        //   _debugPort->print(F(" alt: "));
-        //   _debugPort->print(gps.alt, 2);
-        //   _debugPort->print(F(" speed: "));
-        //   _debugPort->print(spd.speed, 2);
-        //   _debugPort->print(F(" cog: "));
-        //   _debugPort->println(spd.cog, 2);
-        // }
-
-        if (_gpsRequestCallback != nullptr)
-        {
-          _gpsRequestCallback(clck, gps, spd, uncertainty);
-        }
-
-        return true;
+        _debugPort->println(F("processReadEvent: MQTT command result"));
       }
+
+      if (_mqttCommandRequestCallback != nullptr)
+      {
+        _mqttCommandRequestCallback(command, result);
+      }
+
+      return true;
     }
   }
-  { // URC: +UUSIMSTAT (SIM Status)
-    UBX_CELL_sim_states_t state;
-    int scanNum;
-    int stateStore;
 
-    char *searchPtr = strstr(event, UBX_CELL_SIM_STATE_URC);
-    if (searchPtr != nullptr)
+  return false;
+}
+
+bool UBX_CELL::urcHandlerPingCommand(const char* event)
+{
+  // URC: +UUPING (Ping Result)
+  int retry = 0;
+  int p_size = 0;
+  int ttl = 0;
+  String remote_host = "";
+  IPAddress remoteIP = {0, 0, 0, 0};
+  long rtt = 0;
+  int scanNum;
+
+  // Try to extract the UUPING retries and payload size
+  char *searchPtr = strstr(event, UBX_CELL_PING_COMMAND_URC);
+  if (searchPtr != nullptr)
+  {
+    searchPtr += strlen(UBX_CELL_PING_COMMAND_URC); // Move searchPtr to first character - probably a space
+    while (*searchPtr == ' ') searchPtr++; // skip spaces
+    scanNum = sscanf(searchPtr, "%d,%d,", &retry, &p_size);
+
+    if (scanNum == 2)
     {
-      searchPtr += strlen(UBX_CELL_SIM_STATE_URC); // Move searchPtr to first character - probably a space
-      while (*searchPtr == ' ') searchPtr++; // skip spaces
-      scanNum = sscanf(searchPtr, "%d", &stateStore);
-
-      if (scanNum == 1)
+      if (_printDebug == true)
       {
-        if (_printDebug == true)
-          _debugPort->println(F("processReadEvent: SIM status"));
-
-        state = (UBX_CELL_sim_states_t)stateStore;
-
-        if (_simStateReportCallback != nullptr)
-        {
-          _simStateReportCallback(state);
-        }
-
-        return true;
+        _debugPort->println(F("processReadEvent: ping"));
       }
-    }
-  }
-  { // URC: +UUPSDA (Packet Switched Data Action)
-    int result;
-    IPAddress remoteIP = {0, 0, 0, 0};
-    int scanNum;
-    int remoteIPstore[4];
 
-    char *searchPtr = strstr(event, UBX_CELL_MESSAGE_PDP_ACTION_URC);
-    if (searchPtr != nullptr)
-    {
-      searchPtr += strlen(UBX_CELL_MESSAGE_PDP_ACTION_URC); // Move searchPtr to first character - probably a space
-      while (*searchPtr == ' ') searchPtr++; // skip spaces
-      scanNum = sscanf(searchPtr, "%d,\"%d.%d.%d.%d\"",
-                        &result, &remoteIPstore[0], &remoteIPstore[1], &remoteIPstore[2], &remoteIPstore[3]);
+      searchPtr = strchr(++searchPtr, '\"'); // Search to the first quote
 
-      if (scanNum == 5)
+      // Extract the remote host name, stop at the next quote
+      while ((*(++searchPtr) != '\"') && (*searchPtr != '\0'))
       {
-        if (_printDebug == true)
-          _debugPort->println(F("processReadEvent: packet switched data action"));
+        remote_host.concat(*(searchPtr));
+      }
 
+      if (*searchPtr != '\0') // Make sure we found a quote
+      {
+        // Extract IP address
+        int remoteIPstore[4];
+        scanNum = sscanf(searchPtr, "\",\"%d.%d.%d.%d",
+                          &remoteIPstore[0], &remoteIPstore[1], &remoteIPstore[2], &remoteIPstore[3]);
         for (int i = 0; i <= 3; i++)
         {
           remoteIP[i] = (uint8_t)remoteIPstore[i];
         }
 
-        if (_psdActionRequestCallback != nullptr)
+        if (scanNum == 4) // Make sure we extracted enough data
         {
-          _psdActionRequestCallback(result, remoteIP);
-        }
-
-        return true;
-      }
-    }
-  }
-  { // URC: +UUHTTPCR (HTTP Command Result)
-    int profile, command, result;
-    int scanNum;
-
-    char *searchPtr = strstr(event, UBX_CELL_HTTP_COMMAND_URC);
-    if (searchPtr != nullptr)
-    {
-      searchPtr += strlen(UBX_CELL_HTTP_COMMAND_URC); // Move searchPtr to first character - probably a space
-      while (*searchPtr == ' ') searchPtr++; // skip spaces
-      scanNum = sscanf(searchPtr, "%d,%d,%d", &profile, &command, &result);
-
-      if (scanNum == 3)
-      {
-        if (_printDebug == true)
-          _debugPort->println(F("processReadEvent: HTTP command result"));
-
-        if ((profile >= 0) && (profile < UBX_CELL_NUM_HTTP_PROFILES))
-        {
-          if (_httpCommandRequestCallback != nullptr)
+          // Extract TTL, should be immediately after IP address
+          searchPtr = strchr(searchPtr + 2, ','); // +2 to skip the quote and comma
+          if(searchPtr != nullptr)
           {
-            _httpCommandRequestCallback(profile, command, result);
-          }
-        }
+            // It's possible the TTL is not present (eg. on LARA-R6), so we
+            // can ignore scanNum since ttl defaults to 0 anyways
+            scanNum = sscanf(searchPtr, ",%d", &ttl);
 
-        return true;
-      }
-    }
-  }
-  { // URC: +UUMQTTC (MQTT Command Result)
-    int command, result;
-    int scanNum;
-    int qos = -1;
-    String topic;
-
-    char *searchPtr = strstr(event, UBX_CELL_MQTT_COMMAND_URC);
-    if (searchPtr != nullptr)
-    {
-      searchPtr += strlen(UBX_CELL_MQTT_COMMAND_URC); // Move searchPtr to first character - probably a space
-      while (*searchPtr == ' ')
-      {
-        searchPtr++; // skip spaces
-      }
-
-      scanNum = sscanf(searchPtr, "%d,%d", &command, &result);
-      if ((scanNum == 2) && (command == UBX_CELL_MQTT_COMMAND_SUBSCRIBE))
-      {
-        char topicC[100] = "";
-        scanNum = sscanf(searchPtr, "%*d,%*d,%d,\"%[^\"]\"", &qos, topicC);
-        topic = topicC;
-      }
-      if ((scanNum == 2) || (scanNum == 4))
-      {
-        if (_printDebug == true)
-        {
-          _debugPort->println(F("processReadEvent: MQTT command result"));
-        }
-
-        if (_mqttCommandRequestCallback != nullptr)
-        {
-          _mqttCommandRequestCallback(command, result);
-        }
-
-        return true;
-      }
-    }
-  }
-  { // URC: +UUFTPCR (FTP Command Result)
-    int ftpCmd;
-    int ftpResult;
-    int scanNum;
-    char *searchPtr = strstr(event, UBX_CELL_FTP_COMMAND_URC);
-    if (searchPtr != nullptr)
-    {
-      searchPtr += strlen(UBX_CELL_FTP_COMMAND_URC); // Move searchPtr to first character - probably a space
-      while (*searchPtr == ' ')
-      {
-        searchPtr++; // skip spaces
-      }
-
-      scanNum = sscanf(searchPtr, "%d,%d", &ftpCmd, &ftpResult);
-      if (scanNum == 2 && _ftpCommandRequestCallback != nullptr)
-      {
-        _ftpCommandRequestCallback(ftpCmd, ftpResult);
-        return true;
-      }
-    }
-  }
-  { // URC: +UUPING (Ping Result)
-    int retry = 0;
-    int p_size = 0;
-    int ttl = 0;
-    String remote_host = "";
-    IPAddress remoteIP = {0, 0, 0, 0};
-    long rtt = 0;
-    int scanNum;
-
-    // Try to extract the UUPING retries and payload size
-    char *searchPtr = strstr(event, UBX_CELL_PING_COMMAND_URC);
-    if (searchPtr != nullptr)
-    {
-      searchPtr += strlen(UBX_CELL_PING_COMMAND_URC); // Move searchPtr to first character - probably a space
-      while (*searchPtr == ' ') searchPtr++; // skip spaces
-      scanNum = sscanf(searchPtr, "%d,%d,", &retry, &p_size);
-
-      if (scanNum == 2)
-      {
-        if (_printDebug == true)
-        {
-          _debugPort->println(F("processReadEvent: ping"));
-        }
-
-        searchPtr = strchr(++searchPtr, '\"'); // Search to the first quote
-
-        // Extract the remote host name, stop at the next quote
-        while ((*(++searchPtr) != '\"') && (*searchPtr != '\0'))
-        {
-          remote_host.concat(*(searchPtr));
-        }
-
-        if (*searchPtr != '\0') // Make sure we found a quote
-        {
-          // Extract IP address
-          int remoteIPstore[4];
-          scanNum = sscanf(searchPtr, "\",\"%d.%d.%d.%d",
-                            &remoteIPstore[0], &remoteIPstore[1], &remoteIPstore[2], &remoteIPstore[3]);
-          for (int i = 0; i <= 3; i++)
-          {
-            remoteIP[i] = (uint8_t)remoteIPstore[i];
-          }
-
-          if (scanNum == 4) // Make sure we extracted enough data
-          {
-            // Extract TTL, should be immediately after IP address
-            searchPtr = strchr(searchPtr + 2, ','); // +2 to skip the quote and comma
+            // Extract RTT, should be immediately after TTL
+            searchPtr = strchr(searchPtr + 1, ','); // +1 to skip the comma
             if(searchPtr != nullptr)
             {
-              // It's possible the TTL is not present (eg. on LARA-R6), so we
-              // can ignore scanNum since ttl defaults to 0 anyways
-              scanNum = sscanf(searchPtr, ",%d", &ttl);
+              scanNum = sscanf(searchPtr, ",%ld", &rtt);
 
-              // Extract RTT, should be immediately after TTL
-              searchPtr = strchr(searchPtr + 1, ','); // +1 to skip the comma
-              if(searchPtr != nullptr)
+              // Callback, if it exists
+              if (_pingRequestCallback != nullptr)
               {
-                scanNum = sscanf(searchPtr, ",%ld", &rtt);
-
-                // Callback, if it exists
-                if (_pingRequestCallback != nullptr)
-                {
-                  _pingRequestCallback(retry, p_size, remote_host, remoteIP, ttl, rtt);
-                }
+                _pingRequestCallback(retry, p_size, remote_host, remoteIP, ttl, rtt);
               }
             }
           }
         }
-        return true;
       }
+      return true;
     }
   }
-  { // URC: +CREG
-    int status = 0;
-    unsigned int lac = 0, ci = 0, Act = 0;
-    char *searchPtr = strstr(event, UBX_CELL_REGISTRATION_STATUS_URC);
-    if (searchPtr != nullptr)
+
+  return false;
+}
+
+bool UBX_CELL::urcHandlerFTPCommand(const char* event)
+{
+  // URC: +UUFTPCR (FTP Command Result)
+  int ftpCmd;
+  int ftpResult;
+  int scanNum;
+  char *searchPtr = strstr(event, UBX_CELL_FTP_COMMAND_URC);
+  if (searchPtr != nullptr)
+  {
+    searchPtr += strlen(UBX_CELL_FTP_COMMAND_URC); // Move searchPtr to first character - probably a space
+    while (*searchPtr == ' ')
     {
-      searchPtr += strlen(UBX_CELL_REGISTRATION_STATUS_URC); // Move searchPtr to first character - probably a space
-      while (*searchPtr == ' ') searchPtr++; // skip spaces
-      int scanNum = sscanf(searchPtr, "%d,\"%4x\",\"%4x\",%d", &status, &lac, &ci, &Act);
-      if (scanNum == 4)
-      {
-        if (_printDebug == true)
-          _debugPort->println(F("processReadEvent: CREG"));
-
-        if (_registrationCallback != nullptr)
-        {
-          _registrationCallback((UBX_CELL_registration_status_t)status, lac, ci, Act);
-        }
-
-        return true;
-      }
+      searchPtr++; // skip spaces
     }
-  }
-  { // URC: +CEREG
-    int status = 0;
-    unsigned int tac = 0, ci = 0, Act = 0;
-    char *searchPtr = strstr(event, UBX_CELL_EPSREGISTRATION_STATUS_URC);
-    if (searchPtr != nullptr)
+
+    scanNum = sscanf(searchPtr, "%d,%d", &ftpCmd, &ftpResult);
+    if (scanNum == 2 && _ftpCommandRequestCallback != nullptr)
     {
-      searchPtr += strlen(UBX_CELL_EPSREGISTRATION_STATUS_URC); // Move searchPtr to first character - probably a space
-      while (*searchPtr == ' ') searchPtr++; // skip spaces
-      int scanNum = sscanf(searchPtr, "%d,\"%4x\",\"%4x\",%d", &status, &tac, &ci, &Act);
-      if (scanNum == 4)
-      {
-        if (_printDebug == true)
-          _debugPort->println(F("processReadEvent: CEREG"));
-
-        if (_epsRegistrationCallback != nullptr)
-        {
-          _epsRegistrationCallback((UBX_CELL_registration_status_t)status, tac, ci, Act);
-        }
-
-        return true;
-      }
+      _ftpCommandRequestCallback(ftpCmd, ftpResult);
+      return true;
     }
   }
-  // NOTE: When adding new URC messages, remember to update pruneBacklog too!
 
+  return false;
+}
+
+bool UBX_CELL::urcHandlerRegistrationStatus(const char* event)
+{
+  // URC: +CREG
+  int status = 0;
+  unsigned int lac = 0, ci = 0, Act = 0;
+  char *searchPtr = strstr(event, UBX_CELL_REGISTRATION_STATUS_URC);
+  if (searchPtr != nullptr)
+  {
+    searchPtr += strlen(UBX_CELL_REGISTRATION_STATUS_URC); // Move searchPtr to first character - probably a space
+    while (*searchPtr == ' ') searchPtr++; // skip spaces
+    int scanNum = sscanf(searchPtr, "%d,\"%4x\",\"%4x\",%d", &status, &lac, &ci, &Act);
+    if (scanNum == 4)
+    {
+      if (_printDebug == true)
+        _debugPort->println(F("processReadEvent: CREG"));
+
+      if (_registrationCallback != nullptr)
+      {
+        _registrationCallback((UBX_CELL_registration_status_t)status, lac, ci, Act);
+      }
+
+      return true;
+    }
+  }
+
+  return false;
+}
+
+bool UBX_CELL::urcHandlerEPSRegistrationStatus(const char* event)
+{
+  // URC: +CEREG
+  int status = 0;
+  unsigned int tac = 0, ci = 0, Act = 0;
+  char *searchPtr = strstr(event, UBX_CELL_EPSREGISTRATION_STATUS_URC);
+  if (searchPtr != nullptr)
+  {
+    searchPtr += strlen(UBX_CELL_EPSREGISTRATION_STATUS_URC); // Move searchPtr to first character - probably a space
+    while (*searchPtr == ' ') searchPtr++; // skip spaces
+    int scanNum = sscanf(searchPtr, "%d,\"%4x\",\"%4x\",%d", &status, &tac, &ci, &Act);
+    if (scanNum == 4)
+    {
+      if (_printDebug == true)
+        _debugPort->println(F("processReadEvent: CEREG"));
+
+      if (_epsRegistrationCallback != nullptr)
+      {
+        _epsRegistrationCallback((UBX_CELL_registration_status_t)status, tac, ci, Act);
+      }
+
+      return true;
+    }
+  }
+
+  return false;
+}
+
+void UBX_CELL::addURCHandler(const char* urcString, UBX_CELL_urc_handler_t urcHandler)
+{
+  _urcStrings.push_back(urcString);
+  _urcHandlers.push_back(urcHandler);
+}
+
+// Parse incoming URC's - the associated parse functions pass the data to the user via the callbacks (if defined)
+bool UBX_CELL::processURCEvent(const char *event)
+{
+  // Iterate through each URC handler to see if it can handle this message
+  for(auto urcHandler : _urcHandlers)
+  {
+    if (urcHandler(event))
+    {
+      // This handler took care of it, so we're done!
+      return true;
+    }
+  }
+
+  // None of the handlers took care of it
   return false;
 }
 
@@ -1352,218 +1447,6 @@ UBX_CELL_error_t UBX_CELL::setClock(String theTime)
 void UBX_CELL::autoTimeZoneForBegin(bool tz)
 {
   _autoTimeZoneForBegin = tz;
-}
-
-UBX_CELL_error_t UBX_CELL::setUtimeMode(UBX_CELL_utime_mode_t mode, UBX_CELL_utime_sensor_t sensor)
-{
-  UBX_CELL_error_t err;
-  char *command;
-
-  command = ubx_cell_calloc_char(strlen(UBX_CELL_GNSS_REQUEST_TIME) + 16);
-  if (command == nullptr)
-    return UBX_CELL_ERROR_OUT_OF_MEMORY;
-  if (mode == UBX_CELL_UTIME_MODE_STOP) // stop UTIME does not require a sensor
-    sprintf(command, "%s=%d", UBX_CELL_GNSS_REQUEST_TIME, mode);
-  else
-    sprintf(command, "%s=%d,%d", UBX_CELL_GNSS_REQUEST_TIME, mode, sensor);
-
-  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR,
-                                nullptr, UBX_CELL_10_SEC_TIMEOUT);
-  free(command);
-  return err;
-}
-
-UBX_CELL_error_t UBX_CELL::getUtimeMode(UBX_CELL_utime_mode_t *mode, UBX_CELL_utime_sensor_t *sensor)
-{
-  UBX_CELL_error_t err;
-  char *command;
-  char *response;
-
-  UBX_CELL_utime_mode_t m;
-  UBX_CELL_utime_sensor_t s;
-
-  command = ubx_cell_calloc_char(strlen(UBX_CELL_GNSS_REQUEST_TIME) + 2);
-  if (command == nullptr)
-    return UBX_CELL_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s?", UBX_CELL_GNSS_REQUEST_TIME);
-
-  response = ubx_cell_calloc_char(minimumResponseAllocation);
-  if (response == nullptr)
-  {
-    free(command);
-    return UBX_CELL_ERROR_OUT_OF_MEMORY;
-  }
-
-  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR,
-                                response, UBX_CELL_10_SEC_TIMEOUT);
-
-  // Response format: \r\n+UTIME: <mode>[,<sensor>]\r\n\r\nOK\r\n
-  if (err == UBX_CELL_ERROR_SUCCESS)
-  {
-    int mStore, sStore, scanned = 0;
-    char *searchPtr = strstr(response, "+UTIME:");
-    if (searchPtr != nullptr)
-    {
-      searchPtr += strlen("+UTIME:"); // Move searchPtr to first character - probably a space
-      while (*searchPtr == ' ') searchPtr++; // skip spaces
-      scanned = sscanf(searchPtr, "%d,%d\r\n", &mStore, &sStore);
-    }
-    m = (UBX_CELL_utime_mode_t)mStore;
-    s = (UBX_CELL_utime_sensor_t)sStore;
-    if (scanned == 2)
-    {
-      *mode = m;
-      *sensor = s;
-    }
-    else if (scanned == 1)
-    {
-      *mode = m;
-      *sensor = UBX_CELL_UTIME_SENSOR_NONE;
-    }
-    else
-      err = UBX_CELL_ERROR_UNEXPECTED_RESPONSE;
-  }
-
-  free(command);
-  free(response);
-  return err;
-}
-
-UBX_CELL_error_t UBX_CELL::setUtimeIndication(UBX_CELL_utime_urc_configuration_t config)
-{
-  UBX_CELL_error_t err;
-  char *command;
-
-  command = ubx_cell_calloc_char(strlen(UBX_CELL_GNSS_TIME_INDICATION) + 16);
-  if (command == nullptr)
-    return UBX_CELL_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=%d", UBX_CELL_GNSS_TIME_INDICATION, config);
-
-  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR,
-                                nullptr, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
-  free(command);
-  return err;
-}
-
-UBX_CELL_error_t UBX_CELL::getUtimeIndication(UBX_CELL_utime_urc_configuration_t *config)
-{
-  UBX_CELL_error_t err;
-  char *command;
-  char *response;
-
-  UBX_CELL_utime_urc_configuration_t c;
-
-  command = ubx_cell_calloc_char(strlen(UBX_CELL_GNSS_TIME_INDICATION) + 2);
-  if (command == nullptr)
-    return UBX_CELL_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s?", UBX_CELL_GNSS_TIME_INDICATION);
-
-  response = ubx_cell_calloc_char(minimumResponseAllocation);
-  if (response == nullptr)
-  {
-    free(command);
-    return UBX_CELL_ERROR_OUT_OF_MEMORY;
-  }
-
-  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR,
-                                response, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
-
-  // Response format: \r\n+UTIMEIND: <mode>\r\n\r\nOK\r\n
-  if (err == UBX_CELL_ERROR_SUCCESS)
-  {
-    int cStore, scanned = 0;
-    char *searchPtr = strstr(response, "+UTIMEIND:");
-    if (searchPtr != nullptr)
-    {
-      searchPtr += strlen("+UTIMEIND:"); //  Move searchPtr to first char
-      while (*searchPtr == ' ') searchPtr++; // skip spaces
-      scanned = sscanf(searchPtr, "%d\r\n", &cStore);
-    }
-    c = (UBX_CELL_utime_urc_configuration_t)cStore;
-    if (scanned == 1)
-    {
-      *config = c;
-    }
-    else
-      err = UBX_CELL_ERROR_UNEXPECTED_RESPONSE;
-  }
-
-  free(command);
-  free(response);
-  return err;
-}
-
-UBX_CELL_error_t UBX_CELL::setUtimeConfiguration(int32_t offsetNanoseconds, int32_t offsetSeconds)
-{
-  UBX_CELL_error_t err;
-  char *command;
-
-  command = ubx_cell_calloc_char(strlen(UBX_CELL_GNSS_TIME_CONFIGURATION) + 48);
-  if (command == nullptr)
-    return UBX_CELL_ERROR_OUT_OF_MEMORY;
-#if defined(ARDUINO_ARCH_ESP32) || defined(ARDUINO_ARCH_ESP8266)
-  sprintf(command, "%s=%d,%d", UBX_CELL_GNSS_TIME_CONFIGURATION, offsetNanoseconds, offsetSeconds);
-#else
-  sprintf(command, "%s=%ld,%ld", UBX_CELL_GNSS_TIME_CONFIGURATION, offsetNanoseconds, offsetSeconds);
-#endif
-
-  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR,
-                                nullptr, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
-  free(command);
-  return err;
-}
-
-UBX_CELL_error_t UBX_CELL::getUtimeConfiguration(int32_t *offsetNanoseconds, int32_t *offsetSeconds)
-{
-  UBX_CELL_error_t err;
-  char *command;
-  char *response;
-
-  int32_t ons;
-  int32_t os;
-
-  command = ubx_cell_calloc_char(strlen(UBX_CELL_GNSS_TIME_CONFIGURATION) + 2);
-  if (command == nullptr)
-    return UBX_CELL_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s?", UBX_CELL_GNSS_TIME_CONFIGURATION);
-
-  response = ubx_cell_calloc_char(minimumResponseAllocation);
-  if (response == nullptr)
-  {
-    free(command);
-    return UBX_CELL_ERROR_OUT_OF_MEMORY;
-  }
-
-  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR,
-                                response, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
-
-  // Response format: \r\n+UTIMECFG: <offset_nano>,<offset_sec>\r\n\r\nOK\r\n
-  if (err == UBX_CELL_ERROR_SUCCESS)
-  {
-    int scanned = 0;
-    char *searchPtr = strstr(response, "+UTIMECFG:");
-    if (searchPtr != nullptr)
-    {
-      searchPtr += strlen("+UTIMECFG:"); //  Move searchPtr to first char
-      while (*searchPtr == ' ') searchPtr++; // skip spaces
-#if defined(ARDUINO_ARCH_ESP32) || defined(ARDUINO_ARCH_ESP8266)
-      scanned = sscanf(searchPtr, "%d,%d\r\n", &ons, &os);
-#else
-      scanned = sscanf(searchPtr, "%ld,%ld\r\n", &ons, &os);
-#endif
-    }
-    if (scanned == 2)
-    {
-      *offsetNanoseconds = ons;
-      *offsetSeconds = os;
-    }
-    else
-      err = UBX_CELL_ERROR_UNEXPECTED_RESPONSE;
-  }
-
-  free(command);
-  free(response);
-  return err;
 }
 
 UBX_CELL_error_t UBX_CELL::autoTimeZone(bool enable)
@@ -4853,94 +4736,6 @@ UBX_CELL_error_t UBX_CELL::setSecurityManager(UBX_CELL_sec_manager_opcode_t opco
   return err;
 }
 
-UBX_CELL_error_t UBX_CELL::setPDPconfiguration(int profile, UBX_CELL_pdp_configuration_parameter_t parameter, int value)
-{
-  UBX_CELL_error_t err;
-  char *command;
-
-  if (profile >= UBX_CELL_NUM_PSD_PROFILES)
-    return UBX_CELL_ERROR_ERROR;
-
-  command = ubx_cell_calloc_char(strlen(UBX_CELL_MESSAGE_PDP_CONFIG) + 24);
-  if (command == nullptr)
-    return UBX_CELL_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=%d,%d,%d", UBX_CELL_MESSAGE_PDP_CONFIG, profile, parameter,
-          value);
-
-  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr,
-                                UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
-
-  free(command);
-  return err;
-}
-
-UBX_CELL_error_t UBX_CELL::setPDPconfiguration(int profile, UBX_CELL_pdp_configuration_parameter_t parameter, UBX_CELL_pdp_protocol_type_t value)
-{
-  return (setPDPconfiguration(profile, parameter, (int)value));
-}
-
-UBX_CELL_error_t UBX_CELL::setPDPconfiguration(int profile, UBX_CELL_pdp_configuration_parameter_t parameter, String value)
-{
-  UBX_CELL_error_t err;
-  char *command;
-
-  if (profile >= UBX_CELL_NUM_PSD_PROFILES)
-    return UBX_CELL_ERROR_ERROR;
-
-  command = ubx_cell_calloc_char(strlen(UBX_CELL_MESSAGE_PDP_CONFIG) + 64);
-  if (command == nullptr)
-    return UBX_CELL_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=%d,%d,\"%s\"", UBX_CELL_MESSAGE_PDP_CONFIG, profile, parameter,
-          value.c_str());
-
-  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr,
-                                UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
-
-  free(command);
-  return err;
-}
-
-UBX_CELL_error_t UBX_CELL::setPDPconfiguration(int profile, UBX_CELL_pdp_configuration_parameter_t parameter, IPAddress value)
-{
-  UBX_CELL_error_t err;
-  char *command;
-
-  if (profile >= UBX_CELL_NUM_PSD_PROFILES)
-    return UBX_CELL_ERROR_ERROR;
-
-  command = ubx_cell_calloc_char(strlen(UBX_CELL_MESSAGE_PDP_CONFIG) + 64);
-  if (command == nullptr)
-    return UBX_CELL_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=%d,%d,\"%d.%d.%d.%d\"", UBX_CELL_MESSAGE_PDP_CONFIG, profile, parameter,
-          value[0], value[1], value[2], value[3]);
-
-  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr,
-                                UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
-
-  free(command);
-  return err;
-}
-
-UBX_CELL_error_t UBX_CELL::performPDPaction(int profile, UBX_CELL_pdp_actions_t action)
-{
-  UBX_CELL_error_t err;
-  char *command;
-
-  if (profile >= UBX_CELL_NUM_PSD_PROFILES)
-    return UBX_CELL_ERROR_ERROR;
-
-  command = ubx_cell_calloc_char(strlen(UBX_CELL_MESSAGE_PDP_ACTION) + 32);
-  if (command == nullptr)
-    return UBX_CELL_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=%d,%d", UBX_CELL_MESSAGE_PDP_ACTION, profile, action);
-
-  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr,
-                                UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
-
-  free(command);
-  return err;
-}
-
 UBX_CELL_error_t UBX_CELL::activatePDPcontext(bool status, int cid)
 {
   UBX_CELL_error_t err;
@@ -4961,65 +4756,6 @@ UBX_CELL_error_t UBX_CELL::activatePDPcontext(bool status, int cid)
                                 UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
   free(command);
-  return err;
-}
-
-UBX_CELL_error_t UBX_CELL::getNetworkAssignedIPAddress(int profile, IPAddress *address)
-{
-  char *command;
-  char *response;
-  UBX_CELL_error_t err;
-  int scanNum = 0;
-  int profileStore = 0;
-  int paramTag = 0; // 0: IP address: dynamic IP address assigned during PDP context activation
-  int paramVals[4];
-
-  command = ubx_cell_calloc_char(strlen(UBX_CELL_NETWORK_ASSIGNED_DATA) + 16);
-  if (command == nullptr)
-    return UBX_CELL_ERROR_OUT_OF_MEMORY;
-  sprintf(command, "%s=%d,%d", UBX_CELL_NETWORK_ASSIGNED_DATA, profile, paramTag);
-
-  response = ubx_cell_calloc_char(minimumResponseAllocation);
-  if (response == nullptr)
-  {
-    free(command);
-    return UBX_CELL_ERROR_OUT_OF_MEMORY;
-  }
-
-  err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, response,
-                                UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
-
-  if (err == UBX_CELL_ERROR_SUCCESS)
-  {
-    char *searchPtr = strstr(response, "+UPSND:");
-    if (searchPtr != nullptr)
-    {
-      searchPtr += strlen("+UPSND:"); //  Move searchPtr to first char
-      while (*searchPtr == ' ') searchPtr++; // skip spaces
-      scanNum = sscanf(searchPtr, "%d,%d,\"%d.%d.%d.%d\"",
-                        &profileStore, &paramTag,
-                        &paramVals[0], &paramVals[1], &paramVals[2], &paramVals[3]);
-    }
-    if (scanNum != 6)
-    {
-      if (_printDebug == true)
-      {
-        _debugPort->print(F("getNetworkAssignedIPAddress: error: scanNum is "));
-        _debugPort->println(scanNum);
-      }
-      free(command);
-      free(response);
-      return UBX_CELL_ERROR_UNEXPECTED_RESPONSE;
-    }
-
-    IPAddress tempAddress = { (uint8_t)paramVals[0], (uint8_t)paramVals[1],
-                              (uint8_t)paramVals[2], (uint8_t)paramVals[3] };
-    *address = tempAddress;
-  }
-
-  free(command);
-  free(response);
-
   return err;
 }
 
@@ -6697,23 +6433,15 @@ void UBX_CELL::pruneBacklog()
   while (event != nullptr) //If event is actionable, add it to pruneBuffer.
   {
     // These are the events we want to keep so they can be processed by poll / bufferedPoll
-    if ((strstr(event, UBX_CELL_READ_SOCKET_URC) != nullptr)
-        || (strstr(event, UBX_CELL_READ_UDP_SOCKET_URC) != nullptr)
-        || (strstr(event, UBX_CELL_LISTEN_SOCKET_URC) != nullptr)
-        || (strstr(event, UBX_CELL_CLOSE_SOCKET_URC) != nullptr)
-        || (strstr(event, UBX_CELL_GNSS_REQUEST_LOCATION_URC) != nullptr)
-        || (strstr(event, UBX_CELL_SIM_STATE_URC) != nullptr)
-        || (strstr(event, UBX_CELL_MESSAGE_PDP_ACTION_URC) != nullptr)
-        || (strstr(event, UBX_CELL_HTTP_COMMAND_URC) != nullptr)
-        || (strstr(event, UBX_CELL_MQTT_COMMAND_URC) != nullptr)
-        || (strstr(event, UBX_CELL_PING_COMMAND_URC) != nullptr)
-        || (strstr(event, UBX_CELL_REGISTRATION_STATUS_URC) != nullptr)
-        || (strstr(event, UBX_CELL_EPSREGISTRATION_STATUS_URC) != nullptr)
-        || (strstr(event, UBX_CELL_FTP_COMMAND_URC) != nullptr))
+    for(auto urcString : _urcStrings)
     {
-      strcat(_pruneBuffer, event); // The URCs are all readable text so using strcat is OK
-      strcat(_pruneBuffer, "\r\n"); // strtok blows away delimiter, but we want that for later.
-      _saraResponseBacklogLength += strlen(event) + 2; // Add the length of this event to _saraResponseBacklogLength
+      if(strstr(event, urcString) != nullptr)
+      {
+        strcat(_pruneBuffer, event); // The URCs are all readable text so using strcat is OK
+        strcat(_pruneBuffer, "\r\n"); // strtok blows away delimiter, but we want that for later.
+        _saraResponseBacklogLength += strlen(event) + 2; // Add the length of this event to _saraResponseBacklogLength
+        break; // No need to check any other events
+      }
     }
 
     event = strtok_r(nullptr, "\r\n", &preservedEvent); // Walk though any remaining events

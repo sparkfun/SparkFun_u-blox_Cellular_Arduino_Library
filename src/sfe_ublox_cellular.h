@@ -71,6 +71,7 @@
 #endif
 
 #include <IPAddress.h>
+#include <vector>
 
 #define UBX_CELL_POWER_PIN -1 // Default to no pin
 #define UBX_CELL_RESET_PIN -1
@@ -92,126 +93,123 @@
 
 // ## Suported AT Commands
 // ### General
-const char UBX_CELL_COMMAND_AT[] = "AT";           // AT "Test"
-const char UBX_CELL_COMMAND_ECHO[] = "E";          // Local Echo
-const char UBX_CELL_COMMAND_MANU_ID[] = "+CGMI";   // Manufacturer identification
-const char UBX_CELL_COMMAND_MODEL_ID[] = "+CGMM";  // Model identification
-const char UBX_CELL_COMMAND_FW_VER_ID[] = "+CGMR"; // Firmware version identification
-const char UBX_CELL_COMMAND_SERIAL_NO[] = "+CGSN"; // Product serial number
-const char UBX_CELL_COMMAND_IMEI[] = "+GSN";       // IMEI identification
-const char UBX_CELL_COMMAND_IMSI[] = "+CIMI";      // IMSI identification
-const char UBX_CELL_COMMAND_CCID[] = "+CCID";      // SIM CCID
-const char UBX_CELL_COMMAND_REQ_CAP[] = "+GCAP";   // Request capabilities list
+const char* const UBX_CELL_COMMAND_AT = "AT";           // AT "Test"
+const char* const UBX_CELL_COMMAND_ECHO = "E";          // Local Echo
+const char* const UBX_CELL_COMMAND_MANU_ID = "+CGMI";   // Manufacturer identification
+const char* const UBX_CELL_COMMAND_MODEL_ID = "+CGMM";  // Model identification
+const char* const UBX_CELL_COMMAND_FW_VER_ID = "+CGMR"; // Firmware version identification
+const char* const UBX_CELL_COMMAND_SERIAL_NO = "+CGSN"; // Product serial number
+const char* const UBX_CELL_COMMAND_IMEI = "+GSN";       // IMEI identification
+const char* const UBX_CELL_COMMAND_IMSI = "+CIMI";      // IMSI identification
+const char* const UBX_CELL_COMMAND_CCID = "+CCID";      // SIM CCID
+const char* const UBX_CELL_COMMAND_REQ_CAP = "+GCAP";   // Request capabilities list
 // ### Control and status
-const char UBX_CELL_COMMAND_POWER_OFF[] = "+CPWROFF"; // Module switch off
-const char UBX_CELL_COMMAND_FUNC[] = "+CFUN";         // Functionality (reset, etc.)
-const char UBX_CELL_COMMAND_CLOCK[] = "+CCLK";        // Real-time clock
-const char UBX_CELL_COMMAND_AUTO_TZ[] = "+CTZU";      // Automatic time zone update
-const char UBX_CELL_COMMAND_TZ_REPORT[] = "+CTZR";    // Time zone reporting
+const char* const UBX_CELL_COMMAND_POWER_OFF = "+CPWROFF"; // Module switch off
+const char* const UBX_CELL_COMMAND_FUNC = "+CFUN";         // Functionality (reset, etc.)
+const char* const UBX_CELL_COMMAND_CLOCK = "+CCLK";        // Real-time clock
+const char* const UBX_CELL_COMMAND_AUTO_TZ = "+CTZU";      // Automatic time zone update
+const char* const UBX_CELL_COMMAND_TZ_REPORT = "+CTZR";    // Time zone reporting
 // ### Network service
-const char UBX_CELL_COMMAND_CNUM[] = "+CNUM"; // Subscriber number
-const char UBX_CELL_SIGNAL_QUALITY[] = "+CSQ";
-const char UBX_CELL_EXT_SIGNAL_QUALITY[] = "+CESQ";
-const char UBX_CELL_OPERATOR_SELECTION[] = "+COPS";
-const char UBX_CELL_REGISTRATION_STATUS[] = "+CREG";
-const char UBX_CELL_EPSREGISTRATION_STATUS[] = "+CEREG";
-const char UBX_CELL_READ_OPERATOR_NAMES[] = "+COPN";
-const char UBX_CELL_COMMAND_MNO[] = "+UMNOPROF"; // MNO (mobile network operator) Profile
+const char* const UBX_CELL_COMMAND_CNUM = "+CNUM"; // Subscriber number
+const char* const UBX_CELL_SIGNAL_QUALITY = "+CSQ";
+const char* const UBX_CELL_EXT_SIGNAL_QUALITY = "+CESQ";
+const char* const UBX_CELL_OPERATOR_SELECTION = "+COPS";
+const char* const UBX_CELL_REGISTRATION_STATUS = "+CREG";
+const char* const UBX_CELL_EPSREGISTRATION_STATUS = "+CEREG";
+const char* const UBX_CELL_READ_OPERATOR_NAMES = "+COPN";
+const char* const UBX_CELL_COMMAND_MNO = "+UMNOPROF"; // MNO (mobile network operator) Profile
 // ### SIM
-const char UBX_CELL_SIM_STATE[] = "+USIMSTAT";
-const char UBX_CELL_COMMAND_SIMPIN[] = "+CPIN";    // SIM PIN
+const char* const UBX_CELL_SIM_STATE = "+USIMSTAT";
+const char* const UBX_CELL_COMMAND_SIMPIN = "+CPIN";    // SIM PIN
 // ### SMS
-const char UBX_CELL_MESSAGE_FORMAT[] = "+CMGF";     // Set SMS message format
-const char UBX_CELL_SEND_TEXT[] = "+CMGS";          // Send SMS message
-const char UBX_CELL_NEW_MESSAGE_IND[] = "+CNMI";    // New [SMS] message indication
-const char UBX_CELL_PREF_MESSAGE_STORE[] = "+CPMS"; // Preferred message storage
-const char UBX_CELL_READ_TEXT_MESSAGE[] = "+CMGR";  // Read message
-const char UBX_CELL_DELETE_MESSAGE[] = "+CMGD";     // Delete message
+const char* const UBX_CELL_MESSAGE_FORMAT = "+CMGF";     // Set SMS message format
+const char* const UBX_CELL_SEND_TEXT = "+CMGS";          // Send SMS message
+const char* const UBX_CELL_NEW_MESSAGE_IND = "+CNMI";    // New [SMS] message indication
+const char* const UBX_CELL_PREF_MESSAGE_STORE = "+CPMS"; // Preferred message storage
+const char* const UBX_CELL_READ_TEXT_MESSAGE = "+CMGR";  // Read message
+const char* const UBX_CELL_DELETE_MESSAGE = "+CMGD";     // Delete message
 // V24 control and V25ter (UART interface)
-const char UBX_CELL_FLOW_CONTROL[] = "&K";   // Flow control
-const char UBX_CELL_COMMAND_BAUD[] = "+IPR"; // Baud rate
+const char* const UBX_CELL_FLOW_CONTROL = "&K";   // Flow control
+const char* const UBX_CELL_COMMAND_BAUD = "+IPR"; // Baud rate
 // ### Packet switched data services
-const char UBX_CELL_MESSAGE_PDP_DEF[] = "+CGDCONT";            // Packet switched Data Profile context definition
-const char UBX_CELL_MESSAGE_PDP_CONFIG[] = "+UPSD";            // Packet switched Data Profile configuration
-const char UBX_CELL_MESSAGE_PDP_ACTION[] = "+UPSDA";           // Perform the action for the specified PSD profile
-const char UBX_CELL_MESSAGE_PDP_CONTEXT_ACTIVATE[] = "+CGACT"; // Activates or deactivates the specified PDP context
-const char UBX_CELL_MESSAGE_ENTER_PPP[] = "D";
-const char UBX_CELL_NETWORK_ASSIGNED_DATA[] = "+UPSND";        // Packet switched network-assigned data
+const char* const UBX_CELL_MESSAGE_PDP_DEF = "+CGDCONT";            // Packet switched Data Profile context definition
+const char* const UBX_CELL_MESSAGE_PDP_CONTEXT_ACTIVATE = "+CGACT"; // Activates or deactivates the specified PDP context
+const char* const UBX_CELL_MESSAGE_ENTER_PPP = "D";
 // ### GPIO
-const char UBX_CELL_COMMAND_GPIO[] = "+UGPIOC"; // GPIO Configuration
+const char* const UBX_CELL_COMMAND_GPIO = "+UGPIOC"; // GPIO Configuration
 // ### IP
-const char UBX_CELL_CREATE_SOCKET[] = "+USOCR";      // Create a new socket
-const char UBX_CELL_CLOSE_SOCKET[] = "+USOCL";       // Close a socket
-const char UBX_CELL_CONNECT_SOCKET[] = "+USOCO";     // Connect to server on socket
-const char UBX_CELL_WRITE_SOCKET[] = "+USOWR";       // Write data to a socket
-const char UBX_CELL_WRITE_UDP_SOCKET[] = "+USOST";   // Write data to a UDP socket
-const char UBX_CELL_READ_SOCKET[] = "+USORD";        // Read from a socket
-const char UBX_CELL_READ_UDP_SOCKET[] = "+USORF";    // Read UDP data from a socket
-const char UBX_CELL_LISTEN_SOCKET[] = "+USOLI";      // Listen for connection on socket
-const char UBX_CELL_GET_ERROR[] = "+USOER";          // Get last socket error.
-const char UBX_CELL_SOCKET_DIRECT_LINK[] = "+USODL"; // Set socket in Direct Link mode
-const char UBX_CELL_SOCKET_CONTROL[] = "+USOCTL";    // Query the socket parameters
-const char UBX_CELL_UD_CONFIGURATION[] = "+UDCONF";  // User Datagram Configuration
+const char* const UBX_CELL_CREATE_SOCKET = "+USOCR";      // Create a new socket
+const char* const UBX_CELL_CLOSE_SOCKET = "+USOCL";       // Close a socket
+const char* const UBX_CELL_CONNECT_SOCKET = "+USOCO";     // Connect to server on socket
+const char* const UBX_CELL_WRITE_SOCKET = "+USOWR";       // Write data to a socket
+const char* const UBX_CELL_WRITE_UDP_SOCKET = "+USOST";   // Write data to a UDP socket
+const char* const UBX_CELL_READ_SOCKET = "+USORD";        // Read from a socket
+const char* const UBX_CELL_READ_UDP_SOCKET = "+USORF";    // Read UDP data from a socket
+const char* const UBX_CELL_LISTEN_SOCKET = "+USOLI";      // Listen for connection on socket
+const char* const UBX_CELL_GET_ERROR = "+USOER";          // Get last socket error.
+const char* const UBX_CELL_SOCKET_DIRECT_LINK = "+USODL"; // Set socket in Direct Link mode
+const char* const UBX_CELL_SOCKET_CONTROL = "+USOCTL";    // Query the socket parameters
+const char* const UBX_CELL_UD_CONFIGURATION = "+UDCONF";  // User Datagram Configuration
 // ### Ping
-const char UBX_CELL_PING_COMMAND[] = "+UPING"; // Ping
+const char* const UBX_CELL_PING_COMMAND = "+UPING"; // Ping
 // ### HTTP
-const char UBX_CELL_HTTP_PROFILE[] = "+UHTTP";          // Configure the HTTP profile. Up to 4 different profiles can be defined
-const char UBX_CELL_HTTP_COMMAND[] = "+UHTTPC";         // Trigger the specified HTTP command
-const char UBX_CELL_HTTP_PROTOCOL_ERROR[] = "+UHTTPER"; // Retrieves the error class and code of the latest HTTP operation on the specified HTTP profile.
+const char* const UBX_CELL_HTTP_PROFILE = "+UHTTP";          // Configure the HTTP profile. Up to 4 different profiles can be defined
+const char* const UBX_CELL_HTTP_COMMAND = "+UHTTPC";         // Trigger the specified HTTP command
+const char* const UBX_CELL_HTTP_PROTOCOL_ERROR = "+UHTTPER"; // Retrieves the error class and code of the latest HTTP operation on the specified HTTP profile.
 
-const char UBX_CELL_MQTT_NVM[] = "+UMQTTNV";
-const char UBX_CELL_MQTT_PROFILE[] = "+UMQTT";
-const char UBX_CELL_MQTT_COMMAND[] = "+UMQTTC";
-const char UBX_CELL_MQTT_PROTOCOL_ERROR[] = "+UMQTTER";
+const char* const UBX_CELL_MQTT_NVM = "+UMQTTNV";
+const char* const UBX_CELL_MQTT_PROFILE = "+UMQTT";
+const char* const UBX_CELL_MQTT_COMMAND = "+UMQTTC";
+const char* const UBX_CELL_MQTT_PROTOCOL_ERROR = "+UMQTTER";
 // ### FTP
-const char UBX_CELL_FTP_PROFILE[] = "+UFTP";
-const char UBX_CELL_FTP_COMMAND[] = "+UFTPC";
-const char UBX_CELL_FTP_PROTOCOL_ERROR[] = "+UFTPER";
+const char* const UBX_CELL_FTP_PROFILE = "+UFTP";
+const char* const UBX_CELL_FTP_COMMAND = "+UFTPC";
+const char* const UBX_CELL_FTP_PROTOCOL_ERROR = "+UFTPER";
 // ### GNSS
-const char UBX_CELL_GNSS_POWER[] = "+UGPS";                   // GNSS power management configuration
-const char UBX_CELL_GNSS_ASSISTED_IND[] = "+UGIND";           // Assisted GNSS unsolicited indication
-const char UBX_CELL_GNSS_REQUEST_LOCATION[] = "+ULOC";        // Ask for localization information
-const char UBX_CELL_GNSS_GPRMC[] = "+UGRMC";                  // Ask for localization information
-const char UBX_CELL_GNSS_REQUEST_TIME[] = "+UTIME";           // Ask for time information from cellular modem (CellTime)
-const char UBX_CELL_GNSS_TIME_INDICATION[] = "+UTIMEIND";     // Time information request status unsolicited indication
-const char UBX_CELL_GNSS_TIME_CONFIGURATION[] = "+UTIMECFG";  // Sets time configuration
-const char UBX_CELL_GNSS_CONFIGURE_SENSOR[] = "+ULOCGNSS";    // Configure GNSS sensor
-const char UBX_CELL_GNSS_CONFIGURE_LOCATION[] = "+ULOCCELL";  // Configure cellular location sensor (CellLocate®)
-const char UBX_CELL_AIDING_SERVER_CONFIGURATION[] = "+UGSRV"; // Configure aiding server (CellLocate®)
+const char* const UBX_CELL_GNSS_POWER = "+UGPS";                   // GNSS power management configuration
+const char* const UBX_CELL_GNSS_ASSISTED_IND = "+UGIND";           // Assisted GNSS unsolicited indication
+const char* const UBX_CELL_GNSS_REQUEST_LOCATION = "+ULOC";        // Ask for localization information
+const char* const UBX_CELL_GNSS_GPRMC = "+UGRMC";                  // Ask for localization information
+const char* const UBX_CELL_GNSS_CONFIGURE_SENSOR = "+ULOCGNSS";    // Configure GNSS sensor
+const char* const UBX_CELL_GNSS_CONFIGURE_LOCATION = "+ULOCCELL";  // Configure cellular location sensor (CellLocate®)
+const char* const UBX_CELL_AIDING_SERVER_CONFIGURATION = "+UGSRV"; // Configure aiding server (CellLocate®)
 // ### File System
 // TO DO: Add support for file tags. Default tag to USER
-const char UBX_CELL_FILE_SYSTEM_READ_FILE[] = "+URDFILE";      // Read a file
-const char UBX_CELL_FILE_SYSTEM_READ_BLOCK[] = "+URDBLOCK";      // Read a block from a file
-const char UBX_CELL_FILE_SYSTEM_DOWNLOAD_FILE[] = "+UDWNFILE";    // Download a file into the module
-const char UBX_CELL_FILE_SYSTEM_LIST_FILES[] = "+ULSTFILE";    // List of files, size of file, etc.
-const char UBX_CELL_FILE_SYSTEM_DELETE_FILE[] = "+UDELFILE";   // Delete a file
+const char* const UBX_CELL_FILE_SYSTEM_READ_FILE = "+URDFILE";      // Read a file
+const char* const UBX_CELL_FILE_SYSTEM_READ_BLOCK = "+URDBLOCK";      // Read a block from a file
+const char* const UBX_CELL_FILE_SYSTEM_DOWNLOAD_FILE = "+UDWNFILE";    // Download a file into the module
+const char* const UBX_CELL_FILE_SYSTEM_LIST_FILES = "+ULSTFILE";    // List of files, size of file, etc.
+const char* const UBX_CELL_FILE_SYSTEM_DELETE_FILE = "+UDELFILE";   // Delete a file
 // ### File System
 // TO DO: Add support for file tags. Default tag to USER
-const char UBX_CELL_SEC_PROFILE[] = "+USECPRF";
-const char UBX_CELL_SEC_MANAGER[] = "+USECMNG";
+const char* const UBX_CELL_SEC_PROFILE = "+USECPRF";
+const char* const UBX_CELL_SEC_MANAGER = "+USECMNG";
 
 
 // ### URC strings
-const char UBX_CELL_READ_SOCKET_URC[] = "+UUSORD:";
-const char UBX_CELL_READ_UDP_SOCKET_URC[] = "+UUSORF:";
-const char UBX_CELL_LISTEN_SOCKET_URC[] = "+UUSOLI:";
-const char UBX_CELL_CLOSE_SOCKET_URC[] = "+UUSOCL:";
-const char UBX_CELL_GNSS_REQUEST_LOCATION_URC[] = "+UULOC:";
-const char UBX_CELL_SIM_STATE_URC[] = "+UUSIMSTAT:";
-const char UBX_CELL_MESSAGE_PDP_ACTION_URC[] = "+UUPSDA:";
-const char UBX_CELL_HTTP_COMMAND_URC[] = "+UUHTTPCR:";
-const char UBX_CELL_MQTT_COMMAND_URC[] = "+UUMQTTC:";
-const char UBX_CELL_PING_COMMAND_URC[] = "+UUPING:";
-const char UBX_CELL_REGISTRATION_STATUS_URC[] = "+CREG:";
-const char UBX_CELL_EPSREGISTRATION_STATUS_URC[] = "+CEREG:";
-const char UBX_CELL_FTP_COMMAND_URC[] = "+UUFTPCR:";
+const char* const UBX_CELL_READ_SOCKET_URC = "+UUSORD:";
+const char* const UBX_CELL_READ_UDP_SOCKET_URC = "+UUSORF:";
+const char* const UBX_CELL_LISTEN_SOCKET_URC = "+UUSOLI:";
+const char* const UBX_CELL_CLOSE_SOCKET_URC = "+UUSOCL:";
+const char* const UBX_CELL_GNSS_REQUEST_LOCATION_URC = "+UULOC:";
+const char* const UBX_CELL_SIM_STATE_URC = "+UUSIMSTAT:";
+const char* const UBX_CELL_MESSAGE_PDP_ACTION_URC = "+UUPSDA:";
+const char* const UBX_CELL_HTTP_COMMAND_URC = "+UUHTTPCR:";
+const char* const UBX_CELL_MQTT_COMMAND_URC = "+UUMQTTC:";
+const char* const UBX_CELL_PING_COMMAND_URC = "+UUPING:";
+const char* const UBX_CELL_REGISTRATION_STATUS_URC = "+CREG:";
+const char* const UBX_CELL_EPSREGISTRATION_STATUS_URC = "+CEREG:";
+const char* const UBX_CELL_FTP_COMMAND_URC = "+UUFTPCR:";
 
 // ### Response
-const char UBX_CELL_RESPONSE_MORE[] = "\n>";
-const char UBX_CELL_RESPONSE_OK[] = "\nOK\r\n";
-const char UBX_CELL_RESPONSE_ERROR[] = "\nERROR\r\n";
-const char UBX_CELL_RESPONSE_CONNECT[] = "\r\nCONNECT\r\n";
+const char* const UBX_CELL_RESPONSE_MORE = "\n>";
+const char* const UBX_CELL_RESPONSE_OK = "\nOK\r\n";
+const char* const UBX_CELL_RESPONSE_ERROR = "\nERROR\r\n";
+const char* const UBX_CELL_RESPONSE_CONNECT = "\r\nCONNECT\r\n";
 #define UBX_CELL_RESPONSE_OK_OR_ERROR nullptr
+
+// URC handler type definition
+typedef std::function<bool(const char*)> UBX_CELL_urc_handler_t;
 
 // CTRL+Z and ESC ASCII codes for SMS message sends
 const char ASCII_CTRL_Z = 0x1A;
@@ -728,12 +726,6 @@ public:
                             uint8_t h, uint8_t min, uint8_t s, int8_t tz); // TZ can be +/- and is in increments of 15 minutes. -28 == 7 hours behind UTC/GMT
   void autoTimeZoneForBegin(bool enable = true); // Call autoTimeZoneForBegin(false) _before_ .begin if you want to disable the automatic time zone
   UBX_CELL_error_t autoTimeZone(bool enable); // Enable/disable automatic time zone adjustment
-  UBX_CELL_error_t setUtimeMode(UBX_CELL_utime_mode_t mode = UBX_CELL_UTIME_MODE_PPS, UBX_CELL_utime_sensor_t sensor = UBX_CELL_UTIME_SENSOR_GNSS_LTE); // Time mode, source etc. (+UTIME)
-  UBX_CELL_error_t getUtimeMode(UBX_CELL_utime_mode_t *mode, UBX_CELL_utime_sensor_t *sensor);
-  UBX_CELL_error_t setUtimeIndication(UBX_CELL_utime_urc_configuration_t config = UBX_CELL_UTIME_URC_CONFIGURATION_ENABLED); // +UTIMEIND
-  UBX_CELL_error_t getUtimeIndication(UBX_CELL_utime_urc_configuration_t *config);
-  UBX_CELL_error_t setUtimeConfiguration(int32_t offsetNanoseconds = 0, int32_t offsetSeconds = 0); // +UTIMECFG
-  UBX_CELL_error_t getUtimeConfiguration(int32_t *offsetNanoseconds, int32_t *offsetSeconds);
 
   // Network service AT commands
   int8_t rssi(void); // Receive signal strength
@@ -951,15 +943,7 @@ public:
   UBX_CELL_error_t configSecurityProfile(int secprofile, UBX_CELL_sec_profile_parameter_t parameter, int value);
   UBX_CELL_error_t setSecurityManager(UBX_CELL_sec_manager_opcode_t opcode, UBX_CELL_sec_manager_parameter_t parameter, String name, String data);
 
-  // Packet Switched Data
-  // Configure the PDP using +UPSD. See UBX_CELL_pdp_configuration_parameter_t for the list of parameters: protocol, APN, username, DNS, etc.
-  UBX_CELL_error_t setPDPconfiguration(int profile, UBX_CELL_pdp_configuration_parameter_t parameter, int value);                         // Set parameters in the chosen PSD profile
-  UBX_CELL_error_t setPDPconfiguration(int profile, UBX_CELL_pdp_configuration_parameter_t parameter, UBX_CELL_pdp_protocol_type_t value); // Set parameters in the chosen PSD profile
-  UBX_CELL_error_t setPDPconfiguration(int profile, UBX_CELL_pdp_configuration_parameter_t parameter, String value);                      // Set parameters in the chosen PSD profile
-  UBX_CELL_error_t setPDPconfiguration(int profile, UBX_CELL_pdp_configuration_parameter_t parameter, IPAddress value);                   // Set parameters in the chosen PSD profile
-  UBX_CELL_error_t performPDPaction(int profile, UBX_CELL_pdp_actions_t action);  // Performs the requested action for the specified PSD profile: reset, store, load, activate, deactivate
   UBX_CELL_error_t activatePDPcontext(bool status, int cid = -1);                // Activates or deactivates the specified PDP context. Default to all (cid = -1)
-  UBX_CELL_error_t getNetworkAssignedIPAddress(int profile, IPAddress *address); // Get the dynamic IP address assigned during PDP context activation
 
   // GPS
   typedef enum
@@ -1030,6 +1014,9 @@ public:
 
   char *ubx_cell_calloc_char(size_t num);
 
+  // Add a URC handler
+  void addURCHandler(const char* urcString, UBX_CELL_urc_handler_t urcHandler);
+
 protected:
   HardwareSerial *_hardSerial;
 #ifdef UBX_CELL_SOFTWARE_SERIAL_ENABLED
@@ -1074,6 +1061,9 @@ protected:
   void (*_registrationCallback)(UBX_CELL_registration_status_t status, unsigned int lac, unsigned int ci, int Act);
   void (*_epsRegistrationCallback)(UBX_CELL_registration_status_t status, unsigned int tac, unsigned int ci, int Act);
 
+  // Vectors of URC strings and handlers
+  std::vector<const char*> _urcStrings;
+  std::vector<UBX_CELL_urc_handler_t> _urcHandlers;
 
   int _lastSocketProtocol[UBX_CELL_NUM_SOCKETS]; // Record the protocol for each socket to avoid having to call querySocketType in parseSocketReadIndication
 
@@ -1119,6 +1109,20 @@ protected:
   bool find(char *target);
 
   UBX_CELL_error_t autobaud(unsigned long desiredBaud);
+
+  bool urcHandlerReadSocket(const char* event);
+  bool urcHandlerReadUDPSocket(const char* event);
+  bool urcHandlerListeningSocket(const char* event);
+  bool urcHandlerCloseSocket(const char* event);
+  bool urcHandlerGNSSRequestLocation(const char* event);
+  bool urcHandlerSIMState(const char* event);
+  bool urcHandlerPDPAction(const char* event);
+  bool urcHandlerHTTPCommand(const char* event);
+  bool urcHandlerMQTTCommand(const char* event);
+  bool urcHandlerPingCommand(const char* event);
+  bool urcHandlerFTPCommand(const char* event);
+  bool urcHandlerRegistrationStatus(const char* event);
+  bool urcHandlerEPSRegistrationStatus(const char* event);
 
   bool processURCEvent(const char *event);
   void pruneBacklog(void);
