@@ -193,7 +193,6 @@ const char* const UBX_CELL_LISTEN_SOCKET_URC = "+UUSOLI:";
 const char* const UBX_CELL_CLOSE_SOCKET_URC = "+UUSOCL:";
 const char* const UBX_CELL_GNSS_REQUEST_LOCATION_URC = "+UULOC:";
 const char* const UBX_CELL_SIM_STATE_URC = "+UUSIMSTAT:";
-const char* const UBX_CELL_MESSAGE_PDP_ACTION_URC = "+UUPSDA:";
 const char* const UBX_CELL_HTTP_COMMAND_URC = "+UUHTTPCR:";
 const char* const UBX_CELL_MQTT_COMMAND_URC = "+UUMQTTC:";
 const char* const UBX_CELL_PING_COMMAND_URC = "+UUPING:";
@@ -1116,7 +1115,6 @@ protected:
   bool urcHandlerCloseSocket(const char* event);
   bool urcHandlerGNSSRequestLocation(const char* event);
   bool urcHandlerSIMState(const char* event);
-  bool urcHandlerPDPAction(const char* event);
   bool urcHandlerHTTPCommand(const char* event);
   bool urcHandlerMQTTCommand(const char* event);
   bool urcHandlerPingCommand(const char* event);

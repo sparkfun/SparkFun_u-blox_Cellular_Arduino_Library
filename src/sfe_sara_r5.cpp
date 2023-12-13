@@ -1,5 +1,10 @@
 #include "sfe_sara_r5.h"
 
+SARA_R5::SARA_R5()
+{
+  addURCHandler(UBX_CELL_MESSAGE_PDP_ACTION_URC, [this](const char* event){return this->urcHandlerPDPAction(event);});
+}
+
 UBX_CELL_error_t SARA_R5::setUtimeMode(UBX_CELL_utime_mode_t mode, UBX_CELL_utime_sensor_t sensor)
 {
   UBX_CELL_error_t err;
@@ -357,4 +362,42 @@ UBX_CELL_error_t SARA_R5::getNetworkAssignedIPAddress(int profile, IPAddress *ad
   free(response);
 
   return err;
+}
+
+bool SARA_R5::urcHandlerPDPAction(const char* event)
+{
+  // URC: +UUPSDA (Packet Switched Data Action)
+  int result;
+  IPAddress remoteIP = {0, 0, 0, 0};
+  int scanNum;
+  int remoteIPstore[4];
+
+  char *searchPtr = strstr(event, UBX_CELL_MESSAGE_PDP_ACTION_URC);
+  if (searchPtr != nullptr)
+  {
+    searchPtr += strlen(UBX_CELL_MESSAGE_PDP_ACTION_URC); // Move searchPtr to first character - probably a space
+    while (*searchPtr == ' ') searchPtr++; // skip spaces
+    scanNum = sscanf(searchPtr, "%d,\"%d.%d.%d.%d\"",
+                      &result, &remoteIPstore[0], &remoteIPstore[1], &remoteIPstore[2], &remoteIPstore[3]);
+
+    if (scanNum == 5)
+    {
+      if (_printDebug == true)
+        _debugPort->println(F("processReadEvent: packet switched data action"));
+
+      for (int i = 0; i <= 3; i++)
+      {
+        remoteIP[i] = (uint8_t)remoteIPstore[i];
+      }
+
+      if (_psdActionRequestCallback != nullptr)
+      {
+        _psdActionRequestCallback(result, remoteIP);
+      }
+
+      return true;
+    }
+  }
+
+  return false;
 }

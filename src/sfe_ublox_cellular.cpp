@@ -61,7 +61,6 @@ UBX_CELL::UBX_CELL(int powerPin, int resetPin, uint8_t maxInitTries)
   addURCHandler(UBX_CELL_CLOSE_SOCKET_URC,           [this](const char* event){return this->urcHandlerCloseSocket(event);});
   addURCHandler(UBX_CELL_GNSS_REQUEST_LOCATION_URC,  [this](const char* event){return this->urcHandlerGNSSRequestLocation(event);});
   addURCHandler(UBX_CELL_SIM_STATE_URC,              [this](const char* event){return this->urcHandlerSIMState(event);});
-  addURCHandler(UBX_CELL_MESSAGE_PDP_ACTION_URC,     [this](const char* event){return this->urcHandlerPDPAction(event);});
   addURCHandler(UBX_CELL_HTTP_COMMAND_URC,           [this](const char* event){return this->urcHandlerHTTPCommand(event);});
   addURCHandler(UBX_CELL_MQTT_COMMAND_URC,           [this](const char* event){return this->urcHandlerMQTTCommand(event);});
   addURCHandler(UBX_CELL_PING_COMMAND_URC,           [this](const char* event){return this->urcHandlerPingCommand(event);});
@@ -563,44 +562,6 @@ bool UBX_CELL::urcHandlerSIMState(const char* event)
       if (_simStateReportCallback != nullptr)
       {
         _simStateReportCallback(state);
-      }
-
-      return true;
-    }
-  }
-
-  return false;
-}
-
-bool UBX_CELL::urcHandlerPDPAction(const char* event)
-{
-  // URC: +UUPSDA (Packet Switched Data Action)
-  int result;
-  IPAddress remoteIP = {0, 0, 0, 0};
-  int scanNum;
-  int remoteIPstore[4];
-
-  char *searchPtr = strstr(event, UBX_CELL_MESSAGE_PDP_ACTION_URC);
-  if (searchPtr != nullptr)
-  {
-    searchPtr += strlen(UBX_CELL_MESSAGE_PDP_ACTION_URC); // Move searchPtr to first character - probably a space
-    while (*searchPtr == ' ') searchPtr++; // skip spaces
-    scanNum = sscanf(searchPtr, "%d,\"%d.%d.%d.%d\"",
-                      &result, &remoteIPstore[0], &remoteIPstore[1], &remoteIPstore[2], &remoteIPstore[3]);
-
-    if (scanNum == 5)
-    {
-      if (_printDebug == true)
-        _debugPort->println(F("processReadEvent: packet switched data action"));
-
-      for (int i = 0; i <= 3; i++)
-      {
-        remoteIP[i] = (uint8_t)remoteIPstore[i];
-      }
-
-      if (_psdActionRequestCallback != nullptr)
-      {
-        _psdActionRequestCallback(result, remoteIP);
       }
 
       return true;

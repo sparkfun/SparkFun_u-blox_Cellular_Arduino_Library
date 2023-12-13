@@ -10,10 +10,14 @@ const char* const UBX_CELL_GNSS_REQUEST_TIME = "+UTIME";          // Ask for tim
 const char* const UBX_CELL_GNSS_TIME_INDICATION = "+UTIMEIND";    // Time information request status unsolicited indication
 const char* const UBX_CELL_GNSS_TIME_CONFIGURATION = "+UTIMECFG"; // Sets time configuration
 
+const char* const UBX_CELL_MESSAGE_PDP_ACTION_URC = "+UUPSDA:";
+
 // Base SARA-R5 class
 class SARA_R5: public UBX_CELL
 {
 public:
+  SARA_R5();
+  
   UBX_CELL_error_t setUtimeMode(UBX_CELL_utime_mode_t mode = UBX_CELL_UTIME_MODE_PPS, UBX_CELL_utime_sensor_t sensor = UBX_CELL_UTIME_SENSOR_GNSS_LTE); // Time mode, source etc. (+UTIME)
   UBX_CELL_error_t getUtimeMode(UBX_CELL_utime_mode_t *mode, UBX_CELL_utime_sensor_t *sensor);
   UBX_CELL_error_t setUtimeIndication(UBX_CELL_utime_urc_configuration_t config = UBX_CELL_UTIME_URC_CONFIGURATION_ENABLED); // +UTIMEIND
@@ -29,6 +33,9 @@ public:
   UBX_CELL_error_t setPDPconfiguration(int profile, UBX_CELL_pdp_configuration_parameter_t parameter, IPAddress value);                   // Set parameters in the chosen PSD profile
   UBX_CELL_error_t performPDPaction(int profile, UBX_CELL_pdp_actions_t action);  // Performs the requested action for the specified PSD profile: reset, store, load, activate, deactivate
   UBX_CELL_error_t getNetworkAssignedIPAddress(int profile, IPAddress *address); // Get the dynamic IP address assigned during PDP context activation
+
+protected:
+  bool urcHandlerPDPAction(const char* event);
 };
 
 class SARA_R500S: public SARA_R5
