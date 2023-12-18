@@ -83,16 +83,12 @@ template <typename T> class UBX_CELL_VOICE
     {
         UBX_CELL_error_t err;
         size_t cmdLen = strlen(UBX_CELL_COMMAND_PLAY_AUDIO) + 13;
-        char *command;
+        char command[cmdLen];
 
-        command = static_cast<T *>(this)->ubx_cell_calloc_char(cmdLen);
-        if (command == nullptr)
-            return UBX_CELL_ERROR_OUT_OF_MEMORY;
         snprintf(command, cmdLen, "%s=%d,%d,%d", UBX_CELL_COMMAND_PLAY_AUDIO, audio_resource, tone_id, nof_repeat);
 
         err = static_cast<T *>(this)->sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr,
                                                               UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
-        free(command);
         return err;
     }
 
@@ -100,16 +96,12 @@ template <typename T> class UBX_CELL_VOICE
     {
         UBX_CELL_error_t err;
         size_t cmdLen = strlen(UBX_CELL_COMMAND_STOP_AUDIO) + 5;
-        char *command;
+        char command[cmdLen];
 
-        command = static_cast<T *>(this)->ubx_cell_calloc_char(cmdLen);
-        if (command == nullptr)
-            return UBX_CELL_ERROR_OUT_OF_MEMORY;
         snprintf(command, cmdLen, "%s=%d", UBX_CELL_COMMAND_STOP_AUDIO, audio_resource);
 
         err = static_cast<T *>(this)->sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr,
                                                               UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
-        free(command);
         return err;
     }
 
@@ -117,17 +109,13 @@ template <typename T> class UBX_CELL_VOICE
     {
         UBX_CELL_error_t err;
         size_t cmdLen = strlen(UBX_CELL_COMMAND_GENERATE_TONE) + 15;
-        char *command;
+        char command[cmdLen];
         char response[] = "\r\nOK\r\n\r\n+UUTGN: 0\r\n";
 
-        command = static_cast<T *>(this)->ubx_cell_calloc_char(cmdLen);
-        if (command == nullptr)
-            return UBX_CELL_ERROR_OUT_OF_MEMORY;
         snprintf(command, cmdLen, "%s=%d,%d,%d", UBX_CELL_COMMAND_GENERATE_TONE, frequency, duration, volume);
 
         err = static_cast<T *>(this)->sendCommandWithResponse(command, response, nullptr,
                                                               UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
-        free(command);
         return err;
     }
 
@@ -135,17 +123,13 @@ template <typename T> class UBX_CELL_VOICE
     {
         UBX_CELL_error_t err;
         size_t cmdLen = strlen(UBX_CELL_COMMAND_GENERATE_TONE) + 14;
-        char *command;
+        char command[cmdLen];
         char response[] = "\r\nOK\r\n\r\n+UUTGN: 0\r\n";
 
-        command = static_cast<T *>(this)->ubx_cell_calloc_char(cmdLen);
-        if (command == nullptr)
-            return UBX_CELL_ERROR_OUT_OF_MEMORY;
         snprintf(command, cmdLen, "%s=\"%c\",%d,%d", UBX_CELL_COMMAND_GENERATE_TONE, dtmf_character, duration, volume);
 
         err = static_cast<T *>(this)->sendCommandWithResponse(command, response, nullptr,
                                                               UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
-        free(command);
         return err;
     }
 

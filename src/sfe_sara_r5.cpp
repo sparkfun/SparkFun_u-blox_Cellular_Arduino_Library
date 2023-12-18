@@ -10,18 +10,14 @@ UBX_CELL_error_t SARA_R5::setUtimeMode(UBX_CELL_utime_mode_t mode, UBX_CELL_utim
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_GNSS_REQUEST_TIME) + 16;
-    char *command;
+    char command[cmdLen];
 
-    command = ubx_cell_calloc_char(cmdLen);
-    if (command == nullptr)
-        return UBX_CELL_ERROR_OUT_OF_MEMORY;
     if (mode == UBX_CELL_UTIME_MODE_STOP) // stop UTIME does not require a sensor
         snprintf(command, cmdLen, "%s=%d", UBX_CELL_GNSS_REQUEST_TIME, mode);
     else
         snprintf(command, cmdLen, "%s=%d,%d", UBX_CELL_GNSS_REQUEST_TIME, mode, sensor);
 
     err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr, UBX_CELL_10_SEC_TIMEOUT);
-    free(command);
     return err;
 }
 
@@ -29,23 +25,13 @@ UBX_CELL_error_t SARA_R5::getUtimeMode(UBX_CELL_utime_mode_t *mode, UBX_CELL_uti
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_GNSS_REQUEST_TIME) + 2;
-    char *command;
-    char *response;
+    char command[cmdLen];
+    char response[minimumResponseAllocation];
 
     UBX_CELL_utime_mode_t m;
     UBX_CELL_utime_sensor_t s;
 
-    command = ubx_cell_calloc_char(cmdLen);
-    if (command == nullptr)
-        return UBX_CELL_ERROR_OUT_OF_MEMORY;
     snprintf(command, cmdLen, "%s?", UBX_CELL_GNSS_REQUEST_TIME);
-
-    response = ubx_cell_calloc_char(minimumResponseAllocation);
-    if (response == nullptr)
-    {
-        free(command);
-        return UBX_CELL_ERROR_OUT_OF_MEMORY;
-    }
 
     err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, response, UBX_CELL_10_SEC_TIMEOUT);
 
@@ -77,8 +63,6 @@ UBX_CELL_error_t SARA_R5::getUtimeMode(UBX_CELL_utime_mode_t *mode, UBX_CELL_uti
             err = UBX_CELL_ERROR_UNEXPECTED_RESPONSE;
     }
 
-    free(command);
-    free(response);
     return err;
 }
 
@@ -86,15 +70,11 @@ UBX_CELL_error_t SARA_R5::setUtimeIndication(UBX_CELL_utime_urc_configuration_t 
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_GNSS_TIME_INDICATION) + 16;
-    char *command;
+    char command[cmdLen];
 
-    command = ubx_cell_calloc_char(cmdLen);
-    if (command == nullptr)
-        return UBX_CELL_ERROR_OUT_OF_MEMORY;
     snprintf(command, cmdLen, "%s=%d", UBX_CELL_GNSS_TIME_INDICATION, config);
 
     err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
-    free(command);
     return err;
 }
 
@@ -102,22 +82,12 @@ UBX_CELL_error_t SARA_R5::getUtimeIndication(UBX_CELL_utime_urc_configuration_t 
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_GNSS_TIME_INDICATION) + 2;
-    char *command;
-    char *response;
+    char command[cmdLen];
+    char response[minimumResponseAllocation];
 
     UBX_CELL_utime_urc_configuration_t c;
 
-    command = ubx_cell_calloc_char(cmdLen);
-    if (command == nullptr)
-        return UBX_CELL_ERROR_OUT_OF_MEMORY;
     snprintf(command, cmdLen, "%s?", UBX_CELL_GNSS_TIME_INDICATION);
-
-    response = ubx_cell_calloc_char(minimumResponseAllocation);
-    if (response == nullptr)
-    {
-        free(command);
-        return UBX_CELL_ERROR_OUT_OF_MEMORY;
-    }
 
     err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, response, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
@@ -142,8 +112,6 @@ UBX_CELL_error_t SARA_R5::getUtimeIndication(UBX_CELL_utime_urc_configuration_t 
             err = UBX_CELL_ERROR_UNEXPECTED_RESPONSE;
     }
 
-    free(command);
-    free(response);
     return err;
 }
 
@@ -151,11 +119,8 @@ UBX_CELL_error_t SARA_R5::setUtimeConfiguration(int32_t offsetNanoseconds, int32
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_GNSS_TIME_CONFIGURATION) + 48;
-    char *command;
+    char command[cmdLen];
 
-    command = ubx_cell_calloc_char(cmdLen);
-    if (command == nullptr)
-        return UBX_CELL_ERROR_OUT_OF_MEMORY;
 #if defined(ARDUINO_ARCH_ESP32) || defined(ARDUINO_ARCH_ESP8266)
     snprintf(command, cmdLen, "%s=%d,%d", UBX_CELL_GNSS_TIME_CONFIGURATION, offsetNanoseconds, offsetSeconds);
 #else
@@ -163,7 +128,6 @@ UBX_CELL_error_t SARA_R5::setUtimeConfiguration(int32_t offsetNanoseconds, int32
 #endif
 
     err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
-    free(command);
     return err;
 }
 
@@ -171,23 +135,13 @@ UBX_CELL_error_t SARA_R5::getUtimeConfiguration(int32_t *offsetNanoseconds, int3
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_GNSS_TIME_CONFIGURATION) + 2;
-    char *command;
-    char *response;
+    char command[cmdLen];
+    char response[minimumResponseAllocation];
 
     int32_t ons;
     int32_t os;
 
-    command = ubx_cell_calloc_char(cmdLen);
-    if (command == nullptr)
-        return UBX_CELL_ERROR_OUT_OF_MEMORY;
     snprintf(command, cmdLen, "%s?", UBX_CELL_GNSS_TIME_CONFIGURATION);
-
-    response = ubx_cell_calloc_char(minimumResponseAllocation);
-    if (response == nullptr)
-    {
-        free(command);
-        return UBX_CELL_ERROR_OUT_OF_MEMORY;
-    }
 
     err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, response, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
@@ -216,8 +170,6 @@ UBX_CELL_error_t SARA_R5::getUtimeConfiguration(int32_t *offsetNanoseconds, int3
             err = UBX_CELL_ERROR_UNEXPECTED_RESPONSE;
     }
 
-    free(command);
-    free(response);
     return err;
 }
 
@@ -225,19 +177,15 @@ UBX_CELL_error_t SARA_R5::setPDPconfiguration(int profile, UBX_CELL_pdp_configur
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_MESSAGE_PDP_CONFIG) + 24;
-    char *command;
+    char command[cmdLen];
 
     if (profile >= UBX_CELL_NUM_PSD_PROFILES)
         return UBX_CELL_ERROR_ERROR;
 
-    command = ubx_cell_calloc_char(cmdLen);
-    if (command == nullptr)
-        return UBX_CELL_ERROR_OUT_OF_MEMORY;
     snprintf(command, cmdLen, "%s=%d,%d,%d", UBX_CELL_MESSAGE_PDP_CONFIG, profile, parameter, value);
 
     err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
-    free(command);
     return err;
 }
 
@@ -252,19 +200,15 @@ UBX_CELL_error_t SARA_R5::setPDPconfiguration(int profile, UBX_CELL_pdp_configur
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_MESSAGE_PDP_CONFIG) + 64;
-    char *command;
+    char command[cmdLen];
 
     if (profile >= UBX_CELL_NUM_PSD_PROFILES)
         return UBX_CELL_ERROR_ERROR;
 
-    command = ubx_cell_calloc_char(cmdLen);
-    if (command == nullptr)
-        return UBX_CELL_ERROR_OUT_OF_MEMORY;
     snprintf(command, cmdLen, "%s=%d,%d,\"%s\"", UBX_CELL_MESSAGE_PDP_CONFIG, profile, parameter, value.c_str());
 
     err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
-    free(command);
     return err;
 }
 
@@ -273,20 +217,16 @@ UBX_CELL_error_t SARA_R5::setPDPconfiguration(int profile, UBX_CELL_pdp_configur
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_MESSAGE_PDP_CONFIG) + 64;
-    char *command;
+    char command[cmdLen];
 
     if (profile >= UBX_CELL_NUM_PSD_PROFILES)
         return UBX_CELL_ERROR_ERROR;
 
-    command = ubx_cell_calloc_char(cmdLen);
-    if (command == nullptr)
-        return UBX_CELL_ERROR_OUT_OF_MEMORY;
     snprintf(command, cmdLen, "%s=%d,%d,\"%d.%d.%d.%d\"", UBX_CELL_MESSAGE_PDP_CONFIG, profile, parameter, value[0], value[1],
             value[2], value[3]);
 
     err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
-    free(command);
     return err;
 }
 
@@ -294,44 +234,30 @@ UBX_CELL_error_t SARA_R5::performPDPaction(int profile, UBX_CELL_pdp_actions_t a
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_MESSAGE_PDP_ACTION) + 32;
-    char *command;
+    char command[cmdLen];
 
     if (profile >= UBX_CELL_NUM_PSD_PROFILES)
         return UBX_CELL_ERROR_ERROR;
 
-    command = ubx_cell_calloc_char(cmdLen);
-    if (command == nullptr)
-        return UBX_CELL_ERROR_OUT_OF_MEMORY;
     snprintf(command, cmdLen, "%s=%d,%d", UBX_CELL_MESSAGE_PDP_ACTION, profile, action);
 
     err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
-    free(command);
     return err;
 }
 
 UBX_CELL_error_t SARA_R5::getNetworkAssignedIPAddress(int profile, IPAddress *address)
 {
     size_t cmdLen = strlen(UBX_CELL_NETWORK_ASSIGNED_DATA) + 16;
-    char *command;
-    char *response;
+    char command[cmdLen];
+    char response[minimumResponseAllocation];
     UBX_CELL_error_t err;
     int scanNum = 0;
     int profileStore = 0;
     int paramTag = 0; // 0: IP address: dynamic IP address assigned during PDP context activation
     int paramVals[4];
 
-    command = ubx_cell_calloc_char(cmdLen);
-    if (command == nullptr)
-        return UBX_CELL_ERROR_OUT_OF_MEMORY;
     snprintf(command, cmdLen, "%s=%d,%d", UBX_CELL_NETWORK_ASSIGNED_DATA, profile, paramTag);
-
-    response = ubx_cell_calloc_char(minimumResponseAllocation);
-    if (response == nullptr)
-    {
-        free(command);
-        return UBX_CELL_ERROR_OUT_OF_MEMORY;
-    }
 
     err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, response, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
@@ -353,8 +279,6 @@ UBX_CELL_error_t SARA_R5::getNetworkAssignedIPAddress(int profile, IPAddress *ad
                 _debugPort->print(F("getNetworkAssignedIPAddress: error: scanNum is "));
                 _debugPort->println(scanNum);
             }
-            free(command);
-            free(response);
             return UBX_CELL_ERROR_UNEXPECTED_RESPONSE;
         }
 
@@ -362,9 +286,6 @@ UBX_CELL_error_t SARA_R5::getNetworkAssignedIPAddress(int profile, IPAddress *ad
                                  (uint8_t)paramVals[3]};
         *address = tempAddress;
     }
-
-    free(command);
-    free(response);
 
     return err;
 }
