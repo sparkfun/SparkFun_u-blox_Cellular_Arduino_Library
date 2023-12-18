@@ -5,31 +5,31 @@
 #include "sfe_ublox_cellular_voice.h"
 
 // Base LARA-R6 class
-class LARA_R6 : public UBX_CELL
+class SparkFun_ublox_LARA_R6 : public SparkFun_ublox_Cellular
 {
 };
 
-class LARA_R6001 : public LARA_R6, public UBX_CELL_VOICE<LARA_R6001>
+class SparkFun_ublox_LARA_R6001 : public SparkFun_ublox_LARA_R6, public SparkFun_ublox_Cellular_Voice_Base<SparkFun_ublox_LARA_R6001>
 {
 };
 
-class LARA_R6001D : public LARA_R6
+class SparkFun_ublox_LARA_R6001D : public SparkFun_ublox_LARA_R6
 {
 };
 
-class LARA_R6401 : public LARA_R6, public UBX_CELL_VOICE<LARA_R6401>
+class SparkFun_ublox_LARA_R6401 : public SparkFun_ublox_LARA_R6, public SparkFun_ublox_Cellular_Voice_Base<SparkFun_ublox_LARA_R6401>
 {
 };
 
-class LARA_R6401D : public LARA_R6
+class SparkFun_ublox_LARA_R6401D : public SparkFun_ublox_LARA_R6
 {
 };
 
-class LARA_R6801_00B : public LARA_R6, public UBX_CELL_VOICE<LARA_R6801_00B>
+class SparkFun_ublox_LARA_R6801_00B : public SparkFun_ublox_LARA_R6, public SparkFun_ublox_Cellular_Voice_Base<SparkFun_ublox_LARA_R6801_00B>
 {
 };
 
-class LARA_R6801D : public LARA_R6
+class SparkFun_ublox_LARA_R6801D : public SparkFun_ublox_LARA_R6
 {
 };
 

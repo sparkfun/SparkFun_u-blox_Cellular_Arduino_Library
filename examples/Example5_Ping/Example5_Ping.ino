@@ -6,20 +6,20 @@
 
 // Uncomment the module you're using. If your module is not listed below, then
 // it's not supported for this example
-UBX_CELL myModule; // This example works with all modules, so the base class can be used
-// SARA_R5 myModule; // Base SARA-R5 class
-// SARA_R500S myModule;
-// SARA_R500S_01B myModule;
-// SARA_R500S_61B myModule;
-// SARA_R510M8S_61B myModule;
-// SARA_R510S myModule;
-// LARA_R6 myModule; // Base LARA-R6 class
-// LARA_R6001 myModule;
-// LARA_R6001D myModule;
-// LARA_R6401 myModule;
-// LARA_R6401D myModule;
-// LARA_R6801_00B myModule;
-// LARA_R6801D myModule;
+SparkFun_ublox_Cellular myModule; // This example works with all modules, so the base class can be used
+// SparkFun_ublox_SARA_R5 myModule; // Base SARA-R5 class
+// SparkFun_ublox_SARA_R500S myModule;
+// SparkFun_ublox_SARA_R500S_01B myModule;
+// SparkFun_ublox_SARA_R500S_61B myModule;
+// SparkFun_ublox_SARA_R510M8S_61B myModule;
+// SparkFun_ublox_SARA_R510S myModule;
+// SparkFun_ublox_LARA_R6 myModule; // Base LARA-R6 class
+// SparkFun_ublox_LARA_R6001 myModule;
+// SparkFun_ublox_LARA_R6001D myModule;
+// SparkFun_ublox_LARA_R6401 myModule;
+// SparkFun_ublox_LARA_R6401D myModule;
+// SparkFun_ublox_LARA_R6801_00B myModule;
+// SparkFun_ublox_LARA_R6801D myModule;
 
 String pingMe = ""; // The name of the server we are going to ping
 

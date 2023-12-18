@@ -629,15 +629,15 @@ typedef enum
     // DEEP_LOW_POWER_STATE = 127 // Not supported on SARA-R5
 } UBX_CELL_functionality_t;
 
-class UBX_CELL : public Print
+class SparkFun_ublox_Cellular : public Print
 {
   public:
     // Constructor
     // The library will use the powerPin and resetPin (if provided) to power the module off/on and perform an emergency
     // reset maxInitTries sets the maximum number of initialization attempts. .init is called by .begin.
-    UBX_CELL(int powerPin = UBX_CELL_POWER_PIN, int resetPin = UBX_CELL_RESET_PIN, uint8_t maxInitTries = 9);
+    SparkFun_ublox_Cellular(int powerPin = UBX_CELL_POWER_PIN, int resetPin = UBX_CELL_RESET_PIN, uint8_t maxInitTries = 9);
 
-    ~UBX_CELL();
+    ~SparkFun_ublox_Cellular();
     // Begin -- initialize module and ensure it's connected
 #ifdef UBX_CELL_SOFTWARE_SERIAL_ENABLED
     bool begin(SoftwareSerial &softSerial, unsigned long baud = UBX_CELL_DEFAULT_BAUD_RATE);

@@ -22,6 +22,8 @@
 #include "sfe_sara_r5.h"
 #include "sfe_ublox_cellular.h"
 
+#define SARA_R5 SparkFun_ublox_SARA_R5
+
 #define SARA_R5_POWER_PIN -1 // Default to no pin
 #define SARA_R5_RESET_PIN -1
 

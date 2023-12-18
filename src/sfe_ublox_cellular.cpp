@@ -15,7 +15,7 @@
 
 #include "sfe_ublox_cellular.h"
 
-UBX_CELL::UBX_CELL(int powerPin, int resetPin, uint8_t maxInitTries)
+SparkFun_ublox_Cellular::SparkFun_ublox_Cellular(int powerPin, int resetPin, uint8_t maxInitTries)
 {
 #ifdef UBX_CELL_SOFTWARE_SERIAL_ENABLED
     _softSerial = nullptr;
@@ -73,7 +73,7 @@ UBX_CELL::UBX_CELL(int powerPin, int resetPin, uint8_t maxInitTries)
                   [this](const char *event) { return this->urcHandlerEPSRegistrationStatus(event); });
 }
 
-UBX_CELL::~UBX_CELL(void)
+SparkFun_ublox_Cellular::~SparkFun_ublox_Cellular(void)
 {
     if (nullptr != _saraRXBuffer)
     {
@@ -93,7 +93,7 @@ UBX_CELL::~UBX_CELL(void)
 }
 
 #ifdef UBX_CELL_SOFTWARE_SERIAL_ENABLED
-bool UBX_CELL::begin(SoftwareSerial &softSerial, unsigned long baud)
+bool SparkFun_ublox_Cellular::begin(SoftwareSerial &softSerial, unsigned long baud)
 {
     if (nullptr == _saraRXBuffer)
     {
@@ -144,7 +144,7 @@ bool UBX_CELL::begin(SoftwareSerial &softSerial, unsigned long baud)
 }
 #endif
 
-bool UBX_CELL::begin(HardwareSerial &hardSerial, unsigned long baud)
+bool SparkFun_ublox_Cellular::begin(HardwareSerial &hardSerial, unsigned long baud)
 {
     if (nullptr == _saraRXBuffer)
     {
@@ -196,7 +196,7 @@ bool UBX_CELL::begin(HardwareSerial &hardSerial, unsigned long baud)
 
 // Calling this function with nothing sets the debug port to Serial
 // You can also call it with other streams like Serial1, SerialUSB, etc.
-void UBX_CELL::enableDebugging(Print &debugPort)
+void SparkFun_ublox_Cellular::enableDebugging(Print &debugPort)
 {
     _debugPort = &debugPort;
     _printDebug = true;
@@ -204,7 +204,7 @@ void UBX_CELL::enableDebugging(Print &debugPort)
 
 // Calling this function with nothing sets the debug port to Serial
 // You can also call it with other streams like Serial1, SerialUSB, etc.
-void UBX_CELL::enableAtDebugging(Print &debugPort)
+void SparkFun_ublox_Cellular::enableAtDebugging(Print &debugPort)
 {
     _debugAtPort = &debugPort;
     _printAtDebug = true;
@@ -214,7 +214,7 @@ void UBX_CELL::enableAtDebugging(Print &debugPort)
 // See: https://github.com/sparkfun/SparkFun_LTE_Shield_Arduino_Library/pull/8
 // It does the same job as ::poll but also processed any 'old' data stored in the backlog first
 // It also has a built-in timeout - which ::poll does not
-bool UBX_CELL::bufferedPoll(void)
+bool SparkFun_ublox_Cellular::bufferedPoll(void)
 {
     if (_bufferedPollReentrant == true) // Check for reentry (i.e. bufferedPoll has been called from inside a callback)
         return false;
@@ -342,7 +342,7 @@ bool UBX_CELL::bufferedPoll(void)
     return handled;
 } // /bufferedPoll
 
-bool UBX_CELL::urcHandlerReadSocket(const char *event)
+bool SparkFun_ublox_Cellular::urcHandlerReadSocket(const char *event)
 {
     // URC: +UUSORD (Read Socket Data)
     int socket, length;
@@ -380,7 +380,7 @@ bool UBX_CELL::urcHandlerReadSocket(const char *event)
     return false;
 }
 
-bool UBX_CELL::urcHandlerReadUDPSocket(const char *event)
+bool SparkFun_ublox_Cellular::urcHandlerReadUDPSocket(const char *event)
 {
     // URC: +UUSORF (Receive From command (UDP only))
     int socket, length;
@@ -403,7 +403,7 @@ bool UBX_CELL::urcHandlerReadUDPSocket(const char *event)
     return false;
 }
 
-bool UBX_CELL::urcHandlerListeningSocket(const char *event)
+bool SparkFun_ublox_Cellular::urcHandlerListeningSocket(const char *event)
 {
     // URC: +UUSOLI (Set Listening Socket)
     int socket = 0;
@@ -443,7 +443,7 @@ bool UBX_CELL::urcHandlerListeningSocket(const char *event)
     return false;
 }
 
-bool UBX_CELL::urcHandlerCloseSocket(const char *event)
+bool SparkFun_ublox_Cellular::urcHandlerCloseSocket(const char *event)
 {
     // URC: +UUSOCL (Close Socket)
     int socket;
@@ -472,7 +472,7 @@ bool UBX_CELL::urcHandlerCloseSocket(const char *event)
     return false;
 }
 
-bool UBX_CELL::urcHandlerGNSSRequestLocation(const char *event)
+bool SparkFun_ublox_Cellular::urcHandlerGNSSRequestLocation(const char *event)
 {
     // URC: +UULOC (Localization information - CellLocate and hybrid positioning)
     ClockData clck;
@@ -552,7 +552,7 @@ bool UBX_CELL::urcHandlerGNSSRequestLocation(const char *event)
     return false;
 }
 
-bool UBX_CELL::urcHandlerSIMState(const char *event)
+bool SparkFun_ublox_Cellular::urcHandlerSIMState(const char *event)
 {
     // URC: +UUSIMSTAT (SIM Status)
     UBX_CELL_sim_states_t state;
@@ -586,7 +586,7 @@ bool UBX_CELL::urcHandlerSIMState(const char *event)
     return false;
 }
 
-bool UBX_CELL::urcHandlerHTTPCommand(const char *event)
+bool SparkFun_ublox_Cellular::urcHandlerHTTPCommand(const char *event)
 {
     // URC: +UUHTTPCR (HTTP Command Result)
     int profile, command, result;
@@ -620,7 +620,7 @@ bool UBX_CELL::urcHandlerHTTPCommand(const char *event)
     return false;
 }
 
-bool UBX_CELL::urcHandlerMQTTCommand(const char *event)
+bool SparkFun_ublox_Cellular::urcHandlerMQTTCommand(const char *event)
 {
     // URC: +UUMQTTC (MQTT Command Result)
     int command, result;
@@ -663,7 +663,7 @@ bool UBX_CELL::urcHandlerMQTTCommand(const char *event)
     return false;
 }
 
-bool UBX_CELL::urcHandlerPingCommand(const char *event)
+bool SparkFun_ublox_Cellular::urcHandlerPingCommand(const char *event)
 {
     // URC: +UUPING (Ping Result)
     int retry = 0;
@@ -741,7 +741,7 @@ bool UBX_CELL::urcHandlerPingCommand(const char *event)
     return false;
 }
 
-bool UBX_CELL::urcHandlerFTPCommand(const char *event)
+bool SparkFun_ublox_Cellular::urcHandlerFTPCommand(const char *event)
 {
     // URC: +UUFTPCR (FTP Command Result)
     int ftpCmd;
@@ -767,7 +767,7 @@ bool UBX_CELL::urcHandlerFTPCommand(const char *event)
     return false;
 }
 
-bool UBX_CELL::urcHandlerRegistrationStatus(const char *event)
+bool SparkFun_ublox_Cellular::urcHandlerRegistrationStatus(const char *event)
 {
     // URC: +CREG
     int status = 0;
@@ -796,7 +796,7 @@ bool UBX_CELL::urcHandlerRegistrationStatus(const char *event)
     return false;
 }
 
-bool UBX_CELL::urcHandlerEPSRegistrationStatus(const char *event)
+bool SparkFun_ublox_Cellular::urcHandlerEPSRegistrationStatus(const char *event)
 {
     // URC: +CEREG
     int status = 0;
@@ -826,14 +826,14 @@ bool UBX_CELL::urcHandlerEPSRegistrationStatus(const char *event)
     return false;
 }
 
-void UBX_CELL::addURCHandler(const char *urcString, UBX_CELL_urc_handler_t urcHandler)
+void SparkFun_ublox_Cellular::addURCHandler(const char *urcString, UBX_CELL_urc_handler_t urcHandler)
 {
     _urcStrings.push_back(urcString);
     _urcHandlers.push_back(urcHandler);
 }
 
 // Parse incoming URC's - the associated parse functions pass the data to the user via the callbacks (if defined)
-bool UBX_CELL::processURCEvent(const char *event)
+bool SparkFun_ublox_Cellular::processURCEvent(const char *event)
 {
     // Iterate through each URC handler to see if it can handle this message
     for (auto urcHandler : _urcHandlers)
@@ -852,7 +852,7 @@ bool UBX_CELL::processURCEvent(const char *event)
 // This is the original poll function.
 // It is 'blocking' - it does not return when serial data is available until it receives a `\n`.
 // ::bufferedPoll is the new improved version. It processes any data in the backlog and includes a timeout.
-bool UBX_CELL::poll(void)
+bool SparkFun_ublox_Cellular::poll(void)
 {
     if (_pollReentrant == true) // Check for reentry (i.e. poll has been called from inside a callback)
         return false;
@@ -904,66 +904,66 @@ bool UBX_CELL::poll(void)
     return handled;
 }
 
-void UBX_CELL::setSocketListenCallback(void (*socketListenCallback)(int, IPAddress, unsigned int, int, IPAddress,
+void SparkFun_ublox_Cellular::setSocketListenCallback(void (*socketListenCallback)(int, IPAddress, unsigned int, int, IPAddress,
                                                                     unsigned int))
 {
     _socketListenCallback = socketListenCallback;
 }
 
-void UBX_CELL::setSocketReadCallback(void (*socketReadCallback)(int, String))
+void SparkFun_ublox_Cellular::setSocketReadCallback(void (*socketReadCallback)(int, String))
 {
     _socketReadCallback = socketReadCallback;
 }
 
-void UBX_CELL::setSocketReadCallbackPlus(void (*socketReadCallbackPlus)(
+void SparkFun_ublox_Cellular::setSocketReadCallbackPlus(void (*socketReadCallbackPlus)(
     int, const char *, int, IPAddress, int)) // socket, data, length, remoteAddress, remotePort
 {
     _socketReadCallbackPlus = socketReadCallbackPlus;
 }
 
-void UBX_CELL::setSocketCloseCallback(void (*socketCloseCallback)(int))
+void SparkFun_ublox_Cellular::setSocketCloseCallback(void (*socketCloseCallback)(int))
 {
     _socketCloseCallback = socketCloseCallback;
 }
 
-void UBX_CELL::setGpsReadCallback(void (*gpsRequestCallback)(ClockData time, PositionData gps, SpeedData spd,
+void SparkFun_ublox_Cellular::setGpsReadCallback(void (*gpsRequestCallback)(ClockData time, PositionData gps, SpeedData spd,
                                                              unsigned long uncertainty))
 {
     _gpsRequestCallback = gpsRequestCallback;
 }
 
-void UBX_CELL::setSIMstateReportCallback(void (*simStateReportCallback)(UBX_CELL_sim_states_t state))
+void SparkFun_ublox_Cellular::setSIMstateReportCallback(void (*simStateReportCallback)(UBX_CELL_sim_states_t state))
 {
     _simStateReportCallback = simStateReportCallback;
 }
 
-void UBX_CELL::setPSDActionCallback(void (*psdActionRequestCallback)(int result, IPAddress ip))
+void SparkFun_ublox_Cellular::setPSDActionCallback(void (*psdActionRequestCallback)(int result, IPAddress ip))
 {
     _psdActionRequestCallback = psdActionRequestCallback;
 }
 
-void UBX_CELL::setPingCallback(void (*pingRequestCallback)(int retry, int p_size, String remote_hostname, IPAddress ip,
+void SparkFun_ublox_Cellular::setPingCallback(void (*pingRequestCallback)(int retry, int p_size, String remote_hostname, IPAddress ip,
                                                            int ttl, long rtt))
 {
     _pingRequestCallback = pingRequestCallback;
 }
 
-void UBX_CELL::setHTTPCommandCallback(void (*httpCommandRequestCallback)(int profile, int command, int result))
+void SparkFun_ublox_Cellular::setHTTPCommandCallback(void (*httpCommandRequestCallback)(int profile, int command, int result))
 {
     _httpCommandRequestCallback = httpCommandRequestCallback;
 }
 
-void UBX_CELL::setMQTTCommandCallback(void (*mqttCommandRequestCallback)(int command, int result))
+void SparkFun_ublox_Cellular::setMQTTCommandCallback(void (*mqttCommandRequestCallback)(int command, int result))
 {
     _mqttCommandRequestCallback = mqttCommandRequestCallback;
 }
 
-void UBX_CELL::setFTPCommandCallback(void (*ftpCommandRequestCallback)(int command, int result))
+void SparkFun_ublox_Cellular::setFTPCommandCallback(void (*ftpCommandRequestCallback)(int command, int result))
 {
     _ftpCommandRequestCallback = ftpCommandRequestCallback;
 }
 
-UBX_CELL_error_t UBX_CELL::setRegistrationCallback(void (*registrationCallback)(UBX_CELL_registration_status_t status,
+UBX_CELL_error_t SparkFun_ublox_Cellular::setRegistrationCallback(void (*registrationCallback)(UBX_CELL_registration_status_t status,
                                                                                 unsigned int lac, unsigned int ci,
                                                                                 int Act))
 {
@@ -977,7 +977,7 @@ UBX_CELL_error_t UBX_CELL::setRegistrationCallback(void (*registrationCallback)(
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::setEpsRegistrationCallback(
+UBX_CELL_error_t SparkFun_ublox_Cellular::setEpsRegistrationCallback(
     void (*registrationCallback)(UBX_CELL_registration_status_t status, unsigned int tac, unsigned int ci, int Act))
 {
     _epsRegistrationCallback = registrationCallback;
@@ -990,22 +990,22 @@ UBX_CELL_error_t UBX_CELL::setEpsRegistrationCallback(
     return err;
 }
 
-size_t UBX_CELL::write(uint8_t c)
+size_t SparkFun_ublox_Cellular::write(uint8_t c)
 {
     return hwWrite(c);
 }
 
-size_t UBX_CELL::write(const char *str)
+size_t SparkFun_ublox_Cellular::write(const char *str)
 {
     return hwPrint(str);
 }
 
-size_t UBX_CELL::write(const char *buffer, size_t size)
+size_t SparkFun_ublox_Cellular::write(const char *buffer, size_t size)
 {
     return hwWriteData(buffer, size);
 }
 
-UBX_CELL_error_t UBX_CELL::at(void)
+UBX_CELL_error_t SparkFun_ublox_Cellular::at(void)
 {
     UBX_CELL_error_t err;
 
@@ -1014,7 +1014,7 @@ UBX_CELL_error_t UBX_CELL::at(void)
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::enableEcho(bool enable)
+UBX_CELL_error_t SparkFun_ublox_Cellular::enableEcho(bool enable)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_COMMAND_ECHO) + 2;
@@ -1024,7 +1024,7 @@ UBX_CELL_error_t UBX_CELL::enableEcho(bool enable)
     return err;
 }
 
-String UBX_CELL::getManufacturerID(void)
+String SparkFun_ublox_Cellular::getManufacturerID(void)
 {
     char response[minimumResponseAllocation];
     char idResponse[16] = {0x00}; // E.g. u-blox
@@ -1042,7 +1042,7 @@ String UBX_CELL::getManufacturerID(void)
     return String(idResponse);
 }
 
-String UBX_CELL::getModelID(void)
+String SparkFun_ublox_Cellular::getModelID(void)
 {
     char response[minimumResponseAllocation];
     char idResponse[32] = {0x00}; // E.g. SARA-R510M8Q
@@ -1060,7 +1060,7 @@ String UBX_CELL::getModelID(void)
     return String(idResponse);
 }
 
-String UBX_CELL::getFirmwareVersion(void)
+String SparkFun_ublox_Cellular::getFirmwareVersion(void)
 {
     char response[minimumResponseAllocation];
     char idResponse[16] = {0x00}; // E.g. 11.40
@@ -1078,7 +1078,7 @@ String UBX_CELL::getFirmwareVersion(void)
     return String(idResponse);
 }
 
-String UBX_CELL::getSerialNo(void)
+String SparkFun_ublox_Cellular::getSerialNo(void)
 {
     char response[minimumResponseAllocation];
     char idResponse[32] = {0x00}; // E.g. 357520070120767
@@ -1096,7 +1096,7 @@ String UBX_CELL::getSerialNo(void)
     return String(idResponse);
 }
 
-String UBX_CELL::getIMEI(void)
+String SparkFun_ublox_Cellular::getIMEI(void)
 {
     char response[minimumResponseAllocation];
     char imeiResponse[32] = {0x00}; // E.g. 004999010640000
@@ -1114,7 +1114,7 @@ String UBX_CELL::getIMEI(void)
     return String(imeiResponse);
 }
 
-String UBX_CELL::getIMSI(void)
+String SparkFun_ublox_Cellular::getIMSI(void)
 {
     char response[minimumResponseAllocation];
     char imsiResponse[32] = {0x00}; // E.g. 222107701772423
@@ -1132,7 +1132,7 @@ String UBX_CELL::getIMSI(void)
     return String(imsiResponse);
 }
 
-String UBX_CELL::getCCID(void)
+String SparkFun_ublox_Cellular::getCCID(void)
 {
     char response[minimumResponseAllocation];
     char ccidResponse[32] = {0x00}; // E.g. +CCID: 8939107900010087330
@@ -1157,7 +1157,7 @@ String UBX_CELL::getCCID(void)
     return String(ccidResponse);
 }
 
-String UBX_CELL::getSubscriberNo(void)
+String SparkFun_ublox_Cellular::getSubscriberNo(void)
 {
     char response[minimumResponseAllocation];
     char idResponse[128] = {0x00}; // E.g. +CNUM: "ABCD . AAA","123456789012",129
@@ -1182,7 +1182,7 @@ String UBX_CELL::getSubscriberNo(void)
     return String(idResponse);
 }
 
-String UBX_CELL::getCapabilities(void)
+String SparkFun_ublox_Cellular::getCapabilities(void)
 {
     char response[minimumResponseAllocation];
     char idResponse[128] = {0x00}; // E.g. +GCAP: +FCLASS, +CGSM
@@ -1207,7 +1207,7 @@ String UBX_CELL::getCapabilities(void)
     return String(idResponse);
 }
 
-UBX_CELL_error_t UBX_CELL::reset(void)
+UBX_CELL_error_t SparkFun_ublox_Cellular::reset(void)
 {
     UBX_CELL_error_t err;
 
@@ -1229,7 +1229,7 @@ UBX_CELL_error_t UBX_CELL::reset(void)
     return err;
 }
 
-String UBX_CELL::clock(void)
+String SparkFun_ublox_Cellular::clock(void)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_COMMAND_CLOCK) + 2;
@@ -1265,7 +1265,7 @@ String UBX_CELL::clock(void)
     return (clock);
 }
 
-UBX_CELL_error_t UBX_CELL::clock(uint8_t *y, uint8_t *mo, uint8_t *d, uint8_t *h, uint8_t *min, uint8_t *s, int8_t *tz)
+UBX_CELL_error_t SparkFun_ublox_Cellular::clock(uint8_t *y, uint8_t *mo, uint8_t *d, uint8_t *h, uint8_t *min, uint8_t *s, int8_t *tz)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_COMMAND_CLOCK) + 2;
@@ -1312,7 +1312,7 @@ UBX_CELL_error_t UBX_CELL::clock(uint8_t *y, uint8_t *mo, uint8_t *d, uint8_t *h
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::setClock(uint8_t y, uint8_t mo, uint8_t d, uint8_t h, uint8_t min, uint8_t s, int8_t tz)
+UBX_CELL_error_t SparkFun_ublox_Cellular::setClock(uint8_t y, uint8_t mo, uint8_t d, uint8_t h, uint8_t min, uint8_t s, int8_t tz)
 {
     // Convert y,mo,d,h,min,s,tz into a String
     // Some platforms don't support snprintf correctly (for %02d or %+02d) so we need to build the String manually
@@ -1351,7 +1351,7 @@ UBX_CELL_error_t UBX_CELL::setClock(uint8_t y, uint8_t mo, uint8_t d, uint8_t h,
     return (setClock(theTime));
 }
 
-UBX_CELL_error_t UBX_CELL::setClock(String theTime)
+UBX_CELL_error_t SparkFun_ublox_Cellular::setClock(String theTime)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_COMMAND_CLOCK) + theTime.length() + 8;
@@ -1368,12 +1368,12 @@ UBX_CELL_error_t UBX_CELL::setClock(String theTime)
     return err;
 }
 
-void UBX_CELL::autoTimeZoneForBegin(bool tz)
+void SparkFun_ublox_Cellular::autoTimeZoneForBegin(bool tz)
 {
     _autoTimeZoneForBegin = tz;
 }
 
-UBX_CELL_error_t UBX_CELL::autoTimeZone(bool enable)
+UBX_CELL_error_t SparkFun_ublox_Cellular::autoTimeZone(bool enable)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_COMMAND_AUTO_TZ) + 3;
@@ -1385,7 +1385,7 @@ UBX_CELL_error_t UBX_CELL::autoTimeZone(bool enable)
     return err;
 }
 
-int8_t UBX_CELL::rssi(void)
+int8_t SparkFun_ublox_Cellular::rssi(void)
 {
     size_t cmdLen = strlen(UBX_CELL_SIGNAL_QUALITY) + 1;
     char command[cmdLen];
@@ -1419,7 +1419,7 @@ int8_t UBX_CELL::rssi(void)
     return rssi;
 }
 
-UBX_CELL_error_t UBX_CELL::getExtSignalQuality(signal_quality &signal_quality)
+UBX_CELL_error_t SparkFun_ublox_Cellular::getExtSignalQuality(signal_quality &signal_quality)
 {
     size_t cmdLen = strlen(UBX_CELL_EXT_SIGNAL_QUALITY) + 1;
     char command[cmdLen];
@@ -1456,7 +1456,7 @@ UBX_CELL_error_t UBX_CELL::getExtSignalQuality(signal_quality &signal_quality)
     return err;
 }
 
-UBX_CELL_registration_status_t UBX_CELL::registration(bool eps)
+UBX_CELL_registration_status_t SparkFun_ublox_Cellular::registration(bool eps)
 {
     const char *tag = eps ? UBX_CELL_EPSREGISTRATION_STATUS : UBX_CELL_REGISTRATION_STATUS;
     size_t cmdLen = strlen(UBX_CELL_EPSREGISTRATION_STATUS) + 3;
@@ -1491,7 +1491,7 @@ UBX_CELL_registration_status_t UBX_CELL::registration(bool eps)
     return (UBX_CELL_registration_status_t)status;
 }
 
-bool UBX_CELL::setNetworkProfile(mobile_network_operator_t mno, bool autoReset, bool urcNotification)
+bool SparkFun_ublox_Cellular::setNetworkProfile(mobile_network_operator_t mno, bool autoReset, bool urcNotification)
 {
     mobile_network_operator_t currentMno;
 
@@ -1525,7 +1525,7 @@ bool UBX_CELL::setNetworkProfile(mobile_network_operator_t mno, bool autoReset, 
     return true;
 }
 
-mobile_network_operator_t UBX_CELL::getNetworkProfile(void)
+mobile_network_operator_t SparkFun_ublox_Cellular::getNetworkProfile(void)
 {
     mobile_network_operator_t mno;
     UBX_CELL_error_t err;
@@ -1538,7 +1538,7 @@ mobile_network_operator_t UBX_CELL::getNetworkProfile(void)
     return mno;
 }
 
-UBX_CELL_error_t UBX_CELL::setAPN(String apn, uint8_t cid, UBX_CELL_pdp_type pdpType)
+UBX_CELL_error_t SparkFun_ublox_Cellular::setAPN(String apn, uint8_t cid, UBX_CELL_pdp_type pdpType)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_MESSAGE_PDP_DEF) + strlen(apn.c_str()) + 16;
@@ -1600,7 +1600,7 @@ UBX_CELL_error_t UBX_CELL::setAPN(String apn, uint8_t cid, UBX_CELL_pdp_type pdp
 }
 
 // Return the Access Point Name and IP address for the chosen context identifier
-UBX_CELL_error_t UBX_CELL::getAPN(int cid, String *apn, IPAddress *ip, UBX_CELL_pdp_type *pdpType)
+UBX_CELL_error_t SparkFun_ublox_Cellular::getAPN(int cid, String *apn, IPAddress *ip, UBX_CELL_pdp_type *pdpType)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_MESSAGE_PDP_DEF) + 3;
@@ -1678,7 +1678,7 @@ UBX_CELL_error_t UBX_CELL::getAPN(int cid, String *apn, IPAddress *ip, UBX_CELL_
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::getSimStatus(String *code)
+UBX_CELL_error_t SparkFun_ublox_Cellular::getSimStatus(String *code)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_COMMAND_SIMPIN) + 2;
@@ -1712,7 +1712,7 @@ UBX_CELL_error_t UBX_CELL::getSimStatus(String *code)
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::setSimPin(String pin)
+UBX_CELL_error_t SparkFun_ublox_Cellular::setSimPin(String pin)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_COMMAND_SIMPIN) + 4 + pin.length();
@@ -1727,7 +1727,7 @@ UBX_CELL_error_t UBX_CELL::setSimPin(String pin)
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::setSIMstateReportingMode(int mode)
+UBX_CELL_error_t SparkFun_ublox_Cellular::setSIMstateReportingMode(int mode)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_SIM_STATE) + 4;
@@ -1739,7 +1739,7 @@ UBX_CELL_error_t UBX_CELL::setSIMstateReportingMode(int mode)
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::getSIMstateReportingMode(int *mode)
+UBX_CELL_error_t SparkFun_ublox_Cellular::getSIMstateReportingMode(int *mode)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_SIM_STATE) + 3;
@@ -1778,8 +1778,8 @@ const char *PPP_L2P[5] = {
     "", "PPP", "M-HEX", "M-RAW_IP", "M-OPT-PPP",
 };
 
-UBX_CELL_error_t UBX_CELL::enterPPP(uint8_t cid, char dialing_type_char, unsigned long dialNumber,
-                                    UBX_CELL::UBX_CELL_l2p_t l2p)
+UBX_CELL_error_t SparkFun_ublox_Cellular::enterPPP(uint8_t cid, char dialing_type_char, unsigned long dialNumber,
+                                    SparkFun_ublox_Cellular::UBX_CELL_l2p_t l2p)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_MESSAGE_ENTER_PPP) + 32;
@@ -1806,7 +1806,7 @@ UBX_CELL_error_t UBX_CELL::enterPPP(uint8_t cid, char dialing_type_char, unsigne
     return err;
 }
 
-uint8_t UBX_CELL::getOperators(struct operator_stats *opRet, int maxOps)
+uint8_t SparkFun_ublox_Cellular::getOperators(struct operator_stats *opRet, int maxOps)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_OPERATOR_SELECTION) + 3;
@@ -1884,7 +1884,7 @@ uint8_t UBX_CELL::getOperators(struct operator_stats *opRet, int maxOps)
     return opsSeen;
 }
 
-UBX_CELL_error_t UBX_CELL::registerOperator(struct operator_stats oper)
+UBX_CELL_error_t SparkFun_ublox_Cellular::registerOperator(struct operator_stats oper)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_OPERATOR_SELECTION) + 24;
@@ -1898,7 +1898,7 @@ UBX_CELL_error_t UBX_CELL::registerOperator(struct operator_stats oper)
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::automaticOperatorSelection()
+UBX_CELL_error_t SparkFun_ublox_Cellular::automaticOperatorSelection()
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_OPERATOR_SELECTION) + 6;
@@ -1912,7 +1912,7 @@ UBX_CELL_error_t UBX_CELL::automaticOperatorSelection()
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::getOperator(String *oper)
+UBX_CELL_error_t SparkFun_ublox_Cellular::getOperator(String *oper)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_OPERATOR_SELECTION) + 3;
@@ -1967,7 +1967,7 @@ UBX_CELL_error_t UBX_CELL::getOperator(String *oper)
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::deregisterOperator(void)
+UBX_CELL_error_t SparkFun_ublox_Cellular::deregisterOperator(void)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_OPERATOR_SELECTION) + 6;
@@ -1980,7 +1980,7 @@ UBX_CELL_error_t UBX_CELL::deregisterOperator(void)
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::setSMSMessageFormat(UBX_CELL_message_format_t textMode)
+UBX_CELL_error_t SparkFun_ublox_Cellular::setSMSMessageFormat(UBX_CELL_message_format_t textMode)
 {
     size_t cmdLen = strlen(UBX_CELL_MESSAGE_FORMAT) + 4;
     char command[cmdLen];
@@ -1993,7 +1993,7 @@ UBX_CELL_error_t UBX_CELL::setSMSMessageFormat(UBX_CELL_message_format_t textMod
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::sendSMS(String number, String message)
+UBX_CELL_error_t SparkFun_ublox_Cellular::sendSMS(String number, String message)
 {
     char *command;
     char *messageCStr;
@@ -2040,7 +2040,7 @@ UBX_CELL_error_t UBX_CELL::sendSMS(String number, String message)
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::getPreferredMessageStorage(int *used, int *total, String memory)
+UBX_CELL_error_t SparkFun_ublox_Cellular::getPreferredMessageStorage(int *used, int *total, String memory)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_PREF_MESSAGE_STORE) + 32;
@@ -2089,7 +2089,7 @@ UBX_CELL_error_t UBX_CELL::getPreferredMessageStorage(int *used, int *total, Str
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::readSMSmessage(int location, String *unread, String *from, String *dateTime, String *message)
+UBX_CELL_error_t SparkFun_ublox_Cellular::readSMSmessage(int location, String *unread, String *from, String *dateTime, String *message)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_READ_TEXT_MESSAGE) + 5;
@@ -2174,7 +2174,7 @@ UBX_CELL_error_t UBX_CELL::readSMSmessage(int location, String *unread, String *
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::deleteSMSmessage(int location, int deleteFlag)
+UBX_CELL_error_t SparkFun_ublox_Cellular::deleteSMSmessage(int location, int deleteFlag)
 {
     size_t cmdLen = strlen(UBX_CELL_DELETE_MESSAGE) + 12;
     char command[cmdLen];
@@ -2190,7 +2190,7 @@ UBX_CELL_error_t UBX_CELL::deleteSMSmessage(int location, int deleteFlag)
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::setBaud(unsigned long baud)
+UBX_CELL_error_t SparkFun_ublox_Cellular::setBaud(unsigned long baud)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_COMMAND_BAUD) + 7 + 12;
@@ -2218,7 +2218,7 @@ UBX_CELL_error_t UBX_CELL::setBaud(unsigned long baud)
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::setFlowControl(UBX_CELL_flow_control_t value)
+UBX_CELL_error_t SparkFun_ublox_Cellular::setFlowControl(UBX_CELL_flow_control_t value)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_FLOW_CONTROL) + 16;
@@ -2231,7 +2231,7 @@ UBX_CELL_error_t UBX_CELL::setFlowControl(UBX_CELL_flow_control_t value)
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::setGpioMode(UBX_CELL_gpio_t gpio, UBX_CELL_gpio_mode_t mode, int value)
+UBX_CELL_error_t SparkFun_ublox_Cellular::setGpioMode(UBX_CELL_gpio_t gpio, UBX_CELL_gpio_mode_t mode, int value)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_COMMAND_GPIO) + 16;
@@ -2249,7 +2249,7 @@ UBX_CELL_error_t UBX_CELL::setGpioMode(UBX_CELL_gpio_t gpio, UBX_CELL_gpio_mode_
     return err;
 }
 
-UBX_CELL::UBX_CELL_gpio_mode_t UBX_CELL::getGpioMode(UBX_CELL_gpio_t gpio)
+SparkFun_ublox_Cellular::UBX_CELL_gpio_mode_t SparkFun_ublox_Cellular::getGpioMode(UBX_CELL_gpio_t gpio)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_COMMAND_GPIO) + 2;
@@ -2279,7 +2279,7 @@ UBX_CELL::UBX_CELL_gpio_mode_t UBX_CELL::getGpioMode(UBX_CELL_gpio_t gpio)
     return (UBX_CELL_gpio_mode_t)gpioMode;
 }
 
-int UBX_CELL::socketOpen(UBX_CELL_socket_protocol_t protocol, unsigned int localPort)
+int SparkFun_ublox_Cellular::socketOpen(UBX_CELL_socket_protocol_t protocol, unsigned int localPort)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_CREATE_SOCKET) + 10;
@@ -2329,7 +2329,7 @@ int UBX_CELL::socketOpen(UBX_CELL_socket_protocol_t protocol, unsigned int local
     return sockId;
 }
 
-UBX_CELL_error_t UBX_CELL::socketClose(int socket, unsigned long timeout)
+UBX_CELL_error_t SparkFun_ublox_Cellular::socketClose(int socket, unsigned long timeout)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_CLOSE_SOCKET) + 10;
@@ -2352,7 +2352,7 @@ UBX_CELL_error_t UBX_CELL::socketClose(int socket, unsigned long timeout)
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::socketConnect(int socket, const char *address, unsigned int port)
+UBX_CELL_error_t SparkFun_ublox_Cellular::socketConnect(int socket, const char *address, unsigned int port)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_CONNECT_SOCKET) + strlen(address) + 11;
@@ -2370,7 +2370,7 @@ UBX_CELL_error_t UBX_CELL::socketConnect(int socket, const char *address, unsign
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::socketConnect(int socket, IPAddress address, unsigned int port)
+UBX_CELL_error_t SparkFun_ublox_Cellular::socketConnect(int socket, IPAddress address, unsigned int port)
 {
     size_t charLen = 16;
     char charAddress[charLen];
@@ -2380,7 +2380,7 @@ UBX_CELL_error_t UBX_CELL::socketConnect(int socket, IPAddress address, unsigned
     return (socketConnect(socket, (const char *)charAddress, port));
 }
 
-UBX_CELL_error_t UBX_CELL::socketWrite(int socket, const char *str, int len)
+UBX_CELL_error_t SparkFun_ublox_Cellular::socketWrite(int socket, const char *str, int len)
 {
     size_t cmdLen = strlen(UBX_CELL_WRITE_SOCKET) + 16;
     char command[cmdLen];
@@ -2436,12 +2436,12 @@ UBX_CELL_error_t UBX_CELL::socketWrite(int socket, const char *str, int len)
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::socketWrite(int socket, String str)
+UBX_CELL_error_t SparkFun_ublox_Cellular::socketWrite(int socket, String str)
 {
     return socketWrite(socket, str.c_str(), str.length());
 }
 
-UBX_CELL_error_t UBX_CELL::socketWriteUDP(int socket, const char *address, int port, const char *str, int len)
+UBX_CELL_error_t SparkFun_ublox_Cellular::socketWriteUDP(int socket, const char *address, int port, const char *str, int len)
 {
     size_t cmdLen = 64;
     char command[cmdLen];
@@ -2475,7 +2475,7 @@ UBX_CELL_error_t UBX_CELL::socketWriteUDP(int socket, const char *address, int p
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::socketWriteUDP(int socket, IPAddress address, int port, const char *str, int len)
+UBX_CELL_error_t SparkFun_ublox_Cellular::socketWriteUDP(int socket, IPAddress address, int port, const char *str, int len)
 {
     size_t charLen = 16;
     char charAddress[16];
@@ -2485,12 +2485,12 @@ UBX_CELL_error_t UBX_CELL::socketWriteUDP(int socket, IPAddress address, int por
     return (socketWriteUDP(socket, (const char *)charAddress, port, str, len));
 }
 
-UBX_CELL_error_t UBX_CELL::socketWriteUDP(int socket, String address, int port, String str)
+UBX_CELL_error_t SparkFun_ublox_Cellular::socketWriteUDP(int socket, String address, int port, String str)
 {
     return socketWriteUDP(socket, address.c_str(), port, str.c_str(), str.length());
 }
 
-UBX_CELL_error_t UBX_CELL::socketRead(int socket, int length, char *readDest, int *bytesRead)
+UBX_CELL_error_t SparkFun_ublox_Cellular::socketRead(int socket, int length, char *readDest, int *bytesRead)
 {
     size_t cmdLen = strlen(UBX_CELL_READ_SOCKET) + 32;
     char command[cmdLen];
@@ -2627,7 +2627,7 @@ UBX_CELL_error_t UBX_CELL::socketRead(int socket, int length, char *readDest, in
     return UBX_CELL_ERROR_SUCCESS;
 }
 
-UBX_CELL_error_t UBX_CELL::socketReadAvailable(int socket, int *length)
+UBX_CELL_error_t SparkFun_ublox_Cellular::socketReadAvailable(int socket, int *length)
 {
     size_t cmdLen = strlen(UBX_CELL_READ_SOCKET) + 32;
     char command[cmdLen];
@@ -2667,7 +2667,7 @@ UBX_CELL_error_t UBX_CELL::socketReadAvailable(int socket, int *length)
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::socketReadUDP(int socket, int length, char *readDest, IPAddress *remoteIPAddress,
+UBX_CELL_error_t SparkFun_ublox_Cellular::socketReadUDP(int socket, int length, char *readDest, IPAddress *remoteIPAddress,
                                          int *remotePort, int *bytesRead)
 {
     size_t cmdLen = strlen(UBX_CELL_READ_UDP_SOCKET) + 32;
@@ -2827,7 +2827,7 @@ UBX_CELL_error_t UBX_CELL::socketReadUDP(int socket, int length, char *readDest,
     return UBX_CELL_ERROR_SUCCESS;
 }
 
-UBX_CELL_error_t UBX_CELL::socketReadAvailableUDP(int socket, int *length)
+UBX_CELL_error_t SparkFun_ublox_Cellular::socketReadAvailableUDP(int socket, int *length)
 {
     size_t cmdLen = strlen(UBX_CELL_READ_UDP_SOCKET) + 32;
     char command[cmdLen];
@@ -2867,7 +2867,7 @@ UBX_CELL_error_t UBX_CELL::socketReadAvailableUDP(int socket, int *length)
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::socketListen(int socket, unsigned int port)
+UBX_CELL_error_t SparkFun_ublox_Cellular::socketListen(int socket, unsigned int port)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_LISTEN_SOCKET) + 9;
@@ -2880,7 +2880,7 @@ UBX_CELL_error_t UBX_CELL::socketListen(int socket, unsigned int port)
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::socketDirectLinkMode(int socket)
+UBX_CELL_error_t SparkFun_ublox_Cellular::socketDirectLinkMode(int socket)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_SOCKET_DIRECT_LINK) + 8;
@@ -2893,7 +2893,7 @@ UBX_CELL_error_t UBX_CELL::socketDirectLinkMode(int socket)
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::socketDirectLinkTimeTrigger(int socket, unsigned long timerTrigger)
+UBX_CELL_error_t SparkFun_ublox_Cellular::socketDirectLinkTimeTrigger(int socket, unsigned long timerTrigger)
 {
     // valid range is 0 (trigger disabled), 100-120000
     if (!((timerTrigger == 0) || ((timerTrigger >= 100) && (timerTrigger <= 120000))))
@@ -2910,7 +2910,7 @@ UBX_CELL_error_t UBX_CELL::socketDirectLinkTimeTrigger(int socket, unsigned long
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::socketDirectLinkDataLengthTrigger(int socket, int dataLengthTrigger)
+UBX_CELL_error_t SparkFun_ublox_Cellular::socketDirectLinkDataLengthTrigger(int socket, int dataLengthTrigger)
 {
     // valid range is 0, 3-1472 for UDP
     if (!((dataLengthTrigger == 0) || ((dataLengthTrigger >= 3) && (dataLengthTrigger <= 1472))))
@@ -2927,7 +2927,7 @@ UBX_CELL_error_t UBX_CELL::socketDirectLinkDataLengthTrigger(int socket, int dat
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::socketDirectLinkCharacterTrigger(int socket, int characterTrigger)
+UBX_CELL_error_t SparkFun_ublox_Cellular::socketDirectLinkCharacterTrigger(int socket, int characterTrigger)
 {
     // The allowed range is -1, 0-255, the factory-programmed value is -1; -1 means trigger disabled.
     if (!((characterTrigger >= -1) && (characterTrigger <= 255)))
@@ -2944,7 +2944,7 @@ UBX_CELL_error_t UBX_CELL::socketDirectLinkCharacterTrigger(int socket, int char
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::socketDirectLinkCongestionTimer(int socket, unsigned long congestionTimer)
+UBX_CELL_error_t SparkFun_ublox_Cellular::socketDirectLinkCongestionTimer(int socket, unsigned long congestionTimer)
 {
     // valid range is 0, 1000-72000
     if (!((congestionTimer == 0) || ((congestionTimer >= 1000) && (congestionTimer <= 72000))))
@@ -2961,7 +2961,7 @@ UBX_CELL_error_t UBX_CELL::socketDirectLinkCongestionTimer(int socket, unsigned 
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::querySocketType(int socket, UBX_CELL_socket_protocol_t *protocol)
+UBX_CELL_error_t SparkFun_ublox_Cellular::querySocketType(int socket, UBX_CELL_socket_protocol_t *protocol)
 {
     size_t cmdLen = strlen(UBX_CELL_SOCKET_CONTROL) + 16;
     char command[cmdLen];
@@ -3002,7 +3002,7 @@ UBX_CELL_error_t UBX_CELL::querySocketType(int socket, UBX_CELL_socket_protocol_
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::querySocketLastError(int socket, int *error)
+UBX_CELL_error_t SparkFun_ublox_Cellular::querySocketLastError(int socket, int *error)
 {
     size_t cmdLen = strlen(UBX_CELL_SOCKET_CONTROL) + 16;
     char command[cmdLen];
@@ -3042,7 +3042,7 @@ UBX_CELL_error_t UBX_CELL::querySocketLastError(int socket, int *error)
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::querySocketTotalBytesSent(int socket, uint32_t *total)
+UBX_CELL_error_t SparkFun_ublox_Cellular::querySocketTotalBytesSent(int socket, uint32_t *total)
 {
     size_t cmdLen = strlen(UBX_CELL_SOCKET_CONTROL) + 16;
     char command[cmdLen];
@@ -3082,7 +3082,7 @@ UBX_CELL_error_t UBX_CELL::querySocketTotalBytesSent(int socket, uint32_t *total
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::querySocketTotalBytesReceived(int socket, uint32_t *total)
+UBX_CELL_error_t SparkFun_ublox_Cellular::querySocketTotalBytesReceived(int socket, uint32_t *total)
 {
     size_t cmdLen = strlen(UBX_CELL_SOCKET_CONTROL) + 16;
     char command[cmdLen];
@@ -3122,7 +3122,7 @@ UBX_CELL_error_t UBX_CELL::querySocketTotalBytesReceived(int socket, uint32_t *t
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::querySocketRemoteIPAddress(int socket, IPAddress *address, int *port)
+UBX_CELL_error_t SparkFun_ublox_Cellular::querySocketRemoteIPAddress(int socket, IPAddress *address, int *port)
 {
     size_t cmdLen = strlen(UBX_CELL_SOCKET_CONTROL) + 16;
     char command[cmdLen];
@@ -3166,7 +3166,7 @@ UBX_CELL_error_t UBX_CELL::querySocketRemoteIPAddress(int socket, IPAddress *add
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::querySocketStatusTCP(int socket, UBX_CELL_tcp_socket_status_t *status)
+UBX_CELL_error_t SparkFun_ublox_Cellular::querySocketStatusTCP(int socket, UBX_CELL_tcp_socket_status_t *status)
 {
     size_t cmdLen = strlen(UBX_CELL_SOCKET_CONTROL) + 16;
     char command[cmdLen];
@@ -3206,7 +3206,7 @@ UBX_CELL_error_t UBX_CELL::querySocketStatusTCP(int socket, UBX_CELL_tcp_socket_
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::querySocketOutUnackData(int socket, uint32_t *total)
+UBX_CELL_error_t SparkFun_ublox_Cellular::querySocketOutUnackData(int socket, uint32_t *total)
 {
     size_t cmdLen = strlen(UBX_CELL_SOCKET_CONTROL) + 16;
     char command[cmdLen];
@@ -3247,7 +3247,7 @@ UBX_CELL_error_t UBX_CELL::querySocketOutUnackData(int socket, uint32_t *total)
 }
 
 // Issues command to get last socket error, then prints to serial. Also updates rx/backlog buffers.
-int UBX_CELL::socketGetLastError()
+int SparkFun_ublox_Cellular::socketGetLastError()
 {
     UBX_CELL_error_t err;
     size_t cmdLen = 64;
@@ -3274,12 +3274,12 @@ int UBX_CELL::socketGetLastError()
     return errorCode;
 }
 
-IPAddress UBX_CELL::lastRemoteIP(void)
+IPAddress SparkFun_ublox_Cellular::lastRemoteIP(void)
 {
     return _lastRemoteIP;
 }
 
-UBX_CELL_error_t UBX_CELL::resetHTTPprofile(int profile)
+UBX_CELL_error_t SparkFun_ublox_Cellular::resetHTTPprofile(int profile)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_HTTP_PROFILE) + 16;
@@ -3295,7 +3295,7 @@ UBX_CELL_error_t UBX_CELL::resetHTTPprofile(int profile)
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::setHTTPserverIPaddress(int profile, IPAddress address)
+UBX_CELL_error_t SparkFun_ublox_Cellular::setHTTPserverIPaddress(int profile, IPAddress address)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_HTTP_PROFILE) + 64;
@@ -3312,7 +3312,7 @@ UBX_CELL_error_t UBX_CELL::setHTTPserverIPaddress(int profile, IPAddress address
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::setHTTPserverName(int profile, String server)
+UBX_CELL_error_t SparkFun_ublox_Cellular::setHTTPserverName(int profile, String server)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_HTTP_PROFILE) + 12 + server.length();
@@ -3333,7 +3333,7 @@ UBX_CELL_error_t UBX_CELL::setHTTPserverName(int profile, String server)
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::setHTTPusername(int profile, String username)
+UBX_CELL_error_t SparkFun_ublox_Cellular::setHTTPusername(int profile, String username)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_HTTP_PROFILE) + 12 + username.length();
@@ -3354,7 +3354,7 @@ UBX_CELL_error_t UBX_CELL::setHTTPusername(int profile, String username)
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::setHTTPpassword(int profile, String password)
+UBX_CELL_error_t SparkFun_ublox_Cellular::setHTTPpassword(int profile, String password)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_HTTP_PROFILE) + 12 + password.length();
@@ -3375,7 +3375,7 @@ UBX_CELL_error_t UBX_CELL::setHTTPpassword(int profile, String password)
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::setHTTPauthentication(int profile, bool authenticate)
+UBX_CELL_error_t SparkFun_ublox_Cellular::setHTTPauthentication(int profile, bool authenticate)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_HTTP_PROFILE) + 32;
@@ -3392,7 +3392,7 @@ UBX_CELL_error_t UBX_CELL::setHTTPauthentication(int profile, bool authenticate)
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::setHTTPserverPort(int profile, int port)
+UBX_CELL_error_t SparkFun_ublox_Cellular::setHTTPserverPort(int profile, int port)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_HTTP_PROFILE) + 32;
@@ -3408,7 +3408,7 @@ UBX_CELL_error_t UBX_CELL::setHTTPserverPort(int profile, int port)
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::setHTTPcustomHeader(int profile, String header)
+UBX_CELL_error_t SparkFun_ublox_Cellular::setHTTPcustomHeader(int profile, String header)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_HTTP_PROFILE) + 12 + header.length();
@@ -3429,7 +3429,7 @@ UBX_CELL_error_t UBX_CELL::setHTTPcustomHeader(int profile, String header)
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::setHTTPsecure(int profile, bool secure, int secprofile)
+UBX_CELL_error_t SparkFun_ublox_Cellular::setHTTPsecure(int profile, bool secure, int secprofile)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_HTTP_PROFILE) + 32;
@@ -3449,7 +3449,7 @@ UBX_CELL_error_t UBX_CELL::setHTTPsecure(int profile, bool secure, int secprofil
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::ping(String remote_host, int retry, int p_size, unsigned long timeout, int ttl)
+UBX_CELL_error_t SparkFun_ublox_Cellular::ping(String remote_host, int retry, int p_size, unsigned long timeout, int ttl)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_PING_COMMAND) + 48 + remote_host.length();
@@ -3467,7 +3467,7 @@ UBX_CELL_error_t UBX_CELL::ping(String remote_host, int retry, int p_size, unsig
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::sendHTTPGET(int profile, String path, String responseFilename)
+UBX_CELL_error_t SparkFun_ublox_Cellular::sendHTTPGET(int profile, String path, String responseFilename)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_HTTP_COMMAND) + 24 + path.length() + responseFilename.length();
@@ -3488,7 +3488,7 @@ UBX_CELL_error_t UBX_CELL::sendHTTPGET(int profile, String path, String response
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::sendHTTPPOSTdata(int profile, String path, String responseFilename, String data,
+UBX_CELL_error_t SparkFun_ublox_Cellular::sendHTTPPOSTdata(int profile, String path, String responseFilename, String data,
                                             UBX_CELL_http_content_types_t httpContentType)
 {
     UBX_CELL_error_t err;
@@ -3510,7 +3510,7 @@ UBX_CELL_error_t UBX_CELL::sendHTTPPOSTdata(int profile, String path, String res
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::sendHTTPPOSTfile(int profile, String path, String responseFilename, String requestFile,
+UBX_CELL_error_t SparkFun_ublox_Cellular::sendHTTPPOSTfile(int profile, String path, String responseFilename, String requestFile,
                                             UBX_CELL_http_content_types_t httpContentType)
 {
     UBX_CELL_error_t err;
@@ -3534,7 +3534,7 @@ UBX_CELL_error_t UBX_CELL::sendHTTPPOSTfile(int profile, String path, String res
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::getHTTPprotocolError(int profile, int *error_class, int *error_code)
+UBX_CELL_error_t SparkFun_ublox_Cellular::getHTTPprotocolError(int profile, int *error_class, int *error_code)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_HTTP_PROTOCOL_ERROR) + 4;
@@ -3570,7 +3570,7 @@ UBX_CELL_error_t UBX_CELL::getHTTPprotocolError(int profile, int *error_class, i
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::nvMQTT(UBX_CELL_mqtt_nv_parameter_t parameter)
+UBX_CELL_error_t SparkFun_ublox_Cellular::nvMQTT(UBX_CELL_mqtt_nv_parameter_t parameter)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_MQTT_NVM) + 10;
@@ -3581,7 +3581,7 @@ UBX_CELL_error_t UBX_CELL::nvMQTT(UBX_CELL_mqtt_nv_parameter_t parameter)
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::setMQTTclientId(const String &clientId)
+UBX_CELL_error_t SparkFun_ublox_Cellular::setMQTTclientId(const String &clientId)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_MQTT_PROFILE) + clientId.length() + 10;
@@ -3596,7 +3596,7 @@ UBX_CELL_error_t UBX_CELL::setMQTTclientId(const String &clientId)
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::setMQTTserver(const String &serverName, int port)
+UBX_CELL_error_t SparkFun_ublox_Cellular::setMQTTserver(const String &serverName, int port)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_MQTT_PROFILE) + serverName.length() + 16;
@@ -3612,7 +3612,7 @@ UBX_CELL_error_t UBX_CELL::setMQTTserver(const String &serverName, int port)
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::setMQTTcredentials(const String &userName, const String &pwd)
+UBX_CELL_error_t SparkFun_ublox_Cellular::setMQTTcredentials(const String &userName, const String &pwd)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_MQTT_PROFILE) + userName.length() + pwd.length() + 16;
@@ -3628,7 +3628,7 @@ UBX_CELL_error_t UBX_CELL::setMQTTcredentials(const String &userName, const Stri
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::setMQTTsecure(bool secure, int secprofile)
+UBX_CELL_error_t SparkFun_ublox_Cellular::setMQTTsecure(bool secure, int secprofile)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_MQTT_PROFILE) + 16;
@@ -3643,7 +3643,7 @@ UBX_CELL_error_t UBX_CELL::setMQTTsecure(bool secure, int secprofile)
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::connectMQTT(void)
+UBX_CELL_error_t SparkFun_ublox_Cellular::connectMQTT(void)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_MQTT_COMMAND) + 10;
@@ -3654,7 +3654,7 @@ UBX_CELL_error_t UBX_CELL::connectMQTT(void)
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::disconnectMQTT(void)
+UBX_CELL_error_t SparkFun_ublox_Cellular::disconnectMQTT(void)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_MQTT_COMMAND) + 10;
@@ -3665,7 +3665,7 @@ UBX_CELL_error_t UBX_CELL::disconnectMQTT(void)
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::subscribeMQTTtopic(int max_Qos, const String &topic)
+UBX_CELL_error_t SparkFun_ublox_Cellular::subscribeMQTTtopic(int max_Qos, const String &topic)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_MQTT_COMMAND) + 16 + topic.length();
@@ -3681,7 +3681,7 @@ UBX_CELL_error_t UBX_CELL::subscribeMQTTtopic(int max_Qos, const String &topic)
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::unsubscribeMQTTtopic(const String &topic)
+UBX_CELL_error_t SparkFun_ublox_Cellular::unsubscribeMQTTtopic(const String &topic)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_MQTT_COMMAND) + 16 + topic.length();
@@ -3696,7 +3696,7 @@ UBX_CELL_error_t UBX_CELL::unsubscribeMQTTtopic(const String &topic)
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::readMQTT(int *pQos, String *pTopic, uint8_t *readDest, int readLength, int *bytesRead)
+UBX_CELL_error_t SparkFun_ublox_Cellular::readMQTT(int *pQos, String *pTopic, uint8_t *readDest, int readLength, int *bytesRead)
 {
     size_t cmdLen = strlen(UBX_CELL_MQTT_COMMAND) + 10;
     char command[cmdLen];
@@ -3796,7 +3796,7 @@ UBX_CELL_error_t UBX_CELL::readMQTT(int *pQos, String *pTopic, uint8_t *readDest
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::mqttPublishTextMsg(const String &topic, const char *const msg, uint8_t qos, bool retain)
+UBX_CELL_error_t SparkFun_ublox_Cellular::mqttPublishTextMsg(const String &topic, const char *const msg, uint8_t qos, bool retain)
 {
     if (topic.length() < 1 || msg == nullptr)
     {
@@ -3847,7 +3847,7 @@ UBX_CELL_error_t UBX_CELL::mqttPublishTextMsg(const String &topic, const char *c
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::mqttPublishBinaryMsg(const String &topic, const char *const msg, size_t msg_len, uint8_t qos,
+UBX_CELL_error_t SparkFun_ublox_Cellular::mqttPublishBinaryMsg(const String &topic, const char *const msg, size_t msg_len, uint8_t qos,
                                                 bool retain)
 {
     /*
@@ -3885,7 +3885,7 @@ UBX_CELL_error_t UBX_CELL::mqttPublishBinaryMsg(const String &topic, const char 
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::mqttPublishFromFile(const String &topic, const String &filename, uint8_t qos, bool retain)
+UBX_CELL_error_t SparkFun_ublox_Cellular::mqttPublishFromFile(const String &topic, const String &filename, uint8_t qos, bool retain)
 {
     if (topic.length() < 1 || filename.length() < 1)
     {
@@ -3908,7 +3908,7 @@ UBX_CELL_error_t UBX_CELL::mqttPublishFromFile(const String &topic, const String
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::getMQTTprotocolError(int *error_code, int *error_code2)
+UBX_CELL_error_t SparkFun_ublox_Cellular::getMQTTprotocolError(int *error_code, int *error_code2)
 {
     UBX_CELL_error_t err;
     char response[minimumResponseAllocation];
@@ -3941,7 +3941,7 @@ UBX_CELL_error_t UBX_CELL::getMQTTprotocolError(int *error_code, int *error_code
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::setFTPserver(const String &serverName)
+UBX_CELL_error_t SparkFun_ublox_Cellular::setFTPserver(const String &serverName)
 {
     constexpr size_t cmdLen = 145;
     char command[cmdLen]; // long enough for AT+UFTP=1,<128 bytes>
@@ -3951,7 +3951,7 @@ UBX_CELL_error_t UBX_CELL::setFTPserver(const String &serverName)
     return sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 }
 
-UBX_CELL_error_t UBX_CELL::setFTPtimeouts(const unsigned int timeout, const unsigned int cmd_linger,
+UBX_CELL_error_t SparkFun_ublox_Cellular::setFTPtimeouts(const unsigned int timeout, const unsigned int cmd_linger,
                                           const unsigned int data_linger)
 {
     constexpr size_t cmdLen = 64;
@@ -3962,7 +3962,7 @@ UBX_CELL_error_t UBX_CELL::setFTPtimeouts(const unsigned int timeout, const unsi
     return sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 }
 
-UBX_CELL_error_t UBX_CELL::setFTPcredentials(const String &userName, const String &pwd)
+UBX_CELL_error_t SparkFun_ublox_Cellular::setFTPcredentials(const String &userName, const String &pwd)
 {
     UBX_CELL_error_t err;
     constexpr size_t cmdLen = 48;
@@ -3981,7 +3981,7 @@ UBX_CELL_error_t UBX_CELL::setFTPcredentials(const String &userName, const Strin
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::connectFTP(void)
+UBX_CELL_error_t SparkFun_ublox_Cellular::connectFTP(void)
 {
     constexpr size_t cmdLen = 16;
     char command[cmdLen]; // long enough for AT+UFTPC=n
@@ -3990,7 +3990,7 @@ UBX_CELL_error_t UBX_CELL::connectFTP(void)
     return sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 }
 
-UBX_CELL_error_t UBX_CELL::disconnectFTP(void)
+UBX_CELL_error_t SparkFun_ublox_Cellular::disconnectFTP(void)
 {
     constexpr size_t cmdLen = 16;
     char command[cmdLen]; // long enough for AT+UFTPC=n
@@ -3999,7 +3999,7 @@ UBX_CELL_error_t UBX_CELL::disconnectFTP(void)
     return sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 }
 
-UBX_CELL_error_t UBX_CELL::ftpGetFile(const String &filename)
+UBX_CELL_error_t SparkFun_ublox_Cellular::ftpGetFile(const String &filename)
 {
     size_t cmdLen = strlen(UBX_CELL_FTP_COMMAND) + (2 * filename.length()) + 16;
     char *command = ubx_cell_calloc_char(cmdLen);
@@ -4017,7 +4017,7 @@ UBX_CELL_error_t UBX_CELL::ftpGetFile(const String &filename)
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::getFTPprotocolError(int *error_code, int *error_code2)
+UBX_CELL_error_t SparkFun_ublox_Cellular::getFTPprotocolError(int *error_code, int *error_code2)
 {
     UBX_CELL_error_t err;
     char response[minimumResponseAllocation];
@@ -4055,7 +4055,7 @@ UBX_CELL_error_t UBX_CELL::getFTPprotocolError(int *error_code, int *error_code2
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::resetSecurityProfile(int secprofile)
+UBX_CELL_error_t SparkFun_ublox_Cellular::resetSecurityProfile(int secprofile)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_SEC_PROFILE) + 6;
@@ -4068,7 +4068,7 @@ UBX_CELL_error_t UBX_CELL::resetSecurityProfile(int secprofile)
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::configSecurityProfile(int secprofile, UBX_CELL_sec_profile_parameter_t parameter, int value)
+UBX_CELL_error_t SparkFun_ublox_Cellular::configSecurityProfile(int secprofile, UBX_CELL_sec_profile_parameter_t parameter, int value)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_SEC_PROFILE) + 10;
@@ -4079,7 +4079,7 @@ UBX_CELL_error_t UBX_CELL::configSecurityProfile(int secprofile, UBX_CELL_sec_pr
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::configSecurityProfileString(int secprofile, UBX_CELL_sec_profile_parameter_t parameter,
+UBX_CELL_error_t SparkFun_ublox_Cellular::configSecurityProfileString(int secprofile, UBX_CELL_sec_profile_parameter_t parameter,
                                                        String value)
 {
     UBX_CELL_error_t err;
@@ -4095,7 +4095,7 @@ UBX_CELL_error_t UBX_CELL::configSecurityProfileString(int secprofile, UBX_CELL_
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::setSecurityManager(UBX_CELL_sec_manager_opcode_t opcode,
+UBX_CELL_error_t SparkFun_ublox_Cellular::setSecurityManager(UBX_CELL_sec_manager_opcode_t opcode,
                                               UBX_CELL_sec_manager_parameter_t parameter, String name, String data)
 {
     size_t cmdLen = strlen(UBX_CELL_SEC_MANAGER) + name.length() + 20;
@@ -4138,7 +4138,7 @@ UBX_CELL_error_t UBX_CELL::setSecurityManager(UBX_CELL_sec_manager_opcode_t opco
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::activatePDPcontext(bool status, int cid)
+UBX_CELL_error_t SparkFun_ublox_Cellular::activatePDPcontext(bool status, int cid)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_MESSAGE_PDP_CONTEXT_ACTIVATE) + 32;
@@ -4157,7 +4157,7 @@ UBX_CELL_error_t UBX_CELL::activatePDPcontext(bool status, int cid)
     return err;
 }
 
-bool UBX_CELL::isGPSon(void)
+bool SparkFun_ublox_Cellular::isGPSon(void)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_GNSS_POWER) + 2;
@@ -4185,7 +4185,7 @@ bool UBX_CELL::isGPSon(void)
     return on;
 }
 
-UBX_CELL_error_t UBX_CELL::gpsPower(bool enable, gnss_system_t gnss_sys, gnss_aiding_mode_t gnss_aiding)
+UBX_CELL_error_t SparkFun_ublox_Cellular::gpsPower(bool enable, gnss_system_t gnss_sys, gnss_aiding_mode_t gnss_aiding)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_GNSS_POWER) + 32; // gnss_sys could be up to three digits
@@ -4215,56 +4215,56 @@ UBX_CELL_error_t UBX_CELL::gpsPower(bool enable, gnss_system_t gnss_sys, gnss_ai
 }
 
 /*
-UBX_CELL_error_t UBX_CELL::gpsEnableClock(bool enable)
+UBX_CELL_error_t SparkFun_ublox_Cellular::gpsEnableClock(bool enable)
 {
     // AT+UGZDA=<0,1>
     UBX_CELL_error_t err = UBX_CELL_ERROR_SUCCESS;
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::gpsGetClock(struct ClockData *clock)
+UBX_CELL_error_t SparkFun_ublox_Cellular::gpsGetClock(struct ClockData *clock)
 {
     // AT+UGZDA?
     UBX_CELL_error_t err = UBX_CELL_ERROR_SUCCESS;
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::gpsEnableFix(bool enable)
+UBX_CELL_error_t SparkFun_ublox_Cellular::gpsEnableFix(bool enable)
 {
     // AT+UGGGA=<0,1>
     UBX_CELL_error_t err = UBX_CELL_ERROR_SUCCESS;
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::gpsGetFix(struct PositionData *pos)
+UBX_CELL_error_t SparkFun_ublox_Cellular::gpsGetFix(struct PositionData *pos)
 {
     // AT+UGGGA?
     UBX_CELL_error_t err = UBX_CELL_ERROR_SUCCESS;
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::gpsEnablePos(bool enable)
+UBX_CELL_error_t SparkFun_ublox_Cellular::gpsEnablePos(bool enable)
 {
     // AT+UGGLL=<0,1>
     UBX_CELL_error_t err = UBX_CELL_ERROR_SUCCESS;
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::gpsGetPos(struct PositionData *pos)
+UBX_CELL_error_t SparkFun_ublox_Cellular::gpsGetPos(struct PositionData *pos)
 {
     // AT+UGGLL?
     UBX_CELL_error_t err = UBX_CELL_ERROR_SUCCESS;
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::gpsEnableSat(bool enable)
+UBX_CELL_error_t SparkFun_ublox_Cellular::gpsEnableSat(bool enable)
 {
     // AT+UGGSV=<0,1>
     UBX_CELL_error_t err = UBX_CELL_ERROR_SUCCESS;
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::gpsGetSat(uint8_t *sats)
+UBX_CELL_error_t SparkFun_ublox_Cellular::gpsGetSat(uint8_t *sats)
 {
     // AT+UGGSV?
     UBX_CELL_error_t err = UBX_CELL_ERROR_SUCCESS;
@@ -4272,7 +4272,7 @@ UBX_CELL_error_t UBX_CELL::gpsGetSat(uint8_t *sats)
 }
 */
 
-UBX_CELL_error_t UBX_CELL::gpsEnableRmc(bool enable)
+UBX_CELL_error_t SparkFun_ublox_Cellular::gpsEnableRmc(bool enable)
 {
     // AT+UGRMC=<0,1>
     UBX_CELL_error_t err;
@@ -4297,7 +4297,7 @@ UBX_CELL_error_t UBX_CELL::gpsEnableRmc(bool enable)
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::gpsGetRmc(struct PositionData *pos, struct SpeedData *spd, struct ClockData *clk,
+UBX_CELL_error_t SparkFun_ublox_Cellular::gpsGetRmc(struct PositionData *pos, struct SpeedData *spd, struct ClockData *clk,
                                      bool *valid)
 {
     UBX_CELL_error_t err;
@@ -4327,14 +4327,14 @@ UBX_CELL_error_t UBX_CELL::gpsGetRmc(struct PositionData *pos, struct SpeedData 
 }
 
 /*
-UBX_CELL_error_t UBX_CELL::gpsEnableSpeed(bool enable)
+UBX_CELL_error_t SparkFun_ublox_Cellular::gpsEnableSpeed(bool enable)
 {
     // AT+UGVTG=<0,1>
     UBX_CELL_error_t err = UBX_CELL_ERROR_SUCCESS;
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::gpsGetSpeed(struct SpeedData *speed)
+UBX_CELL_error_t SparkFun_ublox_Cellular::gpsGetSpeed(struct SpeedData *speed)
 {
     // AT+UGVTG?
     UBX_CELL_error_t err = UBX_CELL_ERROR_SUCCESS;
@@ -4342,7 +4342,7 @@ UBX_CELL_error_t UBX_CELL::gpsGetSpeed(struct SpeedData *speed)
 }
 */
 
-UBX_CELL_error_t UBX_CELL::gpsRequest(unsigned int timeout, uint32_t accuracy, bool detailed, unsigned int sensor)
+UBX_CELL_error_t SparkFun_ublox_Cellular::gpsRequest(unsigned int timeout, uint32_t accuracy, bool detailed, unsigned int sensor)
 {
     // AT+ULOC=2,<useCellLocate>,<detailed>,<timeout>,<accuracy>
     UBX_CELL_error_t err;
@@ -4373,7 +4373,7 @@ UBX_CELL_error_t UBX_CELL::gpsRequest(unsigned int timeout, uint32_t accuracy, b
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::gpsAidingServerConf(const char *primaryServer, const char *secondaryServer,
+UBX_CELL_error_t SparkFun_ublox_Cellular::gpsAidingServerConf(const char *primaryServer, const char *secondaryServer,
                                                const char *authToken, unsigned int days, unsigned int period,
                                                unsigned int resolution, unsigned int gnssTypes, unsigned int mode,
                                                unsigned int dataType)
@@ -4391,7 +4391,7 @@ UBX_CELL_error_t UBX_CELL::gpsAidingServerConf(const char *primaryServer, const 
 }
 
 // OK for text files. But will fail with binary files (containing \0) on some platforms.
-UBX_CELL_error_t UBX_CELL::appendFileContents(String filename, const char *str, int len)
+UBX_CELL_error_t SparkFun_ublox_Cellular::appendFileContents(String filename, const char *str, int len)
 {
     size_t cmdLen = strlen(UBX_CELL_FILE_SYSTEM_DOWNLOAD_FILE) + filename.length() + 10;
     char *command;
@@ -4438,13 +4438,13 @@ UBX_CELL_error_t UBX_CELL::appendFileContents(String filename, const char *str, 
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::appendFileContents(String filename, String str)
+UBX_CELL_error_t SparkFun_ublox_Cellular::appendFileContents(String filename, String str)
 {
     return appendFileContents(filename, str.c_str(), str.length());
 }
 
 // OK for text files. But will fail with binary files (containing \0) on some platforms.
-UBX_CELL_error_t UBX_CELL::getFileContents(String filename, String *contents)
+UBX_CELL_error_t SparkFun_ublox_Cellular::getFileContents(String filename, String *contents)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_FILE_SYSTEM_READ_FILE) + filename.length() + 8;
@@ -4567,7 +4567,7 @@ UBX_CELL_error_t UBX_CELL::getFileContents(String filename, String *contents)
 }
 
 // OK for binary files. Make sure contents can hold the entire file. Get the size first with getFileSize.
-UBX_CELL_error_t UBX_CELL::getFileContents(String filename, char *contents)
+UBX_CELL_error_t SparkFun_ublox_Cellular::getFileContents(String filename, char *contents)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_FILE_SYSTEM_READ_FILE) + filename.length() + 8;
@@ -4685,7 +4685,7 @@ UBX_CELL_error_t UBX_CELL::getFileContents(String filename, char *contents)
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::getFileBlock(const String &filename, char *buffer, size_t offset, size_t requested_length,
+UBX_CELL_error_t SparkFun_ublox_Cellular::getFileBlock(const String &filename, char *buffer, size_t offset, size_t requested_length,
                                         size_t &bytes_read)
 {
     bytes_read = 0;
@@ -4757,7 +4757,7 @@ UBX_CELL_error_t UBX_CELL::getFileBlock(const String &filename, char *buffer, si
     return UBX_CELL_ERROR_SUCCESS;
 }
 
-UBX_CELL_error_t UBX_CELL::getFileSize(String filename, int *size)
+UBX_CELL_error_t SparkFun_ublox_Cellular::getFileSize(String filename, int *size)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_FILE_SYSTEM_LIST_FILES) + filename.length() + 8;
@@ -4808,7 +4808,7 @@ UBX_CELL_error_t UBX_CELL::getFileSize(String filename, int *size)
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::deleteFile(String filename)
+UBX_CELL_error_t SparkFun_ublox_Cellular::deleteFile(String filename)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_FILE_SYSTEM_DELETE_FILE) + filename.length() + 8;
@@ -4834,7 +4834,7 @@ UBX_CELL_error_t UBX_CELL::deleteFile(String filename)
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::modulePowerOff(void)
+UBX_CELL_error_t SparkFun_ublox_Cellular::modulePowerOff(void)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_COMMAND_POWER_OFF) + 6;
@@ -4847,7 +4847,7 @@ UBX_CELL_error_t UBX_CELL::modulePowerOff(void)
     return err;
 }
 
-void UBX_CELL::modulePowerOn(void)
+void SparkFun_ublox_Cellular::modulePowerOn(void)
 {
     if (_powerPin >= 0)
     {
@@ -4864,7 +4864,7 @@ void UBX_CELL::modulePowerOn(void)
 // Private //
 /////////////
 
-UBX_CELL_error_t UBX_CELL::init(unsigned long baud, UBX_CELL::UBX_CELL_init_type_t initType)
+UBX_CELL_error_t SparkFun_ublox_Cellular::init(unsigned long baud, SparkFun_ublox_Cellular::UBX_CELL_init_type_t initType)
 {
     int retries = _maxInitTries;
     UBX_CELL_error_t err = UBX_CELL_ERROR_SUCCESS;
@@ -4942,14 +4942,14 @@ UBX_CELL_error_t UBX_CELL::init(unsigned long baud, UBX_CELL::UBX_CELL_init_type
     return UBX_CELL_ERROR_SUCCESS;
 }
 
-void UBX_CELL::invertPowerPin(bool invert)
+void SparkFun_ublox_Cellular::invertPowerPin(bool invert)
 {
     _invertPowerPin = invert;
 }
 
 // Do a graceful power off. Hold the PWR_ON pin low for UBX_CELL_POWER_OFF_PULSE_PERIOD
 // Note: +CPWROFF () is preferred to this.
-void UBX_CELL::powerOff(void)
+void SparkFun_ublox_Cellular::powerOff(void)
 {
     if (_powerPin >= 0)
     {
@@ -4969,7 +4969,7 @@ void UBX_CELL::powerOff(void)
     }
 }
 
-void UBX_CELL::powerOn(void)
+void SparkFun_ublox_Cellular::powerOn(void)
 {
     if (_powerPin >= 0)
     {
@@ -4993,7 +4993,7 @@ void UBX_CELL::powerOn(void)
 // This does an abrupt emergency hardware shutdown of the SARA-R5 series modules.
 // It only works if you have access to both the RESET_N and PWR_ON pins.
 // You cannot use this function on the SparkFun Asset Tracker and RESET_N is tied to the MicroMod processor !RESET!...
-void UBX_CELL::hwReset(void)
+void SparkFun_ublox_Cellular::hwReset(void)
 {
     if ((_resetPin >= 0) && (_powerPin >= 0))
     {
@@ -5038,7 +5038,7 @@ void UBX_CELL::hwReset(void)
     }
 }
 
-UBX_CELL_error_t UBX_CELL::functionality(UBX_CELL_functionality_t function)
+UBX_CELL_error_t SparkFun_ublox_Cellular::functionality(UBX_CELL_functionality_t function)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_COMMAND_FUNC) + 16;
@@ -5051,7 +5051,7 @@ UBX_CELL_error_t UBX_CELL::functionality(UBX_CELL_functionality_t function)
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::setMNOprofile(mobile_network_operator_t mno, bool autoReset, bool urcNotification)
+UBX_CELL_error_t SparkFun_ublox_Cellular::setMNOprofile(mobile_network_operator_t mno, bool autoReset, bool urcNotification)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_COMMAND_MNO) + 9;
@@ -5068,7 +5068,7 @@ UBX_CELL_error_t UBX_CELL::setMNOprofile(mobile_network_operator_t mno, bool aut
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::getMNOprofile(mobile_network_operator_t *mno)
+UBX_CELL_error_t SparkFun_ublox_Cellular::getMNOprofile(mobile_network_operator_t *mno)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_COMMAND_MNO) + 2;
@@ -5114,7 +5114,7 @@ UBX_CELL_error_t UBX_CELL::getMNOprofile(mobile_network_operator_t *mno)
     return err;
 }
 
-UBX_CELL_error_t UBX_CELL::waitForResponse(const char *expectedResponse, const char *expectedError, uint16_t timeout)
+UBX_CELL_error_t SparkFun_ublox_Cellular::waitForResponse(const char *expectedResponse, const char *expectedError, uint16_t timeout)
 {
     unsigned long timeIn;
     bool found = false;
@@ -5201,7 +5201,7 @@ UBX_CELL_error_t UBX_CELL::waitForResponse(const char *expectedResponse, const c
     return UBX_CELL_ERROR_NO_RESPONSE;
 }
 
-UBX_CELL_error_t UBX_CELL::sendCommandWithResponse(const char *command, const char *expectedResponse,
+UBX_CELL_error_t SparkFun_ublox_Cellular::sendCommandWithResponse(const char *command, const char *expectedResponse,
                                                    char *responseDest, unsigned long commandTimeout, int destSize,
                                                    bool at)
 {
@@ -5341,14 +5341,14 @@ UBX_CELL_error_t UBX_CELL::sendCommandWithResponse(const char *command, const ch
 }
 
 // Send a custom command with an expected (potentially partial) response, store entire response
-UBX_CELL_error_t UBX_CELL::sendCustomCommandWithResponse(const char *command, const char *expectedResponse,
+UBX_CELL_error_t SparkFun_ublox_Cellular::sendCustomCommandWithResponse(const char *command, const char *expectedResponse,
                                                          char *responseDest, unsigned long commandTimeout, bool at)
 {
     // Assume the user has allocated enough storage for any response. Set destSize to 32766.
     return sendCommandWithResponse(command, expectedResponse, responseDest, commandTimeout, 32766, at);
 }
 
-void UBX_CELL::sendCommand(const char *command, bool at)
+void SparkFun_ublox_Cellular::sendCommand(const char *command, bool at)
 {
     // Check for incoming serial data. Copy it into the backlog
 
@@ -5399,7 +5399,7 @@ void UBX_CELL::sendCommand(const char *command, bool at)
     }
 }
 
-UBX_CELL_error_t UBX_CELL::parseSocketReadIndication(int socket, int length)
+UBX_CELL_error_t SparkFun_ublox_Cellular::parseSocketReadIndication(int socket, int length)
 {
     UBX_CELL_error_t err;
     char *readDest;
@@ -5448,7 +5448,7 @@ UBX_CELL_error_t UBX_CELL::parseSocketReadIndication(int socket, int length)
     return UBX_CELL_ERROR_SUCCESS;
 }
 
-UBX_CELL_error_t UBX_CELL::parseSocketReadIndicationUDP(int socket, int length)
+UBX_CELL_error_t SparkFun_ublox_Cellular::parseSocketReadIndicationUDP(int socket, int length)
 {
     UBX_CELL_error_t err;
     char *readDest;
@@ -5496,7 +5496,7 @@ UBX_CELL_error_t UBX_CELL::parseSocketReadIndicationUDP(int socket, int length)
     return UBX_CELL_ERROR_SUCCESS;
 }
 
-UBX_CELL_error_t UBX_CELL::parseSocketListenIndication(int listeningSocket, IPAddress localIP,
+UBX_CELL_error_t SparkFun_ublox_Cellular::parseSocketListenIndication(int listeningSocket, IPAddress localIP,
                                                        unsigned int listeningPort, int socket, IPAddress remoteIP,
                                                        unsigned int port)
 {
@@ -5511,7 +5511,7 @@ UBX_CELL_error_t UBX_CELL::parseSocketListenIndication(int listeningSocket, IPAd
     return UBX_CELL_ERROR_SUCCESS;
 }
 
-UBX_CELL_error_t UBX_CELL::parseSocketCloseIndication(String *closeIndication)
+UBX_CELL_error_t SparkFun_ublox_Cellular::parseSocketCloseIndication(String *closeIndication)
 {
     int search;
     int socket;
@@ -5532,7 +5532,7 @@ UBX_CELL_error_t UBX_CELL::parseSocketCloseIndication(String *closeIndication)
     return UBX_CELL_ERROR_SUCCESS;
 }
 
-size_t UBX_CELL::hwPrint(const char *s)
+size_t SparkFun_ublox_Cellular::hwPrint(const char *s)
 {
     if ((true == _printAtDebug) && (nullptr != s))
     {
@@ -5552,7 +5552,7 @@ size_t UBX_CELL::hwPrint(const char *s)
     return (size_t)0;
 }
 
-size_t UBX_CELL::hwWriteData(const char *buff, int len)
+size_t SparkFun_ublox_Cellular::hwWriteData(const char *buff, int len)
 {
     if ((true == _printAtDebug) && (nullptr != buff) && (0 < len))
     {
@@ -5571,7 +5571,7 @@ size_t UBX_CELL::hwWriteData(const char *buff, int len)
     return (size_t)0;
 }
 
-size_t UBX_CELL::hwWrite(const char c)
+size_t SparkFun_ublox_Cellular::hwWrite(const char c)
 {
     if (true == _printAtDebug)
     {
@@ -5591,7 +5591,7 @@ size_t UBX_CELL::hwWrite(const char c)
     return (size_t)0;
 }
 
-int UBX_CELL::readAvailable(char *inString)
+int SparkFun_ublox_Cellular::readAvailable(char *inString)
 {
     int len = 0;
 
@@ -5633,7 +5633,7 @@ int UBX_CELL::readAvailable(char *inString)
     return len;
 }
 
-char UBX_CELL::readChar(void)
+char SparkFun_ublox_Cellular::readChar(void)
 {
     char ret = 0;
 
@@ -5651,7 +5651,7 @@ char UBX_CELL::readChar(void)
     return ret;
 }
 
-int UBX_CELL::hwAvailable(void)
+int SparkFun_ublox_Cellular::hwAvailable(void)
 {
     if (_hardSerial != nullptr)
     {
@@ -5667,7 +5667,7 @@ int UBX_CELL::hwAvailable(void)
     return -1;
 }
 
-void UBX_CELL::beginSerial(unsigned long baud)
+void SparkFun_ublox_Cellular::beginSerial(unsigned long baud)
 {
     delay(100);
     if (_hardSerial != nullptr)
@@ -5685,7 +5685,7 @@ void UBX_CELL::beginSerial(unsigned long baud)
     delay(100);
 }
 
-void UBX_CELL::setTimeout(unsigned long timeout)
+void SparkFun_ublox_Cellular::setTimeout(unsigned long timeout)
 {
     if (_hardSerial != nullptr)
     {
@@ -5699,7 +5699,7 @@ void UBX_CELL::setTimeout(unsigned long timeout)
 #endif
 }
 
-bool UBX_CELL::find(char *target)
+bool SparkFun_ublox_Cellular::find(char *target)
 {
     bool found = false;
     if (_hardSerial != nullptr)
@@ -5715,7 +5715,7 @@ bool UBX_CELL::find(char *target)
     return found;
 }
 
-UBX_CELL_error_t UBX_CELL::autobaud(unsigned long desiredBaud)
+UBX_CELL_error_t SparkFun_ublox_Cellular::autobaud(unsigned long desiredBaud)
 {
     UBX_CELL_error_t err = UBX_CELL_ERROR_INVALID;
     int b = 0;
@@ -5734,14 +5734,14 @@ UBX_CELL_error_t UBX_CELL::autobaud(unsigned long desiredBaud)
     return err;
 }
 
-char *UBX_CELL::ubx_cell_calloc_char(size_t num)
+char *SparkFun_ublox_Cellular::ubx_cell_calloc_char(size_t num)
 {
     return (char *)calloc(num, sizeof(char));
 }
 
 // This prunes the backlog of non-actionable events. If new actionable events are added, you must modify the if
 // statement.
-void UBX_CELL::pruneBacklog()
+void SparkFun_ublox_Cellular::pruneBacklog()
 {
     char *event;
 
@@ -5806,7 +5806,7 @@ void UBX_CELL::pruneBacklog()
 // GPS Helper Functions:
 
 // Read a source string until a delimiter is hit, store the result in destination
-char *UBX_CELL::readDataUntil(char *destination, unsigned int destSize, char *source, char delimiter)
+char *SparkFun_ublox_Cellular::readDataUntil(char *destination, unsigned int destSize, char *source, char delimiter)
 {
 
     char *strEnd;
@@ -5824,7 +5824,7 @@ char *UBX_CELL::readDataUntil(char *destination, unsigned int destSize, char *so
     return strEnd;
 }
 
-bool UBX_CELL::parseGPRMCString(char *rmcString, PositionData *pos, ClockData *clk, SpeedData *spd)
+bool SparkFun_ublox_Cellular::parseGPRMCString(char *rmcString, PositionData *pos, ClockData *clk, SpeedData *spd)
 {
     char *ptr, *search;
     unsigned long tTemp;

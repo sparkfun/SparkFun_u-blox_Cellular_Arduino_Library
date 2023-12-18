@@ -20,10 +20,10 @@ typedef enum
 } UBX_CELL_audio_resource_t;
 
 // Base class for any modules supporting voice calls
-template <typename T> class UBX_CELL_VOICE
+template <typename T> class SparkFun_ublox_Cellular_Voice_Base
 {
   public:
-    UBX_CELL_VOICE(void)
+    SparkFun_ublox_Cellular_Voice_Base(void)
     {
         // Set ring URC callback to nullptr
         _ringCallback = nullptr;
@@ -159,7 +159,7 @@ template <typename T> class UBX_CELL_VOICE
     }
 };
 
-class UBX_CELL_VOICE_BASE : public UBX_CELL, public UBX_CELL_VOICE<UBX_CELL_VOICE_BASE>
+class SparkFun_ublox_Cellular_Voice : public SparkFun_ublox_Cellular, public SparkFun_ublox_Cellular_Voice_Base<SparkFun_ublox_Cellular_Voice>
 {
 };
 

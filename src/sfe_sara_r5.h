@@ -13,10 +13,10 @@ const char *const UBX_CELL_GNSS_TIME_CONFIGURATION = "+UTIMECFG"; // Sets time c
 const char *const UBX_CELL_MESSAGE_PDP_ACTION_URC = "+UUPSDA:";
 
 // Base SARA-R5 class
-class SARA_R5 : public UBX_CELL
+class SparkFun_ublox_SARA_R5 : public SparkFun_ublox_Cellular
 {
   public:
-    SARA_R5();
+    SparkFun_ublox_SARA_R5();
 
     UBX_CELL_error_t setUtimeMode(
         UBX_CELL_utime_mode_t mode = UBX_CELL_UTIME_MODE_PPS,
@@ -50,23 +50,23 @@ class SARA_R5 : public UBX_CELL
     bool urcHandlerPDPAction(const char *event);
 };
 
-class SARA_R500S : public SARA_R5
+class SparkFun_ublox_SARA_R500S : public SparkFun_ublox_SARA_R5
 {
 };
 
-class SARA_R500S_01B : public SARA_R5
+class SparkFun_ublox_SARA_R500S_01B : public SparkFun_ublox_SARA_R5
 {
 };
 
-class SARA_R500S_61B : public SARA_R5
+class SparkFun_ublox_SARA_R500S_61B : public SparkFun_ublox_SARA_R5
 {
 };
 
-class SARA_R510M8S_61B : public SARA_R5
+class SparkFun_ublox_SARA_R510M8S_61B : public SparkFun_ublox_SARA_R5
 {
 };
 
-class SARA_R510S : public SARA_R5
+class SparkFun_ublox_SARA_R510S : public SparkFun_ublox_SARA_R5
 {
 };
 

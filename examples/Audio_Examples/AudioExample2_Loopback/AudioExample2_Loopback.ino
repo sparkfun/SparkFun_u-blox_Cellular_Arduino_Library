@@ -6,10 +6,10 @@
 
 // Uncomment the module you're using. If your module is not listed below, then
 // it's not supported for this example
-UBX_CELL_VOICE_BASE myModule; // This example works with all voice-enabled modules, so this base class can be used
-// LARA_R6001 myModule;
-// LARA_R6401 myModule;
-// LARA_R6801_00B myModule;
+SparkFun_ublox_Cellular_Voice myModule; // This example works with all voice-enabled modules, so this base class can be used
+// SparkFun_ublox_LARA_R6001 myModule;
+// SparkFun_ublox_LARA_R6401 myModule;
+// SparkFun_ublox_LARA_R6801_00B myModule;
 
 void setup()
 {

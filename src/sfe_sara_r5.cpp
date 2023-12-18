@@ -1,12 +1,12 @@
 #include "sfe_sara_r5.h"
 
-SARA_R5::SARA_R5()
+SparkFun_ublox_SARA_R5::SparkFun_ublox_SARA_R5()
 {
     addURCHandler(UBX_CELL_MESSAGE_PDP_ACTION_URC,
                   [this](const char *event) { return this->urcHandlerPDPAction(event); });
 }
 
-UBX_CELL_error_t SARA_R5::setUtimeMode(UBX_CELL_utime_mode_t mode, UBX_CELL_utime_sensor_t sensor)
+UBX_CELL_error_t SparkFun_ublox_SARA_R5::setUtimeMode(UBX_CELL_utime_mode_t mode, UBX_CELL_utime_sensor_t sensor)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_GNSS_REQUEST_TIME) + 16;
@@ -21,7 +21,7 @@ UBX_CELL_error_t SARA_R5::setUtimeMode(UBX_CELL_utime_mode_t mode, UBX_CELL_utim
     return err;
 }
 
-UBX_CELL_error_t SARA_R5::getUtimeMode(UBX_CELL_utime_mode_t *mode, UBX_CELL_utime_sensor_t *sensor)
+UBX_CELL_error_t SparkFun_ublox_SARA_R5::getUtimeMode(UBX_CELL_utime_mode_t *mode, UBX_CELL_utime_sensor_t *sensor)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_GNSS_REQUEST_TIME) + 2;
@@ -66,7 +66,7 @@ UBX_CELL_error_t SARA_R5::getUtimeMode(UBX_CELL_utime_mode_t *mode, UBX_CELL_uti
     return err;
 }
 
-UBX_CELL_error_t SARA_R5::setUtimeIndication(UBX_CELL_utime_urc_configuration_t config)
+UBX_CELL_error_t SparkFun_ublox_SARA_R5::setUtimeIndication(UBX_CELL_utime_urc_configuration_t config)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_GNSS_TIME_INDICATION) + 16;
@@ -78,7 +78,7 @@ UBX_CELL_error_t SARA_R5::setUtimeIndication(UBX_CELL_utime_urc_configuration_t 
     return err;
 }
 
-UBX_CELL_error_t SARA_R5::getUtimeIndication(UBX_CELL_utime_urc_configuration_t *config)
+UBX_CELL_error_t SparkFun_ublox_SARA_R5::getUtimeIndication(UBX_CELL_utime_urc_configuration_t *config)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_GNSS_TIME_INDICATION) + 2;
@@ -115,7 +115,7 @@ UBX_CELL_error_t SARA_R5::getUtimeIndication(UBX_CELL_utime_urc_configuration_t 
     return err;
 }
 
-UBX_CELL_error_t SARA_R5::setUtimeConfiguration(int32_t offsetNanoseconds, int32_t offsetSeconds)
+UBX_CELL_error_t SparkFun_ublox_SARA_R5::setUtimeConfiguration(int32_t offsetNanoseconds, int32_t offsetSeconds)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_GNSS_TIME_CONFIGURATION) + 48;
@@ -131,7 +131,7 @@ UBX_CELL_error_t SARA_R5::setUtimeConfiguration(int32_t offsetNanoseconds, int32
     return err;
 }
 
-UBX_CELL_error_t SARA_R5::getUtimeConfiguration(int32_t *offsetNanoseconds, int32_t *offsetSeconds)
+UBX_CELL_error_t SparkFun_ublox_SARA_R5::getUtimeConfiguration(int32_t *offsetNanoseconds, int32_t *offsetSeconds)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_GNSS_TIME_CONFIGURATION) + 2;
@@ -173,7 +173,7 @@ UBX_CELL_error_t SARA_R5::getUtimeConfiguration(int32_t *offsetNanoseconds, int3
     return err;
 }
 
-UBX_CELL_error_t SARA_R5::setPDPconfiguration(int profile, UBX_CELL_pdp_configuration_parameter_t parameter, int value)
+UBX_CELL_error_t SparkFun_ublox_SARA_R5::setPDPconfiguration(int profile, UBX_CELL_pdp_configuration_parameter_t parameter, int value)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_MESSAGE_PDP_CONFIG) + 24;
@@ -189,13 +189,13 @@ UBX_CELL_error_t SARA_R5::setPDPconfiguration(int profile, UBX_CELL_pdp_configur
     return err;
 }
 
-UBX_CELL_error_t SARA_R5::setPDPconfiguration(int profile, UBX_CELL_pdp_configuration_parameter_t parameter,
+UBX_CELL_error_t SparkFun_ublox_SARA_R5::setPDPconfiguration(int profile, UBX_CELL_pdp_configuration_parameter_t parameter,
                                               UBX_CELL_pdp_protocol_type_t value)
 {
     return (setPDPconfiguration(profile, parameter, (int)value));
 }
 
-UBX_CELL_error_t SARA_R5::setPDPconfiguration(int profile, UBX_CELL_pdp_configuration_parameter_t parameter,
+UBX_CELL_error_t SparkFun_ublox_SARA_R5::setPDPconfiguration(int profile, UBX_CELL_pdp_configuration_parameter_t parameter,
                                               String value)
 {
     UBX_CELL_error_t err;
@@ -212,7 +212,7 @@ UBX_CELL_error_t SARA_R5::setPDPconfiguration(int profile, UBX_CELL_pdp_configur
     return err;
 }
 
-UBX_CELL_error_t SARA_R5::setPDPconfiguration(int profile, UBX_CELL_pdp_configuration_parameter_t parameter,
+UBX_CELL_error_t SparkFun_ublox_SARA_R5::setPDPconfiguration(int profile, UBX_CELL_pdp_configuration_parameter_t parameter,
                                               IPAddress value)
 {
     UBX_CELL_error_t err;
@@ -230,7 +230,7 @@ UBX_CELL_error_t SARA_R5::setPDPconfiguration(int profile, UBX_CELL_pdp_configur
     return err;
 }
 
-UBX_CELL_error_t SARA_R5::performPDPaction(int profile, UBX_CELL_pdp_actions_t action)
+UBX_CELL_error_t SparkFun_ublox_SARA_R5::performPDPaction(int profile, UBX_CELL_pdp_actions_t action)
 {
     UBX_CELL_error_t err;
     size_t cmdLen = strlen(UBX_CELL_MESSAGE_PDP_ACTION) + 32;
@@ -246,7 +246,7 @@ UBX_CELL_error_t SARA_R5::performPDPaction(int profile, UBX_CELL_pdp_actions_t a
     return err;
 }
 
-UBX_CELL_error_t SARA_R5::getNetworkAssignedIPAddress(int profile, IPAddress *address)
+UBX_CELL_error_t SparkFun_ublox_SARA_R5::getNetworkAssignedIPAddress(int profile, IPAddress *address)
 {
     size_t cmdLen = strlen(UBX_CELL_NETWORK_ASSIGNED_DATA) + 16;
     char command[cmdLen];
@@ -290,7 +290,7 @@ UBX_CELL_error_t SARA_R5::getNetworkAssignedIPAddress(int profile, IPAddress *ad
     return err;
 }
 
-bool SARA_R5::urcHandlerPDPAction(const char *event)
+bool SparkFun_ublox_SARA_R5::urcHandlerPDPAction(const char *event)
 {
     // URC: +UUPSDA (Packet Switched Data Action)
     int result;
