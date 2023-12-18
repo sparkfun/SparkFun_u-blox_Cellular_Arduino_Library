@@ -222,8 +222,8 @@ UBX_CELL_error_t SARA_R5::setPDPconfiguration(int profile, UBX_CELL_pdp_configur
     if (profile >= UBX_CELL_NUM_PSD_PROFILES)
         return UBX_CELL_ERROR_ERROR;
 
-    snprintf(command, cmdLen, "%s=%d,%d,\"%d.%d.%d.%d\"", UBX_CELL_MESSAGE_PDP_CONFIG, profile, parameter, value[0], value[1],
-            value[2], value[3]);
+    snprintf(command, cmdLen, "%s=%d,%d,\"%d.%d.%d.%d\"", UBX_CELL_MESSAGE_PDP_CONFIG, profile, parameter, value[0],
+             value[1], value[2], value[3]);
 
     err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 

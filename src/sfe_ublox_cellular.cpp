@@ -1792,12 +1792,13 @@ UBX_CELL_error_t UBX_CELL::enterPPP(uint8_t cid, char dialing_type_char, unsigne
 
     if (dialing_type_char != 0)
     {
-        snprintf(command, cmdLen, "%s%c*%lu**%s*%u#", UBX_CELL_MESSAGE_ENTER_PPP, dialing_type_char, dialNumber, PPP_L2P[l2p],
-                (unsigned int)cid);
+        snprintf(command, cmdLen, "%s%c*%lu**%s*%u#", UBX_CELL_MESSAGE_ENTER_PPP, dialing_type_char, dialNumber,
+                 PPP_L2P[l2p], (unsigned int)cid);
     }
     else
     {
-        snprintf(command, cmdLen, "%s*%lu**%s*%u#", UBX_CELL_MESSAGE_ENTER_PPP, dialNumber, PPP_L2P[l2p], (unsigned int)cid);
+        snprintf(command, cmdLen, "%s*%lu**%s*%u#", UBX_CELL_MESSAGE_ENTER_PPP, dialNumber, PPP_L2P[l2p],
+                 (unsigned int)cid);
     }
 
     err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_CONNECT, nullptr, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
@@ -2268,7 +2269,7 @@ UBX_CELL::UBX_CELL_gpio_mode_t UBX_CELL::getGpioMode(UBX_CELL_gpio_t gpio)
         return GPIO_MODE_INVALID;
     }
 
-    snprintf(gpioChar, charLen, "%d", gpio);          // Convert GPIO to char array
+    snprintf(gpioChar, charLen, "%d", gpio);                            // Convert GPIO to char array
     gpioStart = strnstr(response, gpioChar, minimumResponseAllocation); // Find first occurence of GPIO in response
 
     if (gpioStart == nullptr)
@@ -3303,8 +3304,8 @@ UBX_CELL_error_t UBX_CELL::setHTTPserverIPaddress(int profile, IPAddress address
     if (profile >= UBX_CELL_NUM_HTTP_PROFILES)
         return UBX_CELL_ERROR_ERROR;
 
-    snprintf(command, cmdLen, "%s=%d,%d,\"%d.%d.%d.%d\"", UBX_CELL_HTTP_PROFILE, profile, UBX_CELL_HTTP_OP_CODE_SERVER_IP,
-            address[0], address[1], address[2], address[3]);
+    snprintf(command, cmdLen, "%s=%d,%d,\"%d.%d.%d.%d\"", UBX_CELL_HTTP_PROFILE, profile,
+             UBX_CELL_HTTP_OP_CODE_SERVER_IP, address[0], address[1], address[2], address[3]);
 
     err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
@@ -3324,7 +3325,7 @@ UBX_CELL_error_t UBX_CELL::setHTTPserverName(int profile, String server)
     if (command == nullptr)
         return UBX_CELL_ERROR_OUT_OF_MEMORY;
     snprintf(command, cmdLen, "%s=%d,%d,\"%s\"", UBX_CELL_HTTP_PROFILE, profile, UBX_CELL_HTTP_OP_CODE_SERVER_NAME,
-            server.c_str());
+             server.c_str());
 
     err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
@@ -3345,7 +3346,7 @@ UBX_CELL_error_t UBX_CELL::setHTTPusername(int profile, String username)
     if (command == nullptr)
         return UBX_CELL_ERROR_OUT_OF_MEMORY;
     snprintf(command, cmdLen, "%s=%d,%d,\"%s\"", UBX_CELL_HTTP_PROFILE, profile, UBX_CELL_HTTP_OP_CODE_USERNAME,
-            username.c_str());
+             username.c_str());
 
     err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
@@ -3366,7 +3367,7 @@ UBX_CELL_error_t UBX_CELL::setHTTPpassword(int profile, String password)
     if (command == nullptr)
         return UBX_CELL_ERROR_OUT_OF_MEMORY;
     snprintf(command, cmdLen, "%s=%d,%d,\"%s\"", UBX_CELL_HTTP_PROFILE, profile, UBX_CELL_HTTP_OP_CODE_PASSWORD,
-            password.c_str());
+             password.c_str());
 
     err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
@@ -3383,7 +3384,8 @@ UBX_CELL_error_t UBX_CELL::setHTTPauthentication(int profile, bool authenticate)
     if (profile >= UBX_CELL_NUM_HTTP_PROFILES)
         return UBX_CELL_ERROR_ERROR;
 
-    snprintf(command, cmdLen, "%s=%d,%d,%d", UBX_CELL_HTTP_PROFILE, profile, UBX_CELL_HTTP_OP_CODE_AUTHENTICATION, authenticate);
+    snprintf(command, cmdLen, "%s=%d,%d,%d", UBX_CELL_HTTP_PROFILE, profile, UBX_CELL_HTTP_OP_CODE_AUTHENTICATION,
+             authenticate);
 
     err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
@@ -3418,8 +3420,8 @@ UBX_CELL_error_t UBX_CELL::setHTTPcustomHeader(int profile, String header)
     command = ubx_cell_calloc_char(cmdLen);
     if (command == nullptr)
         return UBX_CELL_ERROR_OUT_OF_MEMORY;
-    snprintf(command, cmdLen, "%s=%d,%d,\"%s\"", UBX_CELL_HTTP_PROFILE, profile, UBX_CELL_HTTP_OP_CODE_ADD_CUSTOM_HEADERS,
-            header.c_str());
+    snprintf(command, cmdLen, "%s=%d,%d,\"%s\"", UBX_CELL_HTTP_PROFILE, profile,
+             UBX_CELL_HTTP_OP_CODE_ADD_CUSTOM_HEADERS, header.c_str());
 
     err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
@@ -3439,8 +3441,8 @@ UBX_CELL_error_t UBX_CELL::setHTTPsecure(int profile, bool secure, int secprofil
     if (secprofile == -1)
         snprintf(command, cmdLen, "%s=%d,%d,%d", UBX_CELL_HTTP_PROFILE, profile, UBX_CELL_HTTP_OP_CODE_SECURE, secure);
     else
-        snprintf(command, cmdLen, "%s=%d,%d,%d,%d", UBX_CELL_HTTP_PROFILE, profile, UBX_CELL_HTTP_OP_CODE_SECURE, secure,
-                secprofile);
+        snprintf(command, cmdLen, "%s=%d,%d,%d,%d", UBX_CELL_HTTP_PROFILE, profile, UBX_CELL_HTTP_OP_CODE_SECURE,
+                 secure, secprofile);
 
     err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
@@ -3456,7 +3458,8 @@ UBX_CELL_error_t UBX_CELL::ping(String remote_host, int retry, int p_size, unsig
     command = ubx_cell_calloc_char(cmdLen);
     if (command == nullptr)
         return UBX_CELL_ERROR_OUT_OF_MEMORY;
-    snprintf(command, cmdLen, "%s=\"%s\",%d,%d,%ld,%d", UBX_CELL_PING_COMMAND, remote_host.c_str(), retry, p_size, timeout, ttl);
+    snprintf(command, cmdLen, "%s=\"%s\",%d,%d,%ld,%d", UBX_CELL_PING_COMMAND, remote_host.c_str(), retry, p_size,
+             timeout, ttl);
 
     err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
@@ -3476,8 +3479,8 @@ UBX_CELL_error_t UBX_CELL::sendHTTPGET(int profile, String path, String response
     command = ubx_cell_calloc_char(cmdLen);
     if (command == nullptr)
         return UBX_CELL_ERROR_OUT_OF_MEMORY;
-    snprintf(command, cmdLen, "%s=%d,%d,\"%s\",\"%s\"", UBX_CELL_HTTP_COMMAND, profile, UBX_CELL_HTTP_COMMAND_GET, path.c_str(),
-            responseFilename.c_str());
+    snprintf(command, cmdLen, "%s=%d,%d,\"%s\",\"%s\"", UBX_CELL_HTTP_COMMAND, profile, UBX_CELL_HTTP_COMMAND_GET,
+             path.c_str(), responseFilename.c_str());
 
     err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
@@ -3489,8 +3492,7 @@ UBX_CELL_error_t UBX_CELL::sendHTTPPOSTdata(int profile, String path, String res
                                             UBX_CELL_http_content_types_t httpContentType)
 {
     UBX_CELL_error_t err;
-    size_t cmdLen = strlen(UBX_CELL_HTTP_COMMAND) + 24 + path.length() +
-                    responseFilename.length() + data.length();
+    size_t cmdLen = strlen(UBX_CELL_HTTP_COMMAND) + 24 + path.length() + responseFilename.length() + data.length();
     char *command;
 
     if (profile >= UBX_CELL_NUM_HTTP_PROFILES)
@@ -3500,7 +3502,7 @@ UBX_CELL_error_t UBX_CELL::sendHTTPPOSTdata(int profile, String path, String res
     if (command == nullptr)
         return UBX_CELL_ERROR_OUT_OF_MEMORY;
     snprintf(command, cmdLen, "%s=%d,%d,\"%s\",\"%s\",\"%s\",%d", UBX_CELL_HTTP_COMMAND, profile,
-            UBX_CELL_HTTP_COMMAND_POST_DATA, path.c_str(), responseFilename.c_str(), data.c_str(), httpContentType);
+             UBX_CELL_HTTP_COMMAND_POST_DATA, path.c_str(), responseFilename.c_str(), data.c_str(), httpContentType);
 
     err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
@@ -3512,8 +3514,8 @@ UBX_CELL_error_t UBX_CELL::sendHTTPPOSTfile(int profile, String path, String res
                                             UBX_CELL_http_content_types_t httpContentType)
 {
     UBX_CELL_error_t err;
-    size_t cmdLen = strlen(UBX_CELL_HTTP_COMMAND) + 24 + path.length() +
-                    responseFilename.length() + requestFile.length();
+    size_t cmdLen =
+        strlen(UBX_CELL_HTTP_COMMAND) + 24 + path.length() + responseFilename.length() + requestFile.length();
     char *command;
 
     if (profile >= UBX_CELL_NUM_HTTP_PROFILES)
@@ -3523,8 +3525,8 @@ UBX_CELL_error_t UBX_CELL::sendHTTPPOSTfile(int profile, String path, String res
     if (command == nullptr)
         return UBX_CELL_ERROR_OUT_OF_MEMORY;
     snprintf(command, cmdLen, "%s=%d,%d,\"%s\",\"%s\",\"%s\",%d", UBX_CELL_HTTP_COMMAND, profile,
-            UBX_CELL_HTTP_COMMAND_POST_FILE, path.c_str(), responseFilename.c_str(), requestFile.c_str(),
-            httpContentType);
+             UBX_CELL_HTTP_COMMAND_POST_FILE, path.c_str(), responseFilename.c_str(), requestFile.c_str(),
+             httpContentType);
 
     err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
@@ -3603,8 +3605,8 @@ UBX_CELL_error_t UBX_CELL::setMQTTserver(const String &serverName, int port)
     command = ubx_cell_calloc_char(cmdLen);
     if (command == nullptr)
         return UBX_CELL_ERROR_OUT_OF_MEMORY;
-    snprintf(command, cmdLen, "%s=%d,\"%s\",%d", UBX_CELL_MQTT_PROFILE, UBX_CELL_MQTT_PROFILE_SERVERNAME, serverName.c_str(),
-            port);
+    snprintf(command, cmdLen, "%s=%d,\"%s\",%d", UBX_CELL_MQTT_PROFILE, UBX_CELL_MQTT_PROFILE_SERVERNAME,
+             serverName.c_str(), port);
     err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
     free(command);
     return err;
@@ -3619,8 +3621,8 @@ UBX_CELL_error_t UBX_CELL::setMQTTcredentials(const String &userName, const Stri
     command = ubx_cell_calloc_char(cmdLen);
     if (command == nullptr)
         return UBX_CELL_ERROR_OUT_OF_MEMORY;
-    snprintf(command, cmdLen, "%s=%d,\"%s\",\"%s\"", UBX_CELL_MQTT_PROFILE, UBX_CELL_MQTT_PROFILE_USERNAMEPWD, userName.c_str(),
-            pwd.c_str());
+    snprintf(command, cmdLen, "%s=%d,\"%s\",\"%s\"", UBX_CELL_MQTT_PROFILE, UBX_CELL_MQTT_PROFILE_USERNAMEPWD,
+             userName.c_str(), pwd.c_str());
     err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
     free(command);
     return err;
@@ -3635,7 +3637,8 @@ UBX_CELL_error_t UBX_CELL::setMQTTsecure(bool secure, int secprofile)
     if (secprofile == -1)
         snprintf(command, cmdLen, "%s=%d,%d", UBX_CELL_MQTT_PROFILE, UBX_CELL_MQTT_PROFILE_SECURE, secure);
     else
-        snprintf(command, cmdLen, "%s=%d,%d,%d", UBX_CELL_MQTT_PROFILE, UBX_CELL_MQTT_PROFILE_SECURE, secure, secprofile);
+        snprintf(command, cmdLen, "%s=%d,%d,%d", UBX_CELL_MQTT_PROFILE, UBX_CELL_MQTT_PROFILE_SECURE, secure,
+                 secprofile);
     err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
     return err;
 }
@@ -3671,7 +3674,8 @@ UBX_CELL_error_t UBX_CELL::subscribeMQTTtopic(int max_Qos, const String &topic)
     command = ubx_cell_calloc_char(cmdLen);
     if (command == nullptr)
         return UBX_CELL_ERROR_OUT_OF_MEMORY;
-    snprintf(command, cmdLen, "%s=%d,%d,\"%s\"", UBX_CELL_MQTT_COMMAND, UBX_CELL_MQTT_COMMAND_SUBSCRIBE, max_Qos, topic.c_str());
+    snprintf(command, cmdLen, "%s=%d,%d,\"%s\"", UBX_CELL_MQTT_COMMAND, UBX_CELL_MQTT_COMMAND_SUBSCRIBE, max_Qos,
+             topic.c_str());
     err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
     free(command);
     return err;
@@ -3761,7 +3765,8 @@ UBX_CELL_error_t UBX_CELL::readMQTT(int *pQos, String *pTopic, uint8_t *readDest
             *pTopic = searchPtr + 1;
             searchPtr[topic_length + 1] = '\"'; // restore
         }
-        searchPtr = strnstr(searchPtr + topic_length + 2, "\"", responseLength - (searchPtr + topic_length + 2 - response));
+        searchPtr =
+            strnstr(searchPtr + topic_length + 2, "\"", responseLength - (searchPtr + topic_length + 2 - response));
         if (readDest && (searchPtr != nullptr) && (response + responseLength >= searchPtr + data_length + 1) &&
             (searchPtr[data_length + 1] == '"'))
         {
@@ -3828,7 +3833,7 @@ UBX_CELL_error_t UBX_CELL::mqttPublishTextMsg(const String &topic, const char *c
         return UBX_CELL_ERROR_OUT_OF_MEMORY;
 
     snprintf(command, cmdLen, "%s=%d,%u,%u,0,\"%s\",\"%s\"", UBX_CELL_MQTT_COMMAND, UBX_CELL_MQTT_COMMAND_PUBLISH, qos,
-            (retain ? 1 : 0), topic.c_str(), sanitized_msg);
+             (retain ? 1 : 0), topic.c_str(), sanitized_msg);
 
     sendCommand(command, true);
     err = waitForResponse(UBX_CELL_RESPONSE_MORE, UBX_CELL_RESPONSE_ERROR, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
@@ -3866,7 +3871,7 @@ UBX_CELL_error_t UBX_CELL::mqttPublishBinaryMsg(const String &topic, const char 
         return UBX_CELL_ERROR_OUT_OF_MEMORY;
 
     snprintf(command, cmdLen, "%s=%d,%u,%u,\"%s\",%u", UBX_CELL_MQTT_COMMAND, UBX_CELL_MQTT_COMMAND_PUBLISHBINARY, qos,
-            (retain ? 1 : 0), topic.c_str(), msg_len);
+             (retain ? 1 : 0), topic.c_str(), msg_len);
 
     sendCommand(command, true);
     err = waitForResponse(UBX_CELL_RESPONSE_MORE, UBX_CELL_RESPONSE_ERROR, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
@@ -3893,8 +3898,8 @@ UBX_CELL_error_t UBX_CELL::mqttPublishFromFile(const String &topic, const String
     if (command == nullptr)
         return UBX_CELL_ERROR_OUT_OF_MEMORY;
 
-    snprintf(command, cmdLen, "%s=%d,%u,%u,\"%s\",\"%s\"", UBX_CELL_MQTT_COMMAND, UBX_CELL_MQTT_COMMAND_PUBLISHFILE, qos,
-            (retain ? 1 : 0), topic.c_str(), filename.c_str());
+    snprintf(command, cmdLen, "%s=%d,%u,%u,\"%s\",\"%s\"", UBX_CELL_MQTT_COMMAND, UBX_CELL_MQTT_COMMAND_PUBLISHFILE,
+             qos, (retain ? 1 : 0), topic.c_str(), filename.c_str());
 
     sendCommand(command, true);
     err = waitForResponse(UBX_CELL_RESPONSE_OK, UBX_CELL_RESPONSE_ERROR, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
@@ -3952,8 +3957,8 @@ UBX_CELL_error_t UBX_CELL::setFTPtimeouts(const unsigned int timeout, const unsi
     constexpr size_t cmdLen = 64;
     char command[cmdLen]; // long enough for AT+UFTP=1,<128 bytes>
 
-    snprintf(command, cmdLen, "%s=%d,%u,%u,%u", UBX_CELL_FTP_PROFILE, UBX_CELL_FTP_PROFILE_TIMEOUT, timeout,
-             cmd_linger, data_linger);
+    snprintf(command, cmdLen, "%s=%d,%u,%u,%u", UBX_CELL_FTP_PROFILE, UBX_CELL_FTP_PROFILE_TIMEOUT, timeout, cmd_linger,
+             data_linger);
     return sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 }
 
@@ -3963,8 +3968,7 @@ UBX_CELL_error_t UBX_CELL::setFTPcredentials(const String &userName, const Strin
     constexpr size_t cmdLen = 48;
     char command[cmdLen]; // long enough for AT+UFTP=n,<30 bytes>
 
-    snprintf(command, cmdLen, "%s=%d,\"%s\"", UBX_CELL_FTP_PROFILE, UBX_CELL_FTP_PROFILE_USERNAME,
-             userName.c_str());
+    snprintf(command, cmdLen, "%s=%d,\"%s\"", UBX_CELL_FTP_PROFILE, UBX_CELL_FTP_PROFILE_USERNAME, userName.c_str());
     err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
     if (err != UBX_CELL_ERROR_SUCCESS)
     {
@@ -4002,8 +4006,8 @@ UBX_CELL_error_t UBX_CELL::ftpGetFile(const String &filename)
     if (command == nullptr)
         return UBX_CELL_ERROR_OUT_OF_MEMORY;
 
-    snprintf(command, cmdLen, "%s=%d,\"%s\",\"%s\"", UBX_CELL_FTP_COMMAND, UBX_CELL_FTP_COMMAND_GET_FILE, filename.c_str(),
-            filename.c_str());
+    snprintf(command, cmdLen, "%s=%d,\"%s\",\"%s\"", UBX_CELL_FTP_COMMAND, UBX_CELL_FTP_COMMAND_GET_FILE,
+             filename.c_str(), filename.c_str());
     // memset(response, 0, sizeof(response));
     // sendCommandWithResponse(command, UBX_CELL_RESPONSE_CONNECT, response, 8000 /* ms */, response_len);
     UBX_CELL_error_t err =
@@ -4357,9 +4361,11 @@ UBX_CELL_error_t UBX_CELL::gpsRequest(unsigned int timeout, uint32_t accuracy, b
         accuracy = 999999;
 
 #if defined(ARDUINO_ARCH_ESP32) || defined(ARDUINO_ARCH_ESP8266)
-    snprintf(command, cmdLen, "%s=2,%d,%d,%d,%d", UBX_CELL_GNSS_REQUEST_LOCATION, sensor, detailed ? 1 : 0, timeout, accuracy);
+    snprintf(command, cmdLen, "%s=2,%d,%d,%d,%d", UBX_CELL_GNSS_REQUEST_LOCATION, sensor, detailed ? 1 : 0, timeout,
+             accuracy);
 #else
-    snprintf(command, cmdLen, "%s=2,%d,%d,%d,%ld", UBX_CELL_GNSS_REQUEST_LOCATION, sensor, detailed ? 1 : 0, timeout, accuracy);
+    snprintf(command, cmdLen, "%s=2,%d,%d,%d,%ld", UBX_CELL_GNSS_REQUEST_LOCATION, sensor, detailed ? 1 : 0, timeout,
+             accuracy);
 #endif
 
     err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr, UBX_CELL_10_SEC_TIMEOUT);
@@ -4376,8 +4382,8 @@ UBX_CELL_error_t UBX_CELL::gpsAidingServerConf(const char *primaryServer, const 
     size_t cmdLen = strlen(UBX_CELL_AIDING_SERVER_CONFIGURATION) + 256;
     char command[cmdLen];
 
-    snprintf(command, cmdLen, "%s=\"%s\",\"%s\",\"%s\",%d,%d,%d,%d,%d,%d", UBX_CELL_AIDING_SERVER_CONFIGURATION, primaryServer,
-            secondaryServer, authToken, days, period, resolution, gnssTypes, mode, dataType);
+    snprintf(command, cmdLen, "%s=\"%s\",\"%s\",\"%s\",%d,%d,%d,%d,%d,%d", UBX_CELL_AIDING_SERVER_CONFIGURATION,
+             primaryServer, secondaryServer, authToken, days, period, resolution, gnssTypes, mode, dataType);
 
     err = sendCommandWithResponse(command, UBX_CELL_RESPONSE_OK_OR_ERROR, nullptr, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
 
@@ -5053,7 +5059,7 @@ UBX_CELL_error_t UBX_CELL::setMNOprofile(mobile_network_operator_t mno, bool aut
 
     if (mno == MNO_SIM_ICCID) // Only add autoReset and urcNotification if mno is MNO_SIM_ICCID
         snprintf(command, cmdLen, "%s=%d,%d,%d", UBX_CELL_COMMAND_MNO, (uint8_t)mno, (uint8_t)autoReset,
-                (uint8_t)urcNotification);
+                 (uint8_t)urcNotification);
     else
         snprintf(command, cmdLen, "%s=%d", UBX_CELL_COMMAND_MNO, (uint8_t)mno);
 
