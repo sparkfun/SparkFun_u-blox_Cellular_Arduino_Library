@@ -39,7 +39,7 @@ UBX_CELL_error_t SARA_R5::getUtimeMode(UBX_CELL_utime_mode_t *mode, UBX_CELL_uti
     if (err == UBX_CELL_ERROR_SUCCESS)
     {
         int mStore, sStore, scanned = 0;
-        char *searchPtr = strstr(response, "+UTIME:");
+        char *searchPtr = strnstr(response, "+UTIME:", minimumResponseAllocation);
         if (searchPtr != nullptr)
         {
             searchPtr += strlen("+UTIME:"); // Move searchPtr to first character - probably a space
@@ -95,7 +95,7 @@ UBX_CELL_error_t SARA_R5::getUtimeIndication(UBX_CELL_utime_urc_configuration_t 
     if (err == UBX_CELL_ERROR_SUCCESS)
     {
         int cStore, scanned = 0;
-        char *searchPtr = strstr(response, "+UTIMEIND:");
+        char *searchPtr = strnstr(response, "+UTIMEIND:", minimumResponseAllocation);
         if (searchPtr != nullptr)
         {
             searchPtr += strlen("+UTIMEIND:"); //  Move searchPtr to first char
@@ -149,7 +149,7 @@ UBX_CELL_error_t SARA_R5::getUtimeConfiguration(int32_t *offsetNanoseconds, int3
     if (err == UBX_CELL_ERROR_SUCCESS)
     {
         int scanned = 0;
-        char *searchPtr = strstr(response, "+UTIMECFG:");
+        char *searchPtr = strnstr(response, "+UTIMECFG:", minimumResponseAllocation);
         if (searchPtr != nullptr)
         {
             searchPtr += strlen("+UTIMECFG:"); //  Move searchPtr to first char
@@ -263,7 +263,7 @@ UBX_CELL_error_t SARA_R5::getNetworkAssignedIPAddress(int profile, IPAddress *ad
 
     if (err == UBX_CELL_ERROR_SUCCESS)
     {
-        char *searchPtr = strstr(response, "+UPSND:");
+        char *searchPtr = strnstr(response, "+UPSND:", minimumResponseAllocation);
         if (searchPtr != nullptr)
         {
             searchPtr += strlen("+UPSND:"); //  Move searchPtr to first char
@@ -298,7 +298,7 @@ bool SARA_R5::urcHandlerPDPAction(const char *event)
     int scanNum;
     int remoteIPstore[4];
 
-    char *searchPtr = strstr(event, UBX_CELL_MESSAGE_PDP_ACTION_URC);
+    char *searchPtr = strnstr(event, UBX_CELL_MESSAGE_PDP_ACTION_URC, _RXBuffSize);
     if (searchPtr != nullptr)
     {
         searchPtr += strlen(UBX_CELL_MESSAGE_PDP_ACTION_URC); // Move searchPtr to first character - probably a space

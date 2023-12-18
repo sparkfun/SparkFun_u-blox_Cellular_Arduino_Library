@@ -346,7 +346,7 @@ bool UBX_CELL::urcHandlerReadSocket(const char *event)
 {
     // URC: +UUSORD (Read Socket Data)
     int socket, length;
-    char *searchPtr = strstr(event, UBX_CELL_READ_SOCKET_URC);
+    char *searchPtr = strnstr(event, UBX_CELL_READ_SOCKET_URC, _RXBuffSize);
     if (searchPtr != nullptr)
     {
         searchPtr += strlen(UBX_CELL_READ_SOCKET_URC); // Move searchPtr to first character - probably a space
@@ -384,7 +384,7 @@ bool UBX_CELL::urcHandlerReadUDPSocket(const char *event)
 {
     // URC: +UUSORF (Receive From command (UDP only))
     int socket, length;
-    char *searchPtr = strstr(event, UBX_CELL_READ_UDP_SOCKET_URC);
+    char *searchPtr = strnstr(event, UBX_CELL_READ_UDP_SOCKET_URC, _RXBuffSize);
     if (searchPtr != nullptr)
     {
         searchPtr += strlen(UBX_CELL_READ_UDP_SOCKET_URC); // Move searchPtr to first character - probably a space
@@ -415,7 +415,7 @@ bool UBX_CELL::urcHandlerListeningSocket(const char *event)
     int remoteIPstore[4] = {0, 0, 0, 0};
     int localIPstore[4] = {0, 0, 0, 0};
 
-    char *searchPtr = strstr(event, UBX_CELL_LISTEN_SOCKET_URC);
+    char *searchPtr = strnstr(event, UBX_CELL_LISTEN_SOCKET_URC, _RXBuffSize);
     if (searchPtr != nullptr)
     {
         searchPtr += strlen(UBX_CELL_LISTEN_SOCKET_URC); // Move searchPtr to first character - probably a space
@@ -447,7 +447,7 @@ bool UBX_CELL::urcHandlerCloseSocket(const char *event)
 {
     // URC: +UUSOCL (Close Socket)
     int socket;
-    char *searchPtr = strstr(event, UBX_CELL_CLOSE_SOCKET_URC);
+    char *searchPtr = strnstr(event, UBX_CELL_CLOSE_SOCKET_URC, _RXBuffSize);
     if (searchPtr != nullptr)
     {
         searchPtr += strlen(UBX_CELL_CLOSE_SOCKET_URC); // Move searchPtr to first character - probably a space
@@ -488,7 +488,7 @@ bool UBX_CELL::urcHandlerGNSSRequestLocation(const char *event)
     // Maybe we should also scan for +UUGIND and extract the activated gnss system?
 
     // This assumes the ULOC response type is "0" or "1" - as selected by gpsRequest detailed
-    char *searchPtr = strstr(event, UBX_CELL_GNSS_REQUEST_LOCATION_URC);
+    char *searchPtr = strnstr(event, UBX_CELL_GNSS_REQUEST_LOCATION_URC, _RXBuffSize);
     if (searchPtr != nullptr)
     {
         searchPtr += strlen(UBX_CELL_GNSS_REQUEST_LOCATION_URC); // Move searchPtr to first character - probably a space
@@ -559,7 +559,7 @@ bool UBX_CELL::urcHandlerSIMState(const char *event)
     int scanNum;
     int stateStore;
 
-    char *searchPtr = strstr(event, UBX_CELL_SIM_STATE_URC);
+    char *searchPtr = strnstr(event, UBX_CELL_SIM_STATE_URC, _RXBuffSize);
     if (searchPtr != nullptr)
     {
         searchPtr += strlen(UBX_CELL_SIM_STATE_URC); // Move searchPtr to first character - probably a space
@@ -592,7 +592,7 @@ bool UBX_CELL::urcHandlerHTTPCommand(const char *event)
     int profile, command, result;
     int scanNum;
 
-    char *searchPtr = strstr(event, UBX_CELL_HTTP_COMMAND_URC);
+    char *searchPtr = strnstr(event, UBX_CELL_HTTP_COMMAND_URC, _RXBuffSize);
     if (searchPtr != nullptr)
     {
         searchPtr += strlen(UBX_CELL_HTTP_COMMAND_URC); // Move searchPtr to first character - probably a space
@@ -628,7 +628,7 @@ bool UBX_CELL::urcHandlerMQTTCommand(const char *event)
     int qos = -1;
     String topic;
 
-    char *searchPtr = strstr(event, UBX_CELL_MQTT_COMMAND_URC);
+    char *searchPtr = strnstr(event, UBX_CELL_MQTT_COMMAND_URC, _RXBuffSize);
     if (searchPtr != nullptr)
     {
         searchPtr += strlen(UBX_CELL_MQTT_COMMAND_URC); // Move searchPtr to first character - probably a space
@@ -675,7 +675,7 @@ bool UBX_CELL::urcHandlerPingCommand(const char *event)
     int scanNum;
 
     // Try to extract the UUPING retries and payload size
-    char *searchPtr = strstr(event, UBX_CELL_PING_COMMAND_URC);
+    char *searchPtr = strnstr(event, UBX_CELL_PING_COMMAND_URC, _RXBuffSize);
     if (searchPtr != nullptr)
     {
         searchPtr += strlen(UBX_CELL_PING_COMMAND_URC); // Move searchPtr to first character - probably a space
@@ -747,7 +747,7 @@ bool UBX_CELL::urcHandlerFTPCommand(const char *event)
     int ftpCmd;
     int ftpResult;
     int scanNum;
-    char *searchPtr = strstr(event, UBX_CELL_FTP_COMMAND_URC);
+    char *searchPtr = strnstr(event, UBX_CELL_FTP_COMMAND_URC, _RXBuffSize);
     if (searchPtr != nullptr)
     {
         searchPtr += strlen(UBX_CELL_FTP_COMMAND_URC); // Move searchPtr to first character - probably a space
@@ -772,7 +772,7 @@ bool UBX_CELL::urcHandlerRegistrationStatus(const char *event)
     // URC: +CREG
     int status = 0;
     unsigned int lac = 0, ci = 0, Act = 0;
-    char *searchPtr = strstr(event, UBX_CELL_REGISTRATION_STATUS_URC);
+    char *searchPtr = strnstr(event, UBX_CELL_REGISTRATION_STATUS_URC, _RXBuffSize);
     if (searchPtr != nullptr)
     {
         searchPtr += strlen(UBX_CELL_REGISTRATION_STATUS_URC); // Move searchPtr to first character - probably a space
@@ -801,7 +801,7 @@ bool UBX_CELL::urcHandlerEPSRegistrationStatus(const char *event)
     // URC: +CEREG
     int status = 0;
     unsigned int tac = 0, ci = 0, Act = 0;
-    char *searchPtr = strstr(event, UBX_CELL_EPSREGISTRATION_STATUS_URC);
+    char *searchPtr = strnstr(event, UBX_CELL_EPSREGISTRATION_STATUS_URC, _RXBuffSize);
     if (searchPtr != nullptr)
     {
         searchPtr +=
@@ -1142,7 +1142,7 @@ String UBX_CELL::getCCID(void)
                                   UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
     if (err == UBX_CELL_ERROR_SUCCESS)
     {
-        char *searchPtr = strstr(response, "\r\n+CCID:");
+        char *searchPtr = strnstr(response, "\r\n+CCID:", minimumResponseAllocation);
         if (searchPtr != nullptr)
         {
             searchPtr += strlen("\r\n+CCID:"); // Move searchPtr to first character - probably a space
@@ -1167,7 +1167,7 @@ String UBX_CELL::getSubscriberNo(void)
                                   UBX_CELL_10_SEC_TIMEOUT);
     if (err == UBX_CELL_ERROR_SUCCESS)
     {
-        char *searchPtr = strstr(response, "\r\n+CNUM:");
+        char *searchPtr = strnstr(response, "\r\n+CNUM:", minimumResponseAllocation);
         if (searchPtr != nullptr)
         {
             searchPtr += strlen("\r\n+CNUM:"); // Move searchPtr to first character - probably a space
@@ -1192,7 +1192,7 @@ String UBX_CELL::getCapabilities(void)
                                   UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
     if (err == UBX_CELL_ERROR_SUCCESS)
     {
-        char *searchPtr = strstr(response, "\r\n+GCAP:");
+        char *searchPtr = strnstr(response, "\r\n+GCAP:", minimumResponseAllocation);
         if (searchPtr != nullptr)
         {
             searchPtr += strlen("\r\n+GCAP:"); // Move searchPtr to first character - probably a space
@@ -1283,7 +1283,7 @@ UBX_CELL_error_t UBX_CELL::clock(uint8_t *y, uint8_t *mo, uint8_t *d, uint8_t *h
     // Response format (if TZ is negative): \r\n+CCLK: "YY/MM/DD,HH:MM:SS-TZ"\r\n\r\nOK\r\n
     if (err == UBX_CELL_ERROR_SUCCESS)
     {
-        char *searchPtr = strstr(response, "+CCLK:");
+        char *searchPtr = strnstr(response, "+CCLK:", minimumResponseAllocation);
         if (searchPtr != nullptr)
         {
             searchPtr += strlen("+CCLK:"); //  Move searchPtr to first char
@@ -1403,7 +1403,7 @@ int8_t UBX_CELL::rssi(void)
     }
 
     int scanned = 0;
-    char *searchPtr = strstr(response, "+CSQ:");
+    char *searchPtr = strnstr(response, "+CSQ:", minimumResponseAllocation);
     if (searchPtr != nullptr)
     {
         searchPtr += strlen("+CSQ:"); //  Move searchPtr to first char
@@ -1437,7 +1437,7 @@ UBX_CELL_error_t UBX_CELL::getExtSignalQuality(signal_quality &signal_quality)
 
     int scanned = 0;
     const char *responseStr = "+CESQ:";
-    char *searchPtr = strstr(response, responseStr);
+    char *searchPtr = strnstr(response, responseStr, minimumResponseAllocation);
     if (searchPtr != nullptr)
     {
         searchPtr += strlen(responseStr); //  Move searchPtr to first char
@@ -1476,7 +1476,7 @@ UBX_CELL_registration_status_t UBX_CELL::registration(bool eps)
 
     int scanned = 0;
     const char *startTag = eps ? UBX_CELL_EPSREGISTRATION_STATUS_URC : UBX_CELL_REGISTRATION_STATUS_URC;
-    char *searchPtr = strstr(response, startTag);
+    char *searchPtr = strnstr(response, startTag, minimumResponseAllocation);
     if (searchPtr != nullptr)
     {
         searchPtr += eps ? strlen(UBX_CELL_EPSREGISTRATION_STATUS_URC)
@@ -1628,7 +1628,7 @@ UBX_CELL_error_t UBX_CELL::getAPN(int cid, String *apn, IPAddress *ip, UBX_CELL_
         {
             int scanned = 0;
             // Find the first/next occurrence of +CGDCONT:
-            searchPtr = strstr(searchPtr, "+CGDCONT:");
+            searchPtr = strnstr(searchPtr, "+CGDCONT:", 1024 - (searchPtr - response));
             if (searchPtr != nullptr)
             {
                 char strPdpType[10];
@@ -1692,7 +1692,7 @@ UBX_CELL_error_t UBX_CELL::getSimStatus(String *code)
     {
         int scanned = 0;
         char c[16];
-        char *searchPtr = strstr(response, "+CPIN:");
+        char *searchPtr = strnstr(response, "+CPIN:", minimumResponseAllocation);
         if (searchPtr != nullptr)
         {
             searchPtr += strlen("+CPIN:"); //  Move searchPtr to first char
@@ -1755,7 +1755,7 @@ UBX_CELL_error_t UBX_CELL::getSIMstateReportingMode(int *mode)
     if (err == UBX_CELL_ERROR_SUCCESS)
     {
         int scanned = 0;
-        char *searchPtr = strstr(response, "+USIMSTAT:");
+        char *searchPtr = strnstr(response, "+USIMSTAT:", minimumResponseAllocation);
         if (searchPtr != nullptr)
         {
             searchPtr += strlen("+USIMSTAT:"); //  Move searchPtr to first char
@@ -1927,7 +1927,7 @@ UBX_CELL_error_t UBX_CELL::getOperator(String *oper)
 
     if (err == UBX_CELL_ERROR_SUCCESS)
     {
-        searchPtr = strstr(response, "+COPS:");
+        searchPtr = strnstr(response, "+COPS:", minimumResponseAllocation);
         if (searchPtr != nullptr)
         {
             searchPtr += strlen("+COPS:"); //  Move searchPtr to first char
@@ -2058,7 +2058,7 @@ UBX_CELL_error_t UBX_CELL::getPreferredMessageStorage(int *used, int *total, Str
     }
 
     int scanned = 0;
-    char *searchPtr = strstr(response, "+CPMS:");
+    char *searchPtr = strnstr(response, "+CPMS:", minimumResponseAllocation);
     if (searchPtr != nullptr)
     {
         searchPtr += strlen("+CPMS:"); //  Move searchPtr to first char
@@ -2104,7 +2104,7 @@ UBX_CELL_error_t UBX_CELL::readSMSmessage(int location, String *unread, String *
         char *searchPtr = response;
 
         // Find the first occurrence of +CMGR:
-        searchPtr = strstr(searchPtr, "+CMGR:");
+        searchPtr = strnstr(searchPtr, "+CMGR:", 1024 - (searchPtr - response));
         if (searchPtr != nullptr)
         {
             searchPtr += strlen("+CMGR:"); //  Move searchPtr to first char
@@ -2269,7 +2269,7 @@ UBX_CELL::UBX_CELL_gpio_mode_t UBX_CELL::getGpioMode(UBX_CELL_gpio_t gpio)
     }
 
     snprintf(gpioChar, charLen, "%d", gpio);          // Convert GPIO to char array
-    gpioStart = strstr(response, gpioChar); // Find first occurence of GPIO in response
+    gpioStart = strnstr(response, gpioChar, minimumResponseAllocation); // Find first occurence of GPIO in response
 
     if (gpioStart == nullptr)
         return GPIO_MODE_INVALID; // If not found return invalid
@@ -2307,7 +2307,7 @@ int UBX_CELL::socketOpen(UBX_CELL_socket_protocol_t protocol, unsigned int local
         return -1;
     }
 
-    responseStart = strstr(response, "+USOCR:");
+    responseStart = strnstr(response, "+USOCR:", minimumResponseAllocation);
     if (responseStart == nullptr)
     {
         if (_printDebug == true)
@@ -2544,7 +2544,7 @@ UBX_CELL_error_t UBX_CELL::socketRead(int socket, int length, char *readDest, in
         }
 
         // Extract the data
-        char *searchPtr = strstr(response, "+USORD:");
+        char *searchPtr = strnstr(response, "+USORD:", responseLength);
         if (searchPtr != nullptr)
         {
             searchPtr += strlen("+USORD:"); //  Move searchPtr to first char
@@ -2642,7 +2642,7 @@ UBX_CELL_error_t UBX_CELL::socketReadAvailable(int socket, int *length)
 
     if (err == UBX_CELL_ERROR_SUCCESS)
     {
-        char *searchPtr = strstr(response, "+USORD:");
+        char *searchPtr = strnstr(response, "+USORD:", minimumResponseAllocation);
         if (searchPtr != nullptr)
         {
             searchPtr += strlen("+USORD:"); //  Move searchPtr to first char
@@ -2724,7 +2724,7 @@ UBX_CELL_error_t UBX_CELL::socketReadUDP(int socket, int length, char *readDest,
         }
 
         // Extract the data
-        char *searchPtr = strstr(response, "+USORF:");
+        char *searchPtr = strnstr(response, "+USORF:", responseLength);
         if (searchPtr != nullptr)
         {
             searchPtr += strlen("+USORF:"); //  Move searchPtr to first char
@@ -2842,7 +2842,7 @@ UBX_CELL_error_t UBX_CELL::socketReadAvailableUDP(int socket, int *length)
 
     if (err == UBX_CELL_ERROR_SUCCESS)
     {
-        char *searchPtr = strstr(response, "+USORF:");
+        char *searchPtr = strnstr(response, "+USORF:", minimumResponseAllocation);
         if (searchPtr != nullptr)
         {
             searchPtr += strlen("+USORF:"); //  Move searchPtr to first char
@@ -2976,7 +2976,7 @@ UBX_CELL_error_t UBX_CELL::querySocketType(int socket, UBX_CELL_socket_protocol_
 
     if (err == UBX_CELL_ERROR_SUCCESS)
     {
-        char *searchPtr = strstr(response, "+USOCTL:");
+        char *searchPtr = strnstr(response, "+USOCTL:", minimumResponseAllocation);
         if (searchPtr != nullptr)
         {
             searchPtr += strlen("+USOCTL:"); //  Move searchPtr to first char
@@ -3017,7 +3017,7 @@ UBX_CELL_error_t UBX_CELL::querySocketLastError(int socket, int *error)
 
     if (err == UBX_CELL_ERROR_SUCCESS)
     {
-        char *searchPtr = strstr(response, "+USOCTL:");
+        char *searchPtr = strnstr(response, "+USOCTL:", minimumResponseAllocation);
         if (searchPtr != nullptr)
         {
             searchPtr += strlen("+USOCTL:"); //  Move searchPtr to first char
@@ -3057,7 +3057,7 @@ UBX_CELL_error_t UBX_CELL::querySocketTotalBytesSent(int socket, uint32_t *total
 
     if (err == UBX_CELL_ERROR_SUCCESS)
     {
-        char *searchPtr = strstr(response, "+USOCTL:");
+        char *searchPtr = strnstr(response, "+USOCTL:", minimumResponseAllocation);
         if (searchPtr != nullptr)
         {
             searchPtr += strlen("+USOCTL:"); //  Move searchPtr to first char
@@ -3097,7 +3097,7 @@ UBX_CELL_error_t UBX_CELL::querySocketTotalBytesReceived(int socket, uint32_t *t
 
     if (err == UBX_CELL_ERROR_SUCCESS)
     {
-        char *searchPtr = strstr(response, "+USOCTL:");
+        char *searchPtr = strnstr(response, "+USOCTL:", minimumResponseAllocation);
         if (searchPtr != nullptr)
         {
             searchPtr += strlen("+USOCTL:"); //  Move searchPtr to first char
@@ -3137,7 +3137,7 @@ UBX_CELL_error_t UBX_CELL::querySocketRemoteIPAddress(int socket, IPAddress *add
 
     if (err == UBX_CELL_ERROR_SUCCESS)
     {
-        char *searchPtr = strstr(response, "+USOCTL:");
+        char *searchPtr = strnstr(response, "+USOCTL:", minimumResponseAllocation);
         if (searchPtr != nullptr)
         {
             searchPtr += strlen("+USOCTL:"); //  Move searchPtr to first char
@@ -3181,7 +3181,7 @@ UBX_CELL_error_t UBX_CELL::querySocketStatusTCP(int socket, UBX_CELL_tcp_socket_
 
     if (err == UBX_CELL_ERROR_SUCCESS)
     {
-        char *searchPtr = strstr(response, "+USOCTL:");
+        char *searchPtr = strnstr(response, "+USOCTL:", minimumResponseAllocation);
         if (searchPtr != nullptr)
         {
             searchPtr += strlen("+USOCTL:"); //  Move searchPtr to first char
@@ -3221,7 +3221,7 @@ UBX_CELL_error_t UBX_CELL::querySocketOutUnackData(int socket, uint32_t *total)
 
     if (err == UBX_CELL_ERROR_SUCCESS)
     {
-        char *searchPtr = strstr(response, "+USOCTL:");
+        char *searchPtr = strnstr(response, "+USOCTL:", minimumResponseAllocation);
         if (searchPtr != nullptr)
         {
             searchPtr += strlen("+USOCTL:"); //  Move searchPtr to first char
@@ -3260,7 +3260,7 @@ int UBX_CELL::socketGetLastError()
 
     if (err == UBX_CELL_ERROR_SUCCESS)
     {
-        char *searchPtr = strstr(response, "+USOER:");
+        char *searchPtr = strnstr(response, "+USOER:", minimumResponseAllocation);
         if (searchPtr != nullptr)
         {
             searchPtr += strlen("+USOER:"); //  Move searchPtr to first char
@@ -3548,7 +3548,7 @@ UBX_CELL_error_t UBX_CELL::getHTTPprotocolError(int profile, int *error_class, i
     if (err == UBX_CELL_ERROR_SUCCESS)
     {
         int scanned = 0;
-        char *searchPtr = strstr(response, "+UHTTPER:");
+        char *searchPtr = strnstr(response, "+UHTTPER:", minimumResponseAllocation);
         if (searchPtr != nullptr)
         {
             searchPtr += strlen("+UHTTPER:"); //  Move searchPtr to first char
@@ -3730,7 +3730,7 @@ UBX_CELL_error_t UBX_CELL::readMQTT(int *pQos, String *pTopic, uint8_t *readDest
     }
 
     // Extract the data
-    char *searchPtr = strstr(response, "+UMQTTC:");
+    char *searchPtr = strnstr(response, "+UMQTTC:", responseLength);
     int cmd = 0;
     if (searchPtr != nullptr)
     {
@@ -3752,7 +3752,7 @@ UBX_CELL_error_t UBX_CELL::readMQTT(int *pQos, String *pTopic, uint8_t *readDest
     }
 
     err = UBX_CELL_ERROR_SUCCESS;
-    searchPtr = strstr(searchPtr, "\"");
+    searchPtr = strnstr(searchPtr, "\"", responseLength - (searchPtr - response));
     if (searchPtr != nullptr)
     {
         if (pTopic)
@@ -3761,7 +3761,7 @@ UBX_CELL_error_t UBX_CELL::readMQTT(int *pQos, String *pTopic, uint8_t *readDest
             *pTopic = searchPtr + 1;
             searchPtr[topic_length + 1] = '\"'; // restore
         }
-        searchPtr = strstr(searchPtr + topic_length + 2, "\"");
+        searchPtr = strnstr(searchPtr + topic_length + 2, "\"", responseLength - (searchPtr + topic_length + 2 - response));
         if (readDest && (searchPtr != nullptr) && (response + responseLength >= searchPtr + data_length + 1) &&
             (searchPtr[data_length + 1] == '"'))
         {
@@ -3916,7 +3916,7 @@ UBX_CELL_error_t UBX_CELL::getMQTTprotocolError(int *error_code, int *error_code
     if (err == UBX_CELL_ERROR_SUCCESS)
     {
         int scanned = 0;
-        char *searchPtr = strstr(response, "+UMQTTER:");
+        char *searchPtr = strnstr(response, "+UMQTTER:", minimumResponseAllocation);
         if (searchPtr != nullptr)
         {
             searchPtr += strlen("+UMQTTER:"); //  Move searchPtr to first char
@@ -4026,7 +4026,7 @@ UBX_CELL_error_t UBX_CELL::getFTPprotocolError(int *error_code, int *error_code2
     if (err == UBX_CELL_ERROR_SUCCESS)
     {
         int scanned = 0;
-        char *searchPtr = strstr(response, "+UFTPER:");
+        char *searchPtr = strnstr(response, "+UFTPER:", minimumResponseAllocation);
         if (searchPtr != nullptr)
         {
             searchPtr += strlen("+UFTPER:"); //  Move searchPtr to first char
@@ -4308,7 +4308,7 @@ UBX_CELL_error_t UBX_CELL::gpsGetRmc(struct PositionData *pos, struct SpeedData 
     if (err == UBX_CELL_ERROR_SUCCESS)
     {
         // Fast-forward response string to $GPRMC starter
-        rmcBegin = strstr(response, "$GPRMC");
+        rmcBegin = strnstr(response, "$GPRMC", minimumResponseAllocation);
         if (rmcBegin == nullptr)
         {
             err = UBX_CELL_ERROR_UNEXPECTED_RESPONSE;
@@ -4497,7 +4497,7 @@ UBX_CELL_error_t UBX_CELL::getFileContents(String filename, String *contents)
     // Response format: \r\n+URDFILE: "filename",36,"these bytes are the data of the file"\r\n\r\nOK\r\n
     int scanned = 0;
     int readFileSize = 0;
-    char *searchPtr = strstr(response, "+URDFILE:");
+    char *searchPtr = strnstr(response, "+URDFILE:", fileSize + minimumResponseAllocation);
     if (searchPtr != nullptr)
     {
         searchPtr = strchr(searchPtr, '\"');   // Find the first quote
@@ -4551,7 +4551,7 @@ UBX_CELL_error_t UBX_CELL::getFileContents(String filename, String *contents)
     else
     {
         if (_printDebug == true)
-            _debugPort->println(F("getFileContents: strstr failed!"));
+            _debugPort->println(F("getFileContents: strnstr failed!"));
         err = UBX_CELL_ERROR_UNEXPECTED_RESPONSE;
     }
 
@@ -4620,7 +4620,7 @@ UBX_CELL_error_t UBX_CELL::getFileContents(String filename, char *contents)
     // Response format: \r\n+URDFILE: "filename",36,"these bytes are the data of the file"\r\n\r\nOK\r\n
     int scanned = 0;
     int readFileSize = 0;
-    char *searchPtr = strstr(response, "+URDFILE:");
+    char *searchPtr = strnstr(response, "+URDFILE:", fileSize + minimumResponseAllocation);
     if (searchPtr != nullptr)
     {
         searchPtr = strchr(searchPtr, '\"');   // Find the first quote
@@ -4670,7 +4670,7 @@ UBX_CELL_error_t UBX_CELL::getFileContents(String filename, char *contents)
     else
     {
         if (_printDebug == true)
-            _debugPort->println(F("getFileContents: strstr failed!"));
+            _debugPort->println(F("getFileContents: strnstr failed!"));
         err = UBX_CELL_ERROR_UNEXPECTED_RESPONSE;
     }
 
@@ -4778,7 +4778,7 @@ UBX_CELL_error_t UBX_CELL::getFileSize(String filename, int *size)
         return err;
     }
 
-    char *responseStart = strstr(response, "+ULSTFILE:");
+    char *responseStart = strnstr(response, "+ULSTFILE:", minimumResponseAllocation);
     if (responseStart == nullptr)
     {
         if (_printDebug == true)
@@ -5081,7 +5081,7 @@ UBX_CELL_error_t UBX_CELL::getMNOprofile(mobile_network_operator_t *mno)
         return err;
 
     int scanned = 0;
-    char *searchPtr = strstr(response, "+UMNOPROF:");
+    char *searchPtr = strnstr(response, "+UMNOPROF:", minimumResponseAllocation);
     if (searchPtr != nullptr)
     {
         searchPtr += strlen("+UMNOPROF:"); //  Move searchPtr to first char
@@ -5765,7 +5765,7 @@ void UBX_CELL::pruneBacklog()
         // These are the events we want to keep so they can be processed by poll / bufferedPoll
         for (auto urcString : _urcStrings)
         {
-            if (strstr(event, urcString) != nullptr)
+            if (strnstr(event, urcString, _RXBuffSize - (event - _saraResponseBacklog)) != nullptr)
             {
                 strcat(_pruneBuffer, event);  // The URCs are all readable text so using strcat is OK
                 strcat(_pruneBuffer, "\r\n"); // strtok blows away delimiter, but we want that for later.

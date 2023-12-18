@@ -145,7 +145,7 @@ template <typename T> class UBX_CELL_VOICE
     bool urcCheckRing(const char *event)
     {
         int socket, length;
-        char *searchPtr = strstr(event, UBX_CELL_RING_URC);
+        char *searchPtr = strnstr(event, UBX_CELL_RING_URC, _RXBuffSize);
         if (searchPtr != nullptr)
         {
             if (_ringCallback != nullptr)
