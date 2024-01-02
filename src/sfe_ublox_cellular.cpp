@@ -894,9 +894,6 @@ bool SparkFun_ublox_Cellular::poll(void)
                 _debugPort->println(_saraRXBuffer);
             }
         }
-        else
-        {
-        }
     }
 
     _pollReentrant = false;
