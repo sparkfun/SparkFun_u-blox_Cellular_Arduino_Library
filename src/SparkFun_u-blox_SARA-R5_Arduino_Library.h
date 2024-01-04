@@ -2,9 +2,8 @@
 // RegEx Replace: \#define\sSARA\_R5\_([A-Z0-9_]+).* \#define SARA\_R5\_$+ UBLOX\_AT\_$+
 
 /*
-  Arduino library for the u-blox SARA-R5 LTE-M / NB-IoT modules with secure cloud, as used on the SparkFun MicroMod Asset Tracker
-  By: Paul Clark
-  October 19th 2020
+  Arduino library for the u-blox SARA-R5 LTE-M / NB-IoT modules with secure cloud, as used on the SparkFun MicroMod
+  Asset Tracker By: Paul Clark October 19th 2020
 
   Based extensively on the:
   Arduino Library for the SparkFun LTE CAT M1/NB-IoT Shield - SARA-R4
@@ -23,6 +22,8 @@
 #include "sfe_sara_r5.h"
 #include "sfe_ublox_cellular.h"
 
+#define SARA_R5 SparkFun_ublox_SARA_R5
+
 #define SARA_R5_POWER_PIN -1 // Default to no pin
 #define SARA_R5_RESET_PIN -1
 
@@ -34,8 +35,9 @@
 #define SARA_R5_3_MIN_TIMEOUT 180000
 #define SARA_R5_SET_BAUD_TIMEOUT 500
 #define SARA_R5_POWER_OFF_PULSE_PERIOD 3200 // Hold PWR_ON low for this long to power the module off
-#define SARA_R5_POWER_ON_PULSE_PERIOD 100 // Hold PWR_ON low for this long to power the module on (SARA-R510M8S)
-#define SARA_R5_RESET_PULSE_PERIOD 23000 // Used to perform an abrupt emergency hardware shutdown. 23 seconds... (Yes, really!)
+#define SARA_R5_POWER_ON_PULSE_PERIOD 100   // Hold PWR_ON low for this long to power the module on (SARA-R510M8S)
+#define SARA_R5_RESET_PULSE_PERIOD                                                                                     \
+    23000 // Used to perform an abrupt emergency hardware shutdown. 23 seconds... (Yes, really!)
 #define SARA_R5_POWER_OFF_TIMEOUT 40000 // Datasheet says 40 seconds...
 #define SARA_R5_IP_CONNECT_TIMEOUT 130000
 #define SARA_R5_POLL_DELAY 1
@@ -141,7 +143,6 @@
 #define SARA_R5_SEC_PROFILE UBX_CELL_SEC_PROFILE
 #define SARA_R5_SEC_MANAGER UBX_CELL_SEC_MANAGER
 
-
 // ### URC strings
 #define SARA_R5_READ_SOCKET_URC UBX_CELL_READ_SOCKET_URC
 #define SARA_R5_READ_UDP_SOCKET_URC UBX_CELL_READ_UDP_SOCKET_URC
@@ -167,14 +168,7 @@
 #define SARA_R5_NUM_SOCKETS 6
 
 #define SARA_R5_NUM_SUPPORTED_BAUD 6
-const unsigned long SARA_R5_SUPPORTED_BAUD[SARA_R5_NUM_SUPPORTED_BAUD] =
-    {
-        115200,
-        9600,
-        19200,
-        38400,
-        57600,
-        230400};
+const unsigned long SARA_R5_SUPPORTED_BAUD[SARA_R5_NUM_SUPPORTED_BAUD] = {115200, 9600, 19200, 38400, 57600, 230400};
 #define SARA_R5_DEFAULT_BAUD_RATE 115200
 
 // Flow control definitions for AT&K
@@ -244,13 +238,13 @@ const unsigned long SARA_R5_SUPPORTED_BAUD[SARA_R5_NUM_SUPPORTED_BAUD] =
 #define SARA_R5_SIM_NOT_OPERATIONAL UBX_CELL_SIM_NOT_OPERATIONAL
 #define SARA_R5_SIM_RESTRICTED UBX_CELL_SIM_RESTRICTED
 #define SARA_R5_SIM_OPERATIONAL UBX_CELL_SIM_OPERATIONAL
-//SARA_R5_SIM_PHONEBOOK_READY, // Not reported by SARA-R5
-//SARA_R5_SIM_USIM_PHONEBOOK_READY, // Not reported by SARA-R5
-//SARA_R5_SIM_TOOLKIT_REFRESH_SUCCESSFUL, // Not reported by SARA-R5
-//SARA_R5_SIM_TOOLKIT_REFRESH_UNSUCCESSFUL, // Not reported by SARA-R5
-//SARA_R5_SIM_PPP_CONNECTION_ACTIVE, // Not reported by SARA-R5
-//SARA_R5_SIM_VOICE_CALL_ACTIVE, // Not reported by SARA-R5
-//SARA_R5_SIM_CSD_CALL_ACTIVE // Not reported by SARA-R5
+// SARA_R5_SIM_PHONEBOOK_READY, // Not reported by SARA-R5
+// SARA_R5_SIM_USIM_PHONEBOOK_READY, // Not reported by SARA-R5
+// SARA_R5_SIM_TOOLKIT_REFRESH_SUCCESSFUL, // Not reported by SARA-R5
+// SARA_R5_SIM_TOOLKIT_REFRESH_UNSUCCESSFUL, // Not reported by SARA-R5
+// SARA_R5_SIM_PPP_CONNECTION_ACTIVE, // Not reported by SARA-R5
+// SARA_R5_SIM_VOICE_CALL_ACTIVE, // Not reported by SARA-R5
+// SARA_R5_SIM_CSD_CALL_ACTIVE // Not reported by SARA-R5
 
 #define SARA_R5_NUM_PSD_PROFILES 6             // Number of supported PSD profiles
 #define SARA_R5_NUM_PDP_CONTEXT_IDENTIFIERS 11 // Number of supported PDP context identifiers
@@ -335,14 +329,14 @@ const unsigned long SARA_R5_SUPPORTED_BAUD[SARA_R5_NUM_SUPPORTED_BAUD] =
 
 #define SARA_R5_PSD_CONFIG_PARAM_PROTOCOL UBX_CELL_PSD_CONFIG_PARAM_PROTOCOL
 #define SARA_R5_PSD_CONFIG_PARAM_APN UBX_CELL_PSD_CONFIG_PARAM_APN
-//SARA_R5_PSD_CONFIG_PARAM_USERNAME, // Not allowed on SARA-R5
-//SARA_R5_PSD_CONFIG_PARAM_PASSWORD, // Not allowed on SARA-R5
+// SARA_R5_PSD_CONFIG_PARAM_USERNAME, // Not allowed on SARA-R5
+// SARA_R5_PSD_CONFIG_PARAM_PASSWORD, // Not allowed on SARA-R5
 #define SARA_R5_PSD_CONFIG_PARAM_DNS1 UBX_CELL_PSD_CONFIG_PARAM_DNS1
 #define SARA_R5_PSD_CONFIG_PARAM_DNS2 UBX_CELL_PSD_CONFIG_PARAM_DNS2
-//SARA_R5_PSD_CONFIG_PARAM_AUTHENTICATION, // Not allowed on SARA-R5
-//SARA_R5_PSD_CONFIG_PARAM_IP_ADDRESS, // Not allowed on SARA-R5
-//SARA_R5_PSD_CONFIG_PARAM_DATA_COMPRESSION, // Not allowed on SARA-R5
-//SARA_R5_PSD_CONFIG_PARAM_HEADER_COMPRESSION, // Not allowed on SARA-R5
+// SARA_R5_PSD_CONFIG_PARAM_AUTHENTICATION, // Not allowed on SARA-R5
+// SARA_R5_PSD_CONFIG_PARAM_IP_ADDRESS, // Not allowed on SARA-R5
+// SARA_R5_PSD_CONFIG_PARAM_DATA_COMPRESSION, // Not allowed on SARA-R5
+// SARA_R5_PSD_CONFIG_PARAM_HEADER_COMPRESSION, // Not allowed on SARA-R5
 #define SARA_R5_PSD_CONFIG_PARAM_MAP_TO_CID UBX_CELL_PSD_CONFIG_PARAM_MAP_TO_CID
 
 #define SARA_R5_PSD_PROTOCOL_IPV4 UBX_CELL_PSD_PROTOCOL_IPV4
@@ -388,4 +382,4 @@ const unsigned long SARA_R5_SUPPORTED_BAUD[SARA_R5_NUM_SUPPORTED_BAUD] =
 #define SARA_R5_SEC_MANAGER_CLIENT_KEY UBX_CELL_SEC_MANAGER_CLIENT_KEY
 #define SARA_R5_SEC_MANAGER_SERVER_CERT UBX_CELL_SEC_MANAGER_SERVER_CERT
 
-#endif //SPARKFUN_SARA_R5_ARDUINO_LIBRARY_H
+#endif // SPARKFUN_SARA_R5_ARDUINO_LIBRARY_H
