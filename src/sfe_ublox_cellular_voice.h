@@ -161,6 +161,8 @@ template <typename T> class SparkFun_ublox_Cellular_Voice_Base
 
 class SparkFun_ublox_Cellular_Voice : public SparkFun_ublox_Cellular, public SparkFun_ublox_Cellular_Voice_Base<SparkFun_ublox_Cellular_Voice>
 {
+    // Bring up parent constructors
+    using SparkFun_ublox_Cellular::SparkFun_ublox_Cellular;
 };
 
 #endif

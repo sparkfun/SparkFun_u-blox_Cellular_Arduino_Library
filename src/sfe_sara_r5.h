@@ -18,6 +18,9 @@ class SparkFun_ublox_SARA_R5 : public SparkFun_ublox_Cellular
   public:
     SparkFun_ublox_SARA_R5();
 
+    // Bring up parent constructors
+    using SparkFun_ublox_Cellular::SparkFun_ublox_Cellular;
+
     UBX_CELL_error_t setUtimeMode(
         UBX_CELL_utime_mode_t mode = UBX_CELL_UTIME_MODE_PPS,
         UBX_CELL_utime_sensor_t sensor = UBX_CELL_UTIME_SENSOR_GNSS_LTE); // Time mode, source etc. (+UTIME)
@@ -52,22 +55,32 @@ class SparkFun_ublox_SARA_R5 : public SparkFun_ublox_Cellular
 
 class SparkFun_ublox_SARA_R500S : public SparkFun_ublox_SARA_R5
 {
+    // Bring up parent constructors
+    using SparkFun_ublox_SARA_R5::SparkFun_ublox_SARA_R5;
 };
 
 class SparkFun_ublox_SARA_R500S_01B : public SparkFun_ublox_SARA_R5
 {
+    // Bring up parent constructors
+    using SparkFun_ublox_SARA_R5::SparkFun_ublox_SARA_R5;
 };
 
 class SparkFun_ublox_SARA_R500S_61B : public SparkFun_ublox_SARA_R5
 {
+    // Bring up parent constructors
+    using SparkFun_ublox_SARA_R5::SparkFun_ublox_SARA_R5;
 };
 
 class SparkFun_ublox_SARA_R510M8S_61B : public SparkFun_ublox_SARA_R5
 {
+    // Bring up parent constructors
+    using SparkFun_ublox_SARA_R5::SparkFun_ublox_SARA_R5;
 };
 
 class SparkFun_ublox_SARA_R510S : public SparkFun_ublox_SARA_R5
 {
+    // Bring up parent constructors
+    using SparkFun_ublox_SARA_R5::SparkFun_ublox_SARA_R5;
 };
 
 #endif
