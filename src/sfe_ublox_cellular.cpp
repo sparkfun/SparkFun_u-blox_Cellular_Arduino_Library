@@ -4706,14 +4706,14 @@ UBX_CELL_error_t SparkFun_ublox_Cellular::getFileBlock(const String &filename, c
     return UBX_CELL_ERROR_INVALID;
   }
 
-  command = sara_r5_calloc_char(strlen(UBX_CELL_FILE_SYSTEM_READ_BLOCK) + filename.length() + 28);
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_FILE_SYSTEM_READ_BLOCK) + filename.length() + 28);
   if (command == nullptr)
   {
     return UBX_CELL_ERROR_OUT_OF_MEMORY;
   }
   sprintf(command, "%s=\"%s\",%lu,%lu", UBX_CELL_FILE_SYSTEM_READ_BLOCK, filename.c_str(), (unsigned long) offset, (unsigned long) requestedLength);
 
-  response = sara_r5_calloc_char(minimumResponseAllocation);
+  response = ubx_cell_calloc_char(minimumResponseAllocation);
   if (response == nullptr)
   {
     if (_printDebug == true)
