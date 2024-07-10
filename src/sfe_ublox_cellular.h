@@ -1043,8 +1043,8 @@ class SparkFun_ublox_Cellular : public Print
                                      char *contents); // OK for binary files. Make sure contents can hold the entire
                                                       // file. Get the size first with getFileSize.
     UBX_CELL_error_t getFileBlock(
-        const String &filename, char *buffer, size_t offset, size_t length,
-        size_t &bytes_read); // OK for binary files. Make sure buffer can hold the requested block size.
+        const String &filename, char *buffer, size_t offset, size_t requestedLength,
+        size_t &bytesRead); // OK for binary files. Make sure buffer can hold the requested block size.
 
     // Append data to a file, delete file first to not appends the data.
     UBX_CELL_error_t appendFileContents(String filename, String str);

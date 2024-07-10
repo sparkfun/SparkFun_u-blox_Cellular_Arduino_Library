@@ -4682,76 +4682,120 @@ UBX_CELL_error_t SparkFun_ublox_Cellular::getFileContents(String filename, char 
     return err;
 }
 
-UBX_CELL_error_t SparkFun_ublox_Cellular::getFileBlock(const String &filename, char *buffer, size_t offset, size_t requested_length,
-                                        size_t &bytes_read)
+UBX_CELL_error_t SparkFun_ublox_Cellular::getFileBlock(const String &filename, char *buffer, size_t offset, size_t requestedLength,
+                                        size_t &bytesRead)
 {
-    bytes_read = 0;
-    if (filename.length() < 1 || buffer == nullptr || requested_length < 1)
+  UBX_CELL_error_t err;
+  char *command;
+  char *response;
+
+  bytesRead = 0;
+  if (filename.length() < 1 || buffer == nullptr || requestedLength < 1)
+  {
+      return UBX_CELL_ERROR_UNEXPECTED_PARAM;
+  }
+
+  // trying to get a byte at a time does not seem to be reliable so this method must use
+  // a real UART.
+  if (_hardSerial == nullptr)
+  {
+    if (_printDebug == true)
     {
-        return UBX_CELL_ERROR_UNEXPECTED_PARAM;
+      _debugPort->println(F("getFileBlock: only works with a hardware UART"));
     }
+    return UBX_CELL_ERROR_INVALID;
+  }
 
-    // trying to get a byte at a time does not seem to be reliable so this method must use
-    // a real UART.
-    if (_hardSerial == nullptr)
+  command = ubx_cell_calloc_char(strlen(UBX_CELL_FILE_SYSTEM_READ_BLOCK) + filename.length() + 28);
+  if (command == nullptr)
+  {
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  }
+  sprintf(command, "%s=\"%s\",%lu,%lu", UBX_CELL_FILE_SYSTEM_READ_BLOCK, filename.c_str(), (unsigned long) offset, (unsigned long) requestedLength);
+
+  response = ubx_cell_calloc_char(minimumResponseAllocation);
+  if (response == nullptr)
+  {
+    if (_printDebug == true)
     {
-        if (_printDebug == true)
-        {
-            _debugPort->println(F("getFileBlock: only works with a hardware UART"));
-        }
-        return UBX_CELL_ERROR_INVALID;
+      _debugPort->print(F("getFileBlock: response alloc failed: "));
+      _debugPort->println(minimumResponseAllocation);
     }
+    free(command);
+    return UBX_CELL_ERROR_OUT_OF_MEMORY;
+  }
 
-    size_t cmdLen = filename.length() + 32;
-    char *cmd = ubx_cell_calloc_char(cmdLen);
-    if (cmd == nullptr)
-        return UBX_CELL_ERROR_OUT_OF_MEMORY;
-    snprintf(cmd, cmdLen, "at+urdblock=\"%s\",%zu,%zu\r\n", filename.c_str(), offset, requested_length);
-    sendCommand(cmd, false);
-
-    int ich;
-    char ch;
-    int quote_count = 0;
-    size_t comma_idx = 0;
-
-    while (quote_count < 3)
+  // Send command and wait for some response
+  // Response format: \r\n+URDBLOCK: "filename",64000,"these bytes are the data of the file block"\r\n\r\nOK\r\n
+  sendCommand(command, true);
+  err = waitForResponse(UBX_CELL_FILE_SYSTEM_READ_BLOCK, UBX_CELL_RESPONSE_ERROR, 5 * UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
+  if (err != UBX_CELL_ERROR_SUCCESS)
+  {
+    if (_printDebug == true)
     {
-        ich = _hardSerial->read();
-        if (ich < 0)
-        {
-            continue;
-        }
-        ch = (char)(ich & 0xFF);
-        cmd[bytes_read++] = ch;
-        if (ch == '"')
-        {
-            quote_count++;
-        }
-        else if (ch == ',' && comma_idx == 0)
-        {
-            comma_idx = bytes_read;
-        }
+      _debugPort->print(F("getFileBlock: waitForResponse returned err "));
+      _debugPort->println(err);
     }
+    free(command);
+    free(response);
+    return err;
+  }
 
-    cmd[bytes_read] = 0;
-    cmd[bytes_read - 2] = 0;
-
-    // Example response:
-    // +URDBLOCK: "wombat.bin",64000,"<data starts here>... "<cr><lf>
-    size_t data_length = strtoul(&cmd[comma_idx], nullptr, 10);
-    free(cmd);
-
-    bytes_read = 0;
-    size_t bytes_remaining = data_length;
-    while (bytes_read < data_length)
+  // Skip the filename in quotes and get the data length index
+  int ich;
+  char ch;
+  int quoteCount = 0;
+  size_t lengthIndex = 0;
+  while (quoteCount < 3 && bytesRead < minimumResponseAllocation)
+  {
+    ich = _hardSerial->read();
+    if (ich < 0)
     {
-        // This method seems more reliable than reading a byte at a time.
-        size_t rc = _hardSerial->readBytes(&buffer[bytes_read], bytes_remaining);
-        bytes_read += rc;
-        bytes_remaining -= rc;
+      continue;
     }
+    ch = (char)(ich & 0xFF);
+    response[bytesRead++] = ch;
+    if (ch == '"')
+    {
+      quoteCount++;
+    }
+    else if (ch == ',' && lengthIndex == 0 && quoteCount == 2)
+    {
+      lengthIndex = bytesRead;
+    }
+  }
+  response[bytesRead] = 0; // Make response a null-terminated string
+  response[bytesRead - 2] = 0; // Terminate response string right after block length
+  size_t data_length = strtoul(&response[lengthIndex], nullptr, 10);
 
-    return UBX_CELL_ERROR_SUCCESS;
+  // Read file block data directly into supplied buffer
+  bytesRead = 0;
+  size_t bytesRemaining = data_length;
+  while (bytesRead < data_length)
+  {
+    // This method seems more reliable than reading a byte at a time.
+    size_t rc = _hardSerial->readBytes(&buffer[bytesRead], bytesRemaining);
+    bytesRead += rc;
+    bytesRemaining -= rc;
+  }
+
+  // Read rest of response until \r\nOK\r\n
+  err = waitForResponse(UBX_CELL_RESPONSE_OK, UBX_CELL_RESPONSE_ERROR, UBX_CELL_STANDARD_RESPONSE_TIMEOUT);
+  if (err != UBX_CELL_ERROR_SUCCESS)
+  {
+    if (_printDebug == true)
+    {
+      _debugPort->print(F("getFileBlock: waitForResponse returned err "));
+      _debugPort->println(err);
+    }
+    free(command);
+    free(response);
+    return err;
+  }
+
+  free(command);
+  free(response);
+  return err;
 }
 
 UBX_CELL_error_t SparkFun_ublox_Cellular::getFileSize(String filename, int *size)
